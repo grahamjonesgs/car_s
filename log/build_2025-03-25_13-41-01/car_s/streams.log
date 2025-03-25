@@ -1,0 +1,544 @@
+[0.054s] Invoking command in '/home/graham/ros2_ws/src/car_s/build/car_s': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/graham/ros2_ws/src/car_s -DCMAKE_INSTALL_PREFIX=/home/graham/ros2_ws/src/car_s/install/car_s
+[0.508s] -- The C compiler identification is GNU 13.3.0
+[0.811s] -- The CXX compiler identification is GNU 13.3.0
+[0.886s] -- Detecting C compiler ABI info
+[1.231s] -- Detecting C compiler ABI info - done
+[1.252s] -- Check for working C compiler: /usr/bin/cc - skipped
+[1.255s] -- Detecting C compile features
+[1.260s] -- Detecting C compile features - done
+[1.298s] -- Detecting CXX compiler ABI info
+[1.927s] -- Detecting CXX compiler ABI info - done
+[1.998s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[2.000s] -- Detecting CXX compile features
+[2.000s] -- Detecting CXX compile features - done
+[2.059s] -- Found ament_cmake: 2.5.3 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[2.602s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[3.095s] -- Found rclcpp: 28.1.6 (/opt/ros/jazzy/share/rclcpp/cmake)
+[3.401s] -- Found rosidl_generator_c: 4.6.5 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)
+[3.508s] -- Found rosidl_generator_cpp: 4.6.5 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)
+[3.680s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[3.812s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[4.250s] -- Found rmw_implementation_cmake: 7.3.1 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)
+[4.277s] -- Found rmw_fastrtps_cpp: 8.4.1 (/opt/ros/jazzy/share/rmw_fastrtps_cpp/cmake)
+[4.726s] -- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.13")  
+[4.816s] -- Found FastRTPS: /opt/ros/jazzy/include (Required is at least version "2.13") 
+[4.977s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[5.313s] -- Found std_msgs: 5.3.5 (/opt/ros/jazzy/share/std_msgs/cmake)
+[5.420s] -- Found geometry_msgs: 5.3.5 (/opt/ros/jazzy/share/geometry_msgs/cmake)
+[5.556s] -- Found tf2: 0.36.8 (/opt/ros/jazzy/share/tf2/cmake)
+[5.575s] -- Found tf2_ros: 0.36.8 (/opt/ros/jazzy/share/tf2_ros/cmake)
+[6.389s] -- Found nav_msgs: 5.3.5 (/opt/ros/jazzy/share/nav_msgs/cmake)
+[6.928s] -- Configuring done (6.8s)
+[7.016s] -- Generating done (0.1s)
+[7.039s] -- Build files have been written to: /home/graham/ros2_ws/src/car_s/build/car_s
+[7.073s] Invoked command in '/home/graham/ros2_ws/src/car_s/build/car_s' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/graham/ros2_ws/src/car_s -DCMAKE_INSTALL_PREFIX=/home/graham/ros2_ws/src/car_s/install/car_s
+[7.079s] Invoking command in '/home/graham/ros2_ws/src/car_s/build/car_s': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/graham/ros2_ws/src/car_s/build/car_s -- -j4 -l4
+[7.270s] [ 50%] [32mBuilding CXX object CMakeFiles/car_s_controller.dir/src/pi_car_s_controller.cpp.o[0m
+[18.565s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:91:9:[m[K [01;31m[Kerror: [m[K‘[01m[KTimer[m[K’ in namespace ‘[01m[Krclcpp[m[K’ does not name a type; did you mean ‘[01m[KTime[m[K’?
+[18.565s]    91 | rclcpp::[01;31m[KTimer[m[K message_timeout;    // Timer for stop motors if no message
+[18.565s]       |         [01;31m[K^~~~~[m[K
+[18.566s]       |         [32m[KTime[m[K
+[18.567s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:92:19:[m[K [01;31m[Kerror: [m[Kclass template argument deduction failed:
+[18.567s]    92 | rclcpp::Publisher [01;31m[Kodom_pub[m[K;
+[18.567s]       |                   [01;31m[K^~~~~~~~[m[K
+[18.569s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:92:19:[m[K [01;31m[Kerror: [m[Kno matching function for call to ‘[01m[KPublisher()[m[K’
+[18.570s] In file included from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/topic_statistics/subscription_topic_statistics.hpp:31[m[K,
+[18.571s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/subscription.hpp:50[m[K,
+[18.571s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/any_executable.hpp:25[m[K,
+[18.571s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategy.hpp:25[m[K,
+[18.572s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategies.hpp:18[m[K,
+[18.572s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executor_options.hpp:22[m[K,
+[18.572s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executor.hpp:38[m[K,
+[18.573s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25[m[K,
+[18.573s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors.hpp:21[m[K,
+[18.573s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/rclcpp.hpp:172[m[K,
+[18.573s]                  from [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:29[m[K:
+[18.575s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:134:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class MessageT, class AllocatorT> [01;32m[KPublisher[m[K(rclcpp::node_interfaces::NodeBaseInterface*, const std::string&, const rclcpp::QoS&, const rclcpp::PublisherOptionsWithAllocator<AllocatorT>&)-> rclcpp::Publisher<MessageT, AllocatorT>[m[K’
+[18.575s]   134 |   [01;36m[KPublisher[m[K(
+[18.576s]       |   [01;36m[K^~~~~~~~~[m[K
+[18.576s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:134:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[18.577s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:92:19:[m[K [01;36m[Knote: [m[K  candidate expects 4 arguments, 0 provided
+[18.577s]    92 | rclcpp::Publisher [01;36m[Kodom_pub[m[K;
+[18.578s]       |                   [01;36m[K^~~~~~~~[m[K
+[18.579s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:80:7:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class MessageT, class AllocatorT> [01;32m[KPublisher[m[K(rclcpp::Publisher<MessageT, AllocatorT>)-> rclcpp::Publisher<MessageT, AllocatorT>[m[K’
+[18.580s]    80 | class [01;36m[KPublisher[m[K : public PublisherBase
+[18.581s]       |       [01;36m[K^~~~~~~~~[m[K
+[18.581s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:80:7:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[18.581s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:92:19:[m[K [01;36m[Knote: [m[K  candidate expects 1 argument, 0 provided
+[18.582s]    92 | rclcpp::Publisher [01;36m[Kodom_pub[m[K;
+[18.583s]       |                   [01;36m[K^~~~~~~~[m[K
+[18.583s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:93:19:[m[K [01;31m[Kerror: [m[Kclass template argument deduction failed:
+[18.584s]    93 | rclcpp::Publisher [01;31m[Kleft_speed_pub[m[K;
+[18.584s]       |                   [01;31m[K^~~~~~~~~~~~~~[m[K
+[18.585s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:93:19:[m[K [01;31m[Kerror: [m[Kno matching function for call to ‘[01m[KPublisher()[m[K’
+[18.589s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:134:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class MessageT, class AllocatorT> [01;32m[KPublisher[m[K(rclcpp::node_interfaces::NodeBaseInterface*, const std::string&, const rclcpp::QoS&, const rclcpp::PublisherOptionsWithAllocator<AllocatorT>&)-> rclcpp::Publisher<MessageT, AllocatorT>[m[K’
+[18.591s]   134 |   [01;36m[KPublisher[m[K(
+[18.591s]       |   [01;36m[K^~~~~~~~~[m[K
+[18.592s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:134:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[18.592s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:93:19:[m[K [01;36m[Knote: [m[K  candidate expects 4 arguments, 0 provided
+[18.593s]    93 | rclcpp::Publisher [01;36m[Kleft_speed_pub[m[K;
+[18.593s]       |                   [01;36m[K^~~~~~~~~~~~~~[m[K
+[18.593s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:80:7:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class MessageT, class AllocatorT> [01;32m[KPublisher[m[K(rclcpp::Publisher<MessageT, AllocatorT>)-> rclcpp::Publisher<MessageT, AllocatorT>[m[K’
+[18.593s]    80 | class [01;36m[KPublisher[m[K : public PublisherBase
+[18.593s]       |       [01;36m[K^~~~~~~~~[m[K
+[18.593s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:80:7:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[18.593s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:93:19:[m[K [01;36m[Knote: [m[K  candidate expects 1 argument, 0 provided
+[18.599s]    93 | rclcpp::Publisher [01;36m[Kleft_speed_pub[m[K;
+[18.600s]       |                   [01;36m[K^~~~~~~~~~~~~~[m[K
+[18.600s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:94:19:[m[K [01;31m[Kerror: [m[Kclass template argument deduction failed:
+[18.600s]    94 | rclcpp::Publisher [01;31m[Kright_speed_pub[m[K;
+[18.601s]       |                   [01;31m[K^~~~~~~~~~~~~~~[m[K
+[18.601s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:94:19:[m[K [01;31m[Kerror: [m[Kno matching function for call to ‘[01m[KPublisher()[m[K’
+[18.601s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:134:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class MessageT, class AllocatorT> [01;32m[KPublisher[m[K(rclcpp::node_interfaces::NodeBaseInterface*, const std::string&, const rclcpp::QoS&, const rclcpp::PublisherOptionsWithAllocator<AllocatorT>&)-> rclcpp::Publisher<MessageT, AllocatorT>[m[K’
+[18.601s]   134 |   [01;36m[KPublisher[m[K(
+[18.602s]       |   [01;36m[K^~~~~~~~~[m[K
+[18.602s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:134:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[18.603s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:94:19:[m[K [01;36m[Knote: [m[K  candidate expects 4 arguments, 0 provided
+[18.603s]    94 | rclcpp::Publisher [01;36m[Kright_speed_pub[m[K;
+[18.603s]       |                   [01;36m[K^~~~~~~~~~~~~~~[m[K
+[18.604s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:80:7:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class MessageT, class AllocatorT> [01;32m[KPublisher[m[K(rclcpp::Publisher<MessageT, AllocatorT>)-> rclcpp::Publisher<MessageT, AllocatorT>[m[K’
+[18.604s]    80 | class [01;36m[KPublisher[m[K : public PublisherBase
+[18.604s]       |       [01;36m[K^~~~~~~~~[m[K
+[18.604s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:80:7:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[18.604s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:94:19:[m[K [01;36m[Knote: [m[K  candidate expects 1 argument, 0 provided
+[18.605s]    94 | rclcpp::Publisher [01;36m[Kright_speed_pub[m[K;
+[18.605s]       |                   [01;36m[K^~~~~~~~~~~~~~~[m[K
+[18.605s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:95:19:[m[K [01;31m[Kerror: [m[Kclass template argument deduction failed:
+[18.605s]    95 | rclcpp::Publisher [01;31m[Kangle_pub[m[K;
+[18.605s]       |                   [01;31m[K^~~~~~~~~[m[K
+[18.605s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:95:19:[m[K [01;31m[Kerror: [m[Kno matching function for call to ‘[01m[KPublisher()[m[K’
+[18.605s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:134:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class MessageT, class AllocatorT> [01;32m[KPublisher[m[K(rclcpp::node_interfaces::NodeBaseInterface*, const std::string&, const rclcpp::QoS&, const rclcpp::PublisherOptionsWithAllocator<AllocatorT>&)-> rclcpp::Publisher<MessageT, AllocatorT>[m[K’
+[18.606s]   134 |   [01;36m[KPublisher[m[K(
+[18.606s]       |   [01;36m[K^~~~~~~~~[m[K
+[18.607s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:134:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[18.607s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:95:19:[m[K [01;36m[Knote: [m[K  candidate expects 4 arguments, 0 provided
+[18.607s]    95 | rclcpp::Publisher [01;36m[Kangle_pub[m[K;
+[18.609s]       |                   [01;36m[K^~~~~~~~~[m[K
+[18.610s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:80:7:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class MessageT, class AllocatorT> [01;32m[KPublisher[m[K(rclcpp::Publisher<MessageT, AllocatorT>)-> rclcpp::Publisher<MessageT, AllocatorT>[m[K’
+[18.611s]    80 | class [01;36m[KPublisher[m[K : public PublisherBase
+[18.611s]       |       [01;36m[K^~~~~~~~~[m[K
+[18.612s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:80:7:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[18.613s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:95:19:[m[K [01;36m[Knote: [m[K  candidate expects 1 argument, 0 provided
+[18.613s]    95 | rclcpp::Publisher [01;36m[Kangle_pub[m[K;
+[18.614s]       |                   [01;36m[K^~~~~~~~~[m[K
+[18.614s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:96:1:[m[K [01;31m[Kerror: [m[K‘[01m[Ktf[m[K’ does not name a type; did you mean ‘[01m[Ktm[m[K’?
+[18.614s]    96 | [01;31m[Ktf[m[K::TransformBroadcaster *odom_broadcaster;
+[18.615s]       | [01;31m[K^~[m[K
+[18.616s]       | [32m[Ktm[m[K
+[18.617s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:[m[K In function ‘[01m[Kvoid[01;32m[K sigintHandler[m[K(int)[m[K’:
+[18.617s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:120:24:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Ksig[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+[18.618s]   120 | void sigintHandler([01;35m[Kint sig[m[K) {
+[18.618s]       |                    [01;35m[K~~~~^~~[m[K
+[18.618s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:[m[K In function ‘[01m[Kvoid[01;32m[K set_substep[m[K(int)[m[K’:
+[18.619s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:133:9:[m[K [01;31m[Kerror: [m[K‘[01m[KROS_INFO[m[K’ was not declared in this scope
+[18.620s]   133 |         [01;31m[KROS_INFO[m[K("substeps set to %i",steps);
+[18.622s]       |         [01;31m[K^~~~~~~~[m[K
+[18.623s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:[m[K In function ‘[01m[Kvoid[01;32m[K motor_control[m[K(float, float)[m[K’:
+[18.623s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:152:9:[m[K [01;31m[Kerror: [m[K‘[01m[KROS_INFO[m[K’ was not declared in this scope
+[18.628s]   152 |         [01;31m[KROS_INFO[m[K("In motor control, speed %f, turn %f", speed, turn);
+[18.635s]       |         [01;31m[K^~~~~~~~[m[K
+[18.637s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:177:17:[m[K [01;31m[Kerror: [m[K‘[01m[Khardware_PWM[m[K’ was not declared in this scope
+[18.638s]   177 |                 [01;31m[Khardware_PWM[m[K(pi,LEFT_FRONT_STEP_PIN,0,0);
+[18.639s]       |                 [01;31m[K^~~~~~~~~~~~[m[K
+[18.640s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:[m[K At global scope:
+[18.640s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:203:46:[m[K [01;31m[Kerror: [m[K‘[01m[KTimerEvent[m[K’ in namespace ‘[01m[Krclcpp[m[K’ does not name a type
+[18.641s]   203 | void message_timeout_callback (const rclcpp::[01;31m[KTimerEvent[m[K&){
+[18.641s]       |                                              [01;31m[K^~~~~~~~~~[m[K
+[18.648s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:[m[K In function ‘[01m[Kvoid[01;32m[K message_timeout_callback[m[K(const int&)[m[K’:
+[18.649s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:207:17:[m[K [01;31m[Kerror: [m[K‘[01m[Kmessage_timeout[m[K’ was not declared in this scope
+[18.650s]   207 |                 [01;31m[Kmessage_timeout[m[K.setPeriod(rclcpp::Duration(MESSAGE_TIMOUT),true);    // reset no message timeout
+[18.650s]       |                 [01;31m[K^~~~~~~~~~~~~~~[m[K
+[18.650s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:207:74:[m[K [01;31m[Kerror: [m[Kno matching function for call to ‘[01m[Krclcpp::Duration::Duration(double)[m[K’
+[18.650s]   207 |                 message_timeout.setPeriod(rclcpp::Duration(MESSAGE_TIMOUT[01;31m[K)[m[K,true);    // reset no message timeout
+[18.652s]       |                                                                          [01;31m[K^[m[K
+[18.652s] In file included from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/time.hpp:24[m[K,
+[18.653s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/clock.hpp:24[m[K,
+[18.653s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/client.hpp:38[m[K,
+[18.653s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/callback_group.hpp:24[m[K,
+[18.653s]                  from [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/any_executable.hpp:20[m[K:
+[18.654s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:49:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class Rep, class Period> rclcpp::Duration::[01;32m[KDuration[m[K(const std::chrono::duration<_Rep1, _Period1>&)[m[K’
+[18.654s]    49 |   [01;36m[KDuration[m[K(const std::chrono::duration<Rep, Period> & duration)  // NOLINT(runtime/explicit)
+[18.654s]       |   [01;36m[K^~~~~~~~[m[K
+[18.655s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:49:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[18.655s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:207:74:[m[K [01;36m[Knote: [m[K  mismatched types ‘[01m[Kconst std::chrono::duration<_Rep1, _Period1>[m[K’ and ‘[01m[Kdouble[m[K’
+[18.655s]   207 |                 message_timeout.setPeriod(rclcpp::Duration(MESSAGE_TIMOUT[01;36m[K)[m[K,true);    // reset no message timeout
+[18.655s]       |                                                                          [01;36m[K^[m[K
+[18.655s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:159:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Krclcpp::Duration::[01;32m[KDuration[m[K()[m[K’
+[18.656s]   159 |   [01;36m[KDuration[m[K() = default;
+[18.656s]       |   [01;36m[K^~~~~~~~[m[K
+[18.656s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:159:3:[m[K [01;36m[Knote: [m[K  candidate expects 0 arguments, 1 provided
+[18.656s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:62:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Krclcpp::Duration::[01;32m[KDuration[m[K(const rclcpp::Duration&)[m[K’
+[18.656s]    62 |   [01;36m[KDuration[m[K(const Duration & rhs);
+[18.656s]       |   [01;36m[K^~~~~~~~[m[K
+[18.656s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:62:29:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kdouble[m[K’ to ‘[01m[Kconst rclcpp::Duration&[m[K’
+[18.656s]    62 |   Duration([01;36m[Kconst Duration & rhs[m[K);
+[18.657s]       |            [01;36m[K~~~~~~~~~~~~~~~~~^~~[m[K
+[18.657s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:60:12:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Krclcpp::Duration::[01;32m[KDuration[m[K(const rcl_duration_t&)[m[K’
+[18.657s]    60 |   explicit [01;36m[KDuration[m[K(const rcl_duration_t & duration);
+[18.657s]       |            [01;36m[K^~~~~~~~[m[K
+[18.657s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:60:44:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kdouble[m[K’ to ‘[01m[Kconst rcl_duration_t&[m[K’ {aka ‘[01m[Kconst rcl_duration_s&[m[K’}
+[18.657s]    60 |   explicit Duration([01;36m[Kconst rcl_duration_t & duration[m[K);
+[18.657s]       |                     [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~[m[K
+[18.658s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:54:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Krclcpp::Duration::[01;32m[KDuration[m[K(const builtin_interfaces::msg::Duration&)[m[K’
+[18.658s]    54 |   [01;36m[KDuration[m[K(const builtin_interfaces::msg::Duration & duration_msg);  // NOLINT(runtime/explicit)
+[18.658s]       |   [01;36m[K^~~~~~~~[m[K
+[18.659s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:54:54:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kdouble[m[K’ to ‘[01m[Kconst builtin_interfaces::msg::Duration&[m[K’ {aka ‘[01m[Kconst builtin_interfaces::msg::Duration_<std::allocator<void> >&[m[K’}
+[18.659s]    54 |   Duration([01;36m[Kconst builtin_interfaces::msg::Duration & duration_msg[m[K);  // NOLINT(runtime/explicit)
+[18.659s]       |            [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~[m[K
+[18.659s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:43:12:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Krclcpp::Duration::[01;32m[KDuration[m[K(std::chrono::nanoseconds)[m[K’
+[18.659s]    43 |   explicit [01;36m[KDuration[m[K(std::chrono::nanoseconds nanoseconds);
+[18.660s]       |            [01;36m[K^~~~~~~~[m[K
+[18.660s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:43:46:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kdouble[m[K’ to ‘[01m[Kstd::chrono::nanoseconds[m[K’ {aka ‘[01m[Kstd::chrono::duration<long int, std::ratio<1, 1000000000> >[m[K’}
+[18.664s]    43 |   explicit Duration([01;36m[Kstd::chrono::nanoseconds nanoseconds[m[K);
+[18.665s]       |                     [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~[m[K
+[18.665s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:40:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Krclcpp::Duration::[01;32m[KDuration[m[K(int32_t, uint32_t)[m[K’
+[18.666s]    40 |   [01;36m[KDuration[m[K(int32_t seconds, uint32_t nanoseconds);
+[18.666s]       |   [01;36m[K^~~~~~~~[m[K
+[18.667s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:40:3:[m[K [01;36m[Knote: [m[K  candidate expects 2 arguments, 1 provided
+[18.668s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:208:17:[m[K [01;31m[Kerror: [m[K‘[01m[KROS_INFO[m[K’ was not declared in this scope
+[18.669s]   208 |                 [01;31m[KROS_INFO[m[K("Timeout");
+[18.672s]       |                 [01;31m[K^~~~~~~~[m[K
+[18.673s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:[m[K At global scope:
+[18.674s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:212:40:[m[K [01;31m[Kerror: [m[K‘[01m[KTimerEvent[m[K’ in namespace ‘[01m[Krclcpp[m[K’ does not name a type
+[18.675s]   212 | void LED_timer_callback (const rclcpp::[01;31m[KTimerEvent[m[K&){
+[18.676s]       |                                        [01;31m[K^~~~~~~~~~[m[K
+[18.677s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:[m[K In function ‘[01m[Kvoid[01;32m[K left_speed_callback[m[K(int, uint32_t, uint32_t, uint32_t)[m[K’:
+[18.677s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:225:37:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kpi[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+[18.678s]   225 | static void left_speed_callback([01;35m[Kint pi[m[K,uint32_t gpio, uint32_t level, uint32_t tick){
+[18.680s]       |                                 [01;35m[K~~~~^~[m[K
+[18.682s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:225:49:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kgpio[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+[18.683s]   225 | static void left_speed_callback(int pi,[01;35m[Kuint32_t gpio[m[K, uint32_t level, uint32_t tick){
+[18.685s]       |                                        [01;35m[K~~~~~~~~~^~~~[m[K
+[18.686s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:225:64:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Klevel[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+[18.688s]   225 | static void left_speed_callback(int pi,uint32_t gpio, [01;35m[Kuint32_t level[m[K, uint32_t tick){
+[18.688s]       |                                                       [01;35m[K~~~~~~~~~^~~~~[m[K
+[18.689s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:225:80:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Ktick[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+[18.689s]   225 | static void left_speed_callback(int pi,uint32_t gpio, uint32_t level, [01;35m[Kuint32_t tick[m[K){
+[18.689s]       |                                                                       [01;35m[K~~~~~~~~~^~~~[m[K
+[18.689s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:[m[K In function ‘[01m[Kvoid[01;32m[K right_speed_callback[m[K(int, uint32_t, uint32_t, uint32_t)[m[K’:
+[18.690s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:230:38:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kpi[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+[18.691s]   230 | static void right_speed_callback([01;35m[Kint pi[m[K,uint32_t gpio, uint32_t level, uint32_t tick){
+[18.692s]       |                                  [01;35m[K~~~~^~[m[K
+[18.693s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:230:50:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Kgpio[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+[18.693s]   230 | static void right_speed_callback(int pi,[01;35m[Kuint32_t gpio[m[K, uint32_t level, uint32_t tick){
+[18.695s]       |                                         [01;35m[K~~~~~~~~~^~~~[m[K
+[18.696s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:230:65:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Klevel[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+[18.697s]   230 | static void right_speed_callback(int pi,uint32_t gpio, [01;35m[Kuint32_t level[m[K, uint32_t tick){
+[18.697s]       |                                                        [01;35m[K~~~~~~~~~^~~~~[m[K
+[18.697s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:230:81:[m[K [01;35m[Kwarning: [m[Kunused parameter ‘[01m[Ktick[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter-Wunused-parameter]8;;[m[K]
+[18.698s]   230 | static void right_speed_callback(int pi,uint32_t gpio, uint32_t level, [01;35m[Kuint32_t tick[m[K){
+[18.698s]       |                                                                        [01;35m[K~~~~~~~~~^~~~[m[K
+[18.699s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:[m[K At global scope:
+[18.699s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:235:41:[m[K [01;31m[Kerror: [m[K‘[01m[KTimerEvent[m[K’ in namespace ‘[01m[Krclcpp[m[K’ does not name a type
+[18.700s]   235 | void odom_timer_callback (const rclcpp::[01;31m[KTimerEvent[m[K&){
+[18.700s]       |                                         [01;31m[K^~~~~~~~~~[m[K
+[18.702s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:[m[K In function ‘[01m[Kvoid[01;32m[K odom_timer_callback[m[K(const int&)[m[K’:
+[18.703s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:237:19:[m[K [01;31m[Kerror: [m[K‘[01m[KFloat32[m[K’ is not a member of ‘[01m[Kstd_msgs[m[K’; did you mean ‘[01m[Kstd_msgs::msg::Float32[m[K’?
+[18.704s]   237 |         std_msgs::[01;31m[KFloat32[m[K left_speed;
+[18.706s]       |                   [01;31m[K^~~~~~~[m[K
+[18.706s] In file included from [01m[K/opt/ros/jazzy/include/std_msgs/std_msgs/msg/float32.hpp:7[m[K,
+[18.706s]                  from [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:31[m[K:
+[18.706s] [01m[K/opt/ros/jazzy/include/std_msgs/std_msgs/msg/detail/float32__struct.hpp:125:7:[m[K [01;36m[Knote: [m[K‘[01m[Kstd_msgs::msg::Float32[m[K’ declared here
+[18.707s]   125 | using [01;36m[KFloat32[m[K =
+[18.707s]       |       [01;36m[K^~~~~~~[m[K
+[18.707s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:238:19:[m[K [01;31m[Kerror: [m[K‘[01m[KFloat32[m[K’ is not a member of ‘[01m[Kstd_msgs[m[K’; did you mean ‘[01m[Kstd_msgs::msg::Float32[m[K’?
+[18.708s]   238 |         std_msgs::[01;31m[KFloat32[m[K right_speed;
+[18.708s]       |                   [01;31m[K^~~~~~~[m[K
+[18.708s] [01m[K/opt/ros/jazzy/include/std_msgs/std_msgs/msg/detail/float32__struct.hpp:125:7:[m[K [01;36m[Knote: [m[K‘[01m[Kstd_msgs::msg::Float32[m[K’ declared here
+[18.709s]   125 | using [01;36m[KFloat32[m[K =
+[18.709s]       |       [01;36m[K^~~~~~~[m[K
+[18.709s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:239:19:[m[K [01;31m[Kerror: [m[K‘[01m[KFloat32[m[K’ is not a member of ‘[01m[Kstd_msgs[m[K’; did you mean ‘[01m[Kstd_msgs::msg::Float32[m[K’?
+[18.709s]   239 |         std_msgs::[01;31m[KFloat32[m[K angle;
+[18.710s]       |                   [01;31m[K^~~~~~~[m[K
+[18.710s] [01m[K/opt/ros/jazzy/include/std_msgs/std_msgs/msg/detail/float32__struct.hpp:125:7:[m[K [01;36m[Knote: [m[K‘[01m[Kstd_msgs::msg::Float32[m[K’ declared here
+[18.710s]   125 | using [01;36m[KFloat32[m[K =
+[18.710s]       |       [01;36m[K^~~~~~~[m[K
+[18.711s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:252:9:[m[K [01;31m[Kerror: [m[K‘[01m[Kleft_speed[m[K’ was not declared in this scope; did you mean ‘[01m[Kleft_speed_pub[m[K’?
+[18.711s]   252 |         [01;31m[Kleft_speed[m[K.data = left_delta / ODOM_TIMOUT;
+[18.711s]       |         [01;31m[K^~~~~~~~~~[m[K
+[18.712s]       |         [32m[Kleft_speed_pub[m[K
+[18.712s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:253:9:[m[K [01;31m[Kerror: [m[K‘[01m[Kright_speed[m[K’ was not declared in this scope; did you mean ‘[01m[Kright_speed_pub[m[K’?
+[18.712s]   253 |         [01;31m[Kright_speed[m[K.data =  right_delta / ODOM_TIMOUT;
+[18.712s]       |         [01;31m[K^~~~~~~~~~~[m[K
+[18.712s]       |         [32m[Kright_speed_pub[m[K
+[18.719s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:263:9:[m[K [01;31m[Kerror: [m[K‘[01m[Kangle[m[K’ was not declared in this scope
+[18.719s]   263 |         [01;31m[Kangle[m[K.data = 180*theta/PI;  // Send angle in degrees
+[18.720s]       |         [01;31m[K^~~~~[m[K
+[18.733s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:267:11:[m[K [01;31m[Kerror: [m[K‘[01m[KROS_INFO[m[K’ was not declared in this scope
+[18.734s]   267 |           [01;31m[KROS_INFO[m[K("Turn started set to true");
+[18.734s]       |           [01;31m[K^~~~~~~~[m[K
+[18.746s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:271:17:[m[K [01;31m[Kerror: [m[K‘[01m[KROS_INFO[m[K’ was not declared in this scope
+[18.746s]   271 |                 [01;31m[KROS_INFO[m[K("Target angle reached");
+[18.746s]       |                 [01;31m[K^~~~~~~~[m[K
+[18.748s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:280:24:[m[K [01;31m[Kerror: [m[K‘[01m[KQuaternion[m[K’ is not a member of ‘[01m[Kgeometry_msgs[m[K’; did you mean ‘[01m[Kgeometry_msgs::msg::Quaternion[m[K’?
+[18.748s]   280 |         geometry_msgs::[01;31m[KQuaternion[m[K odom_quat = tf::createQuaternionMsgFromYaw(theta);
+[18.749s]       |                        [01;31m[K^~~~~~~~~~[m[K
+[18.749s] In file included from [01m[K/opt/ros/jazzy/include/geometry_msgs/geometry_msgs/msg/detail/transform__struct.hpp:25[m[K,
+[18.749s]                  from [01m[K/opt/ros/jazzy/include/geometry_msgs/geometry_msgs/msg/detail/transform_stamped__struct.hpp:25[m[K,
+[18.749s]                  from [01m[K/opt/ros/jazzy/include/geometry_msgs/geometry_msgs/msg/transform_stamped.hpp:7[m[K,
+[18.749s]                  from [01m[K/opt/ros/jazzy/include/tf2_ros/tf2_ros/transform_broadcaster.h:44[m[K,
+[18.749s]                  from [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:34[m[K:
+[18.749s] [01m[K/opt/ros/jazzy/include/geometry_msgs/geometry_msgs/msg/detail/quaternion__struct.hpp:177:7:[m[K [01;36m[Knote: [m[K‘[01m[Kgeometry_msgs::msg::Quaternion[m[K’ declared here
+[18.750s]   177 | using [01;36m[KQuaternion[m[K =
+[18.750s]       |       [01;36m[K^~~~~~~~~~[m[K
+[18.751s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:283:24:[m[K [01;31m[Kerror: [m[K‘[01m[KTransformStamped[m[K’ is not a member of ‘[01m[Kgeometry_msgs[m[K’; did you mean ‘[01m[Kgeometry_msgs::msg::TransformStamped[m[K’?
+[18.751s]   283 |         geometry_msgs::[01;31m[KTransformStamped[m[K odom_trans;
+[18.752s]       |                        [01;31m[K^~~~~~~~~~~~~~~~[m[K
+[18.752s] [01m[K/opt/ros/jazzy/include/geometry_msgs/geometry_msgs/msg/detail/transform_stamped__struct.hpp:159:7:[m[K [01;36m[Knote: [m[K‘[01m[Kgeometry_msgs::msg::TransformStamped[m[K’ declared here
+[18.753s]   159 | using [01;36m[KTransformStamped[m[K =
+[18.754s]       |       [01;36m[K^~~~~~~~~~~~~~~~[m[K
+[18.761s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:284:9:[m[K [01;31m[Kerror: [m[K‘[01m[Kodom_trans[m[K’ was not declared in this scope
+[18.762s]   284 |         [01;31m[Kodom_trans[m[K.header.stamp = rclcpp::Time::now();
+[18.762s]       |         [01;31m[K^~~~~~~~~~[m[K
+[18.762s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:284:49:[m[K [01;31m[Kerror: [m[K‘[01m[Know[m[K’ is not a member of ‘[01m[Krclcpp::Time[m[K’
+[18.762s]   284 |         odom_trans.header.stamp = rclcpp::Time::[01;31m[Know[m[K();
+[18.763s]       |                                                 [01;31m[K^~~[m[K
+[18.773s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:291:41:[m[K [01;31m[Kerror: [m[K‘[01m[Kodom_quat[m[K’ was not declared in this scope; did you mean ‘[01m[Kodom_pub[m[K’?
+[18.773s]   291 |         odom_trans.transform.rotation = [01;31m[Kodom_quat[m[K;
+[18.773s]       |                                         [01;31m[K^~~~~~~~~[m[K
+[18.773s]       |                                         [32m[Kodom_pub[m[K
+[18.789s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:293:9:[m[K [01;31m[Kerror: [m[K‘[01m[Kodom_broadcaster[m[K’ was not declared in this scope
+[18.790s]   293 |         [01;31m[Kodom_broadcaster[m[K->sendTransform(odom_trans);
+[18.791s]       |         [01;31m[K^~~~~~~~~~~~~~~~[m[K
+[18.791s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:296:19:[m[K [01;31m[Kerror: [m[K‘[01m[KOdometry[m[K’ is not a member of ‘[01m[Knav_msgs[m[K’; did you mean ‘[01m[Knav_msgs::msg::Odometry[m[K’?
+[18.792s]   296 |         nav_msgs::[01;31m[KOdometry[m[K odom;
+[18.793s]       |                   [01;31m[K^~~~~~~~[m[K
+[18.794s] In file included from [01m[K/opt/ros/jazzy/include/nav_msgs/nav_msgs/msg/odometry.hpp:7[m[K,
+[18.795s]                  from [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:35[m[K:
+[18.795s] [01m[K/opt/ros/jazzy/include/nav_msgs/nav_msgs/msg/detail/odometry__struct.hpp:175:7:[m[K [01;36m[Knote: [m[K‘[01m[Knav_msgs::msg::Odometry[m[K’ declared here
+[18.797s]   175 | using [01;36m[KOdometry[m[K =
+[18.797s]       |       [01;36m[K^~~~~~~~[m[K
+[18.809s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:297:9:[m[K [01;31m[Kerror: [m[K‘[01m[Kodom[m[K’ was not declared in this scope
+[18.810s]   297 |         [01;31m[Kodom[m[K.header.stamp = rclcpp::Time::now();
+[18.811s]       |         [01;31m[K^~~~[m[K
+[18.811s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:297:43:[m[K [01;31m[Kerror: [m[K‘[01m[Know[m[K’ is not a member of ‘[01m[Krclcpp::Time[m[K’
+[18.811s]   297 |         odom.header.stamp = rclcpp::Time::[01;31m[Know[m[K();
+[18.812s]       |                                           [01;31m[K^~~[m[K
+[18.812s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:[m[K At global scope:
+[18.812s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:317:45:[m[K [01;31m[Kerror: [m[K‘[01m[KTwist[m[K’ in namespace ‘[01m[Kgeometry_msgs[m[K’ does not name a type
+[18.812s]   317 | void velocity_callback(const geometry_msgs::[01;31m[KTwist[m[K::ConstPtr& msg)
+[18.812s]       |                                             [01;31m[K^~~~~[m[K
+[18.812s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:317:60:[m[K [01;31m[Kerror: [m[Kexpected unqualified-id before ‘[01m[K&[m[K’ token
+[18.813s]   317 | void velocity_callback(const geometry_msgs::Twist::ConstPtr[01;31m[K&[m[K msg)
+[18.813s]       |                                                            [01;31m[K^[m[K
+[18.813s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:317:60:[m[K [01;31m[Kerror: [m[Kexpected ‘[01m[K)[m[K’ before ‘[01m[K&[m[K’ token
+[18.814s]   317 | void velocity_callback[34m[K([m[Kconst geometry_msgs::Twist::ConstPtr[01;31m[K&[m[K msg)
+[18.815s]       |                       [34m[K~[m[K                                    [01;31m[K^[m[K
+[18.816s]       |                                                            [32m[K)[m[K
+[18.817s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:317:62:[m[K [01;31m[Kerror: [m[Kexpected initializer before ‘[01m[Kmsg[m[K’
+[18.817s]   317 | void velocity_callback(const geometry_msgs::Twist::ConstPtr& [01;31m[Kmsg[m[K)
+[18.818s]       |                                                              [01;31m[K^~~[m[K
+[18.819s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:324:37:[m[K [01;31m[Kerror: [m[K‘[01m[KInt32[m[K’ in namespace ‘[01m[Kstd_msgs[m[K’ does not name a type
+[18.819s]   324 | void steps_callback(const std_msgs::[01;31m[KInt32[m[K::ConstPtr& msg)
+[18.820s]       |                                     [01;31m[K^~~~~[m[K
+[18.820s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:324:52:[m[K [01;31m[Kerror: [m[Kexpected unqualified-id before ‘[01m[K&[m[K’ token
+[18.820s]   324 | void steps_callback(const std_msgs::Int32::ConstPtr[01;31m[K&[m[K msg)
+[18.821s]       |                                                    [01;31m[K^[m[K
+[18.822s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:324:52:[m[K [01;31m[Kerror: [m[Kexpected ‘[01m[K)[m[K’ before ‘[01m[K&[m[K’ token
+[18.823s]   324 | void steps_callback[34m[K([m[Kconst std_msgs::Int32::ConstPtr[01;31m[K&[m[K msg)
+[18.823s]       |                    [34m[K~[m[K                               [01;31m[K^[m[K
+[18.824s]       |                                                    [32m[K)[m[K
+[18.825s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:324:54:[m[K [01;31m[Kerror: [m[Kexpected initializer before ‘[01m[Kmsg[m[K’
+[18.826s]   324 | void steps_callback(const std_msgs::Int32::ConstPtr& [01;31m[Kmsg[m[K)
+[18.827s]       |                                                      [01;31m[K^~~[m[K
+[18.828s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:331:36:[m[K [01;31m[Kerror: [m[K‘[01m[KInt32[m[K’ in namespace ‘[01m[Kstd_msgs[m[K’ does not name a type
+[18.830s]   331 | void freq_callback(const std_msgs::[01;31m[KInt32[m[K::ConstPtr& msg)
+[18.831s]       |                                    [01;31m[K^~~~~[m[K
+[18.832s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:331:51:[m[K [01;31m[Kerror: [m[Kexpected unqualified-id before ‘[01m[K&[m[K’ token
+[18.833s]   331 | void freq_callback(const std_msgs::Int32::ConstPtr[01;31m[K&[m[K msg)
+[18.833s]       |                                                   [01;31m[K^[m[K
+[18.833s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:331:51:[m[K [01;31m[Kerror: [m[Kexpected ‘[01m[K)[m[K’ before ‘[01m[K&[m[K’ token
+[18.834s]   331 | void freq_callback[34m[K([m[Kconst std_msgs::Int32::ConstPtr[01;31m[K&[m[K msg)
+[18.835s]       |                   [34m[K~[m[K                               [01;31m[K^[m[K
+[18.835s]       |                                                   [32m[K)[m[K
+[18.836s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:331:53:[m[K [01;31m[Kerror: [m[Kexpected initializer before ‘[01m[Kmsg[m[K’
+[18.836s]   331 | void freq_callback(const std_msgs::Int32::ConstPtr& [01;31m[Kmsg[m[K)
+[18.836s]       |                                                     [01;31m[K^~~[m[K
+[18.839s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:339:42:[m[K [01;31m[Kerror: [m[K‘[01m[KInt32[m[K’ in namespace ‘[01m[Kstd_msgs[m[K’ does not name a type
+[18.839s]   339 | void motor_mode_callback(const std_msgs::[01;31m[KInt32[m[K::ConstPtr& msg)
+[18.840s]       |                                          [01;31m[K^~~~~[m[K
+[18.840s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:339:57:[m[K [01;31m[Kerror: [m[Kexpected unqualified-id before ‘[01m[K&[m[K’ token
+[18.840s]   339 | void motor_mode_callback(const std_msgs::Int32::ConstPtr[01;31m[K&[m[K msg)
+[18.841s]       |                                                         [01;31m[K^[m[K
+[18.841s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:339:57:[m[K [01;31m[Kerror: [m[Kexpected ‘[01m[K)[m[K’ before ‘[01m[K&[m[K’ token
+[18.842s]   339 | void motor_mode_callback[34m[K([m[Kconst std_msgs::Int32::ConstPtr[01;31m[K&[m[K msg)
+[18.842s]       |                         [34m[K~[m[K                               [01;31m[K^[m[K
+[18.843s]       |                                                         [32m[K)[m[K
+[18.843s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:339:59:[m[K [01;31m[Kerror: [m[Kexpected initializer before ‘[01m[Kmsg[m[K’
+[18.843s]   339 | void motor_mode_callback(const std_msgs::Int32::ConstPtr& [01;31m[Kmsg[m[K)
+[18.844s]       |                                                           [01;31m[K^~~[m[K
+[18.844s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:361:37:[m[K [01;31m[Kerror: [m[K‘[01m[KBool[m[K’ in namespace ‘[01m[Kstd_msgs[m[K’ does not name a type
+[18.844s]   361 | void motor_callback(const std_msgs::[01;31m[KBool[m[K::ConstPtr& msg)
+[18.845s]       |                                     [01;31m[K^~~~[m[K
+[18.845s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:361:51:[m[K [01;31m[Kerror: [m[Kexpected unqualified-id before ‘[01m[K&[m[K’ token
+[18.845s]   361 | void motor_callback(const std_msgs::Bool::ConstPtr[01;31m[K&[m[K msg)
+[18.845s]       |                                                   [01;31m[K^[m[K
+[18.846s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:361:51:[m[K [01;31m[Kerror: [m[Kexpected ‘[01m[K)[m[K’ before ‘[01m[K&[m[K’ token
+[18.849s]   361 | void motor_callback[34m[K([m[Kconst std_msgs::Bool::ConstPtr[01;31m[K&[m[K msg)
+[18.849s]       |                    [34m[K~[m[K                              [01;31m[K^[m[K
+[18.849s]       |                                                   [32m[K)[m[K
+[18.849s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:361:53:[m[K [01;31m[Kerror: [m[Kexpected initializer before ‘[01m[Kmsg[m[K’
+[18.849s]   361 | void motor_callback(const std_msgs::Bool::ConstPtr& [01;31m[Kmsg[m[K)
+[18.849s]       |                                                     [01;31m[K^~~[m[K
+[18.850s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:[m[K In function ‘[01m[Kint[01;32m[K main[m[K(int, char**)[m[K’:
+[18.850s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:374:65:[m[K [01;31m[Kerror: [m[K‘[01m[Krclcpp::init_options[m[K’ has not been declared
+[18.852s]   374 |         rclcpp::init(argc, argv, "pi_car_s_controller", rclcpp::[01;31m[Kinit_options[m[K::NoSigintHandler);
+[18.853s]       |                                                                 [01;31m[K^~~~~~~~~~~~[m[K
+[18.854s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:375:9:[m[K [01;31m[Kerror: [m[K‘[01m[KROS_INFO[m[K’ was not declared in this scope
+[18.854s]   375 |         [01;31m[KROS_INFO[m[K("Started Pi Car Stepper Controller");
+[18.854s]       |         [01;31m[K^~~~~~~~[m[K
+[18.858s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:376:17:[m[K [01;31m[Kerror: [m[K‘[01m[KNodeHandle[m[K’ is not a member of ‘[01m[Krclcpp[m[K’
+[18.858s]   376 |         rclcpp::[01;31m[KNodeHandle[m[K nh;
+[18.858s]       |                 [01;31m[K^~~~~~~~~~[m[K
+[18.858s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:404:17:[m[K [01;31m[Kerror: [m[K‘[01m[KSubscriber[m[K’ is not a member of ‘[01m[Krclcpp[m[K’
+[18.858s]   404 |         rclcpp::[01;31m[KSubscriber[m[K sub_velocity = nh.subscribe(TOPIC_CMD_VEL,2,velocity_callback);
+[18.858s]       |                 [01;31m[K^~~~~~~~~~[m[K
+[18.859s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:405:17:[m[K [01;31m[Kerror: [m[K‘[01m[KSubscriber[m[K’ is not a member of ‘[01m[Krclcpp[m[K’
+[18.859s]   405 |         rclcpp::[01;31m[KSubscriber[m[K sub_motor = nh.subscribe(TOPIC_MOTOR,1,motor_callback);
+[18.859s]       |                 [01;31m[K^~~~~~~~~~[m[K
+[18.859s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:406:17:[m[K [01;31m[Kerror: [m[K‘[01m[KSubscriber[m[K’ is not a member of ‘[01m[Krclcpp[m[K’
+[18.859s]   406 |         rclcpp::[01;31m[KSubscriber[m[K sub_motor_mode = nh.subscribe(TOPIC_MODE,1,motor_mode_callback);
+[18.859s]       |                 [01;31m[K^~~~~~~~~~[m[K
+[18.859s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:407:17:[m[K [01;31m[Kerror: [m[K‘[01m[KSubscriber[m[K’ is not a member of ‘[01m[Krclcpp[m[K’
+[18.859s]   407 |         rclcpp::[01;31m[KSubscriber[m[K sub_set_steps = nh.subscribe(TOPIC_STEPS,1,steps_callback);
+[18.860s]       |                 [01;31m[K^~~~~~~~~~[m[K
+[18.861s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:408:17:[m[K [01;31m[Kerror: [m[K‘[01m[KSubscriber[m[K’ is not a member of ‘[01m[Krclcpp[m[K’
+[18.861s]   408 |         rclcpp::[01;31m[KSubscriber[m[K sub_set_freq = nh.subscribe(TOPIC_FREQ,1,freq_callback);
+[18.861s]       |                 [01;31m[K^~~~~~~~~~[m[K
+[18.862s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:409:9:[m[K [01;31m[Kerror: [m[K‘[01m[Kmessage_timeout[m[K’ was not declared in this scope
+[18.863s]   409 |         [01;31m[Kmessage_timeout[m[K = nh.createTimer(rclcpp::Duration(MESSAGE_TIMOUT), message_timeout_callback);
+[18.864s]       |         [01;31m[K^~~~~~~~~~~~~~~[m[K
+[18.864s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:409:27:[m[K [01;31m[Kerror: [m[K‘[01m[Knh[m[K’ was not declared in this scope
+[18.865s]   409 |         message_timeout = [01;31m[Knh[m[K.createTimer(rclcpp::Duration(MESSAGE_TIMOUT), message_timeout_callback);
+[18.865s]       |                           [01;31m[K^~[m[K
+[18.866s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:409:73:[m[K [01;31m[Kerror: [m[Kno matching function for call to ‘[01m[Krclcpp::Duration::Duration(double)[m[K’
+[18.867s]   409 |         message_timeout = nh.createTimer(rclcpp::Duration(MESSAGE_TIMOUT[01;31m[K)[m[K, message_timeout_callback);
+[18.868s]       |                                                                         [01;31m[K^[m[K
+[18.868s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:49:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Ktemplate<class Rep, class Period> rclcpp::Duration::[01;32m[KDuration[m[K(const std::chrono::duration<_Rep1, _Period1>&)[m[K’
+[18.869s]    49 |   [01;36m[KDuration[m[K(const std::chrono::duration<Rep, Period> & duration)  // NOLINT(runtime/explicit)
+[18.869s]       |   [01;36m[K^~~~~~~~[m[K
+[18.869s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:49:3:[m[K [01;36m[Knote: [m[K  template argument deduction/substitution failed:
+[18.870s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:409:73:[m[K [01;36m[Knote: [m[K  mismatched types ‘[01m[Kconst std::chrono::duration<_Rep1, _Period1>[m[K’ and ‘[01m[Kdouble[m[K’
+[18.871s]   409 |         message_timeout = nh.createTimer(rclcpp::Duration(MESSAGE_TIMOUT[01;36m[K)[m[K, message_timeout_callback);
+[18.871s]       |                                                                         [01;36m[K^[m[K
+[18.872s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:159:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Krclcpp::Duration::[01;32m[KDuration[m[K()[m[K’
+[18.872s]   159 |   [01;36m[KDuration[m[K() = default;
+[18.872s]       |   [01;36m[K^~~~~~~~[m[K
+[18.873s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:159:3:[m[K [01;36m[Knote: [m[K  candidate expects 0 arguments, 1 provided
+[18.873s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:62:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Krclcpp::Duration::[01;32m[KDuration[m[K(const rclcpp::Duration&)[m[K’
+[18.873s]    62 |   [01;36m[KDuration[m[K(const Duration & rhs);
+[18.874s]       |   [01;36m[K^~~~~~~~[m[K
+[18.874s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:62:29:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kdouble[m[K’ to ‘[01m[Kconst rclcpp::Duration&[m[K’
+[18.874s]    62 |   Duration([01;36m[Kconst Duration & rhs[m[K);
+[18.874s]       |            [01;36m[K~~~~~~~~~~~~~~~~~^~~[m[K
+[18.875s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:60:12:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Krclcpp::Duration::[01;32m[KDuration[m[K(const rcl_duration_t&)[m[K’
+[18.875s]    60 |   explicit [01;36m[KDuration[m[K(const rcl_duration_t & duration);
+[18.875s]       |            [01;36m[K^~~~~~~~[m[K
+[18.876s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:60:44:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kdouble[m[K’ to ‘[01m[Kconst rcl_duration_t&[m[K’ {aka ‘[01m[Kconst rcl_duration_s&[m[K’}
+[18.876s]    60 |   explicit Duration([01;36m[Kconst rcl_duration_t & duration[m[K);
+[18.877s]       |                     [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~[m[K
+[18.877s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:54:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Krclcpp::Duration::[01;32m[KDuration[m[K(const builtin_interfaces::msg::Duration&)[m[K’
+[18.878s]    54 |   [01;36m[KDuration[m[K(const builtin_interfaces::msg::Duration & duration_msg);  // NOLINT(runtime/explicit)
+[18.879s]       |   [01;36m[K^~~~~~~~[m[K
+[18.880s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:54:54:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kdouble[m[K’ to ‘[01m[Kconst builtin_interfaces::msg::Duration&[m[K’ {aka ‘[01m[Kconst builtin_interfaces::msg::Duration_<std::allocator<void> >&[m[K’}
+[18.880s]    54 |   Duration([01;36m[Kconst builtin_interfaces::msg::Duration & duration_msg[m[K);  // NOLINT(runtime/explicit)
+[18.880s]       |            [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~[m[K
+[18.880s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:43:12:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Krclcpp::Duration::[01;32m[KDuration[m[K(std::chrono::nanoseconds)[m[K’
+[18.880s]    43 |   explicit [01;36m[KDuration[m[K(std::chrono::nanoseconds nanoseconds);
+[18.881s]       |            [01;36m[K^~~~~~~~[m[K
+[18.881s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:43:46:[m[K [01;36m[Knote: [m[K  no known conversion for argument 1 from ‘[01m[Kdouble[m[K’ to ‘[01m[Kstd::chrono::nanoseconds[m[K’ {aka ‘[01m[Kstd::chrono::duration<long int, std::ratio<1, 1000000000> >[m[K’}
+[18.881s]    43 |   explicit Duration([01;36m[Kstd::chrono::nanoseconds nanoseconds[m[K);
+[18.881s]       |                     [01;36m[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~[m[K
+[18.882s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:40:3:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Krclcpp::Duration::[01;32m[KDuration[m[K(int32_t, uint32_t)[m[K’
+[18.886s]    40 |   [01;36m[KDuration[m[K(int32_t seconds, uint32_t nanoseconds);
+[18.888s]       |   [01;36m[K^~~~~~~~[m[K
+[18.888s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:40:3:[m[K [01;36m[Knote: [m[K  candidate expects 2 arguments, 1 provided
+[18.888s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:410:17:[m[K [01;31m[Kerror: [m[K‘[01m[KTimer[m[K’ is not a member of ‘[01m[Krclcpp[m[K’; did you mean ‘[01m[KTime[m[K’?
+[18.888s]   410 |         rclcpp::[01;31m[KTimer[m[K odom_timer = nh.createTimer(rclcpp::Duration(ODOM_TIMOUT), odom_timer_callback);
+[18.889s]       |                 [01;31m[K^~~~~[m[K
+[18.889s]       |                 [32m[KTime[m[K
+[18.890s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:411:17:[m[K [01;31m[Kerror: [m[K‘[01m[KTimer[m[K’ is not a member of ‘[01m[Krclcpp[m[K’; did you mean ‘[01m[KTime[m[K’?
+[18.891s]   411 |         rclcpp::[01;31m[KTimer[m[K LED_timer = nh.createTimer(rclcpp::Duration(LED_FLASH_TIMER), LED_timer_callback);
+[18.891s]       |                 [01;31m[K^~~~~[m[K
+[18.892s]       |                 [32m[KTime[m[K
+[18.892s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:412:43:[m[K [01;31m[Kerror: [m[K‘[01m[KOdometry[m[K’ is not a member of ‘[01m[Knav_msgs[m[K’; did you mean ‘[01m[Knav_msgs::msg::Odometry[m[K’?
+[18.893s]   412 |         odom_pub = nh.advertise<nav_msgs::[01;31m[KOdometry[m[K>("odom", 50);
+[18.893s]       |                                           [01;31m[K^~~~~~~~[m[K
+[18.893s] [01m[K/opt/ros/jazzy/include/nav_msgs/nav_msgs/msg/detail/odometry__struct.hpp:175:7:[m[K [01;36m[Knote: [m[K‘[01m[Knav_msgs::msg::Odometry[m[K’ declared here
+[18.893s]   175 | using [01;36m[KOdometry[m[K =
+[18.893s]       |       [01;36m[K^~~~~~~~[m[K
+[18.894s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:412:53:[m[K [01;35m[Kwarning: [m[Kleft operand of comma operator has no effect [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-value-Wunused-value]8;;[m[K]
+[18.894s]   412 |         odom_pub = nh.advertise<nav_msgs::Odometry>([01;35m[K"odom"[m[K, 50);
+[18.894s]       |                                                     [01;35m[K^~~~~~[m[K
+[18.894s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:413:49:[m[K [01;31m[Kerror: [m[K‘[01m[KFloat32[m[K’ is not a member of ‘[01m[Kstd_msgs[m[K’; did you mean ‘[01m[Kstd_msgs::msg::Float32[m[K’?
+[18.895s]   413 |         left_speed_pub = nh.advertise<std_msgs::[01;31m[KFloat32[m[K>(TOPIC_LEFT_SPEED, 2);
+[18.895s]       |                                                 [01;31m[K^~~~~~~[m[K
+[18.896s] [01m[K/opt/ros/jazzy/include/std_msgs/std_msgs/msg/detail/float32__struct.hpp:125:7:[m[K [01;36m[Knote: [m[K‘[01m[Kstd_msgs::msg::Float32[m[K’ declared here
+[18.897s]   125 | using [01;36m[KFloat32[m[K =
+[18.898s]       |       [01;36m[K^~~~~~~[m[K
+[18.898s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:82:26:[m[K [01;35m[Kwarning: [m[Kleft operand of comma operator has no effect [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-value-Wunused-value]8;;[m[K]
+[18.899s]    82 | #define TOPIC_LEFT_SPEED [01;35m[K"left_speed"[m[K
+[18.899s]       |                          [01;35m[K^~~~~~~~~~~~[m[K
+[18.899s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:413:58:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KTOPIC_LEFT_SPEED[m[K’
+[18.899s]   413 |         left_speed_pub = nh.advertise<std_msgs::Float32>([01;36m[KTOPIC_LEFT_SPEED[m[K, 2);
+[18.899s]       |                                                          [01;36m[K^~~~~~~~~~~~~~~~[m[K
+[18.900s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:414:50:[m[K [01;31m[Kerror: [m[K‘[01m[KFloat32[m[K’ is not a member of ‘[01m[Kstd_msgs[m[K’; did you mean ‘[01m[Kstd_msgs::msg::Float32[m[K’?
+[18.901s]   414 |         right_speed_pub = nh.advertise<std_msgs::[01;31m[KFloat32[m[K>(TOPIC_RIGHT_SPEED, 2);
+[18.902s]       |                                                  [01;31m[K^~~~~~~[m[K
+[18.903s] [01m[K/opt/ros/jazzy/include/std_msgs/std_msgs/msg/detail/float32__struct.hpp:125:7:[m[K [01;36m[Knote: [m[K‘[01m[Kstd_msgs::msg::Float32[m[K’ declared here
+[18.904s]   125 | using [01;36m[KFloat32[m[K =
+[18.904s]       |       [01;36m[K^~~~~~~[m[K
+[18.905s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:83:27:[m[K [01;35m[Kwarning: [m[Kleft operand of comma operator has no effect [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-value-Wunused-value]8;;[m[K]
+[18.905s]    83 | #define TOPIC_RIGHT_SPEED [01;35m[K"right_speed"[m[K
+[18.905s]       |                           [01;35m[K^~~~~~~~~~~~~[m[K
+[18.905s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:414:59:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KTOPIC_RIGHT_SPEED[m[K’
+[18.906s]   414 |         right_speed_pub = nh.advertise<std_msgs::Float32>([01;36m[KTOPIC_RIGHT_SPEED[m[K, 2);
+[18.907s]       |                                                           [01;36m[K^~~~~~~~~~~~~~~~~[m[K
+[18.907s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:415:44:[m[K [01;31m[Kerror: [m[K‘[01m[KFloat32[m[K’ is not a member of ‘[01m[Kstd_msgs[m[K’; did you mean ‘[01m[Kstd_msgs::msg::Float32[m[K’?
+[18.907s]   415 |         angle_pub = nh.advertise<std_msgs::[01;31m[KFloat32[m[K>(TOPIC_ANGLE, 2);
+[18.908s]       |                                            [01;31m[K^~~~~~~[m[K
+[18.908s] [01m[K/opt/ros/jazzy/include/std_msgs/std_msgs/msg/detail/float32__struct.hpp:125:7:[m[K [01;36m[Knote: [m[K‘[01m[Kstd_msgs::msg::Float32[m[K’ declared here
+[18.909s]   125 | using [01;36m[KFloat32[m[K =
+[18.909s]       |       [01;36m[K^~~~~~~[m[K
+[18.909s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:85:21:[m[K [01;35m[Kwarning: [m[Kleft operand of comma operator has no effect [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-value-Wunused-value]8;;[m[K]
+[18.913s]    85 | #define TOPIC_ANGLE [01;35m[K"angle"[m[K
+[18.915s]       |                     [01;35m[K^~~~~~~[m[K
+[18.915s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:415:53:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KTOPIC_ANGLE[m[K’
+[18.915s]   415 |         angle_pub = nh.advertise<std_msgs::Float32>([01;36m[KTOPIC_ANGLE[m[K, 2);
+[18.916s]       |                                                     [01;36m[K^~~~~~~~~~~[m[K
+[18.916s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:416:9:[m[K [01;31m[Kerror: [m[K‘[01m[Kodom_broadcaster[m[K’ was not declared in this scope
+[18.918s]   416 |         [01;31m[Kodom_broadcaster[m[K = new tf::TransformBroadcaster;
+[18.920s]       |         [01;31m[K^~~~~~~~~~~~~~~~[m[K
+[18.920s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:416:32:[m[K [01;31m[Kerror: [m[K‘[01m[Ktf[m[K’ does not name a type; did you mean ‘[01m[Ktm[m[K’?
+[18.921s]   416 |         odom_broadcaster = new [01;31m[Ktf[m[K::TransformBroadcaster;
+[18.922s]       |                                [01;31m[K^~[m[K
+[18.922s]       |                                [32m[Ktm[m[K
+[18.934s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:418:41:[m[K [01;31m[Kerror: [m[K‘[01m[KRISING_EDGE[m[K’ was not declared in this scope
+[18.934s]   418 |         callback(pi,LEFT_FRONT_STEP_PIN,[01;31m[KRISING_EDGE[m[K,left_speed_callback);
+[18.934s]       |                                         [01;31m[K^~~~~~~~~~~[m[K
+[18.946s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:418:9:[m[K [01;31m[Kerror: [m[K‘[01m[Kcallback[m[K’ was not declared in this scope; did you mean ‘[01m[Kcalloc[m[K’?
+[18.949s]   418 |         [01;31m[Kcallback[m[K(pi,LEFT_FRONT_STEP_PIN,RISING_EDGE,left_speed_callback);
+[18.950s]       |         [01;31m[K^~~~~~~~[m[K
+[18.950s]       |         [32m[Kcalloc[m[K
+[18.953s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:423:21:[m[K [01;31m[Kerror: [m[Kno matching function for call to ‘[01m[Kspin()[m[K’
+[18.954s]   423 |         [01;31m[Krclcpp::spin()[m[K;
+[18.954s]       |         [01;31m[K~~~~~~~~~~~~^~[m[K
+[18.955s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors.hpp:58:1:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid rclcpp::[01;32m[Kspin[m[K(node_interfaces::NodeBaseInterface::SharedPtr)[m[K’
+[18.955s]    58 | [01;36m[Kspin[m[K(rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_ptr);
+[18.956s]       | [01;36m[K^~~~[m[K
+[18.956s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors.hpp:58:1:[m[K [01;36m[Knote: [m[K  candidate expects 1 argument, 0 provided
+[18.957s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors.hpp:62:1:[m[K [01;36m[Knote: [m[Kcandidate: ‘[01m[Kvoid rclcpp::[01;32m[Kspin[m[K(Node::SharedPtr)[m[K’
+[18.957s]    62 | [01;36m[Kspin[m[K(rclcpp::Node::SharedPtr node_ptr);
+[18.957s]       | [01;36m[K^~~~[m[K
+[18.957s] [01m[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors.hpp:62:1:[m[K [01;36m[Knote: [m[K  candidate expects 1 argument, 0 provided
+[21.163s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:[m[K At global scope:
+[21.163s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:230:13:[m[K [01;35m[Kwarning: [m[K‘[01m[Kvoid[01;32m[K right_speed_callback[m[K(int, uint32_t, uint32_t, uint32_t)[m[K’ defined but not used [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-function-Wunused-function]8;;[m[K]
+[21.163s]   230 | static void [01;35m[Kright_speed_callback[m[K(int pi,uint32_t gpio, uint32_t level, uint32_t tick){
+[21.163s]       |             [01;35m[K^~~~~~~~~~~~~~~~~~~~[m[K
+[21.164s] [01m[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:225:13:[m[K [01;35m[Kwarning: [m[K‘[01m[Kvoid[01;32m[K left_speed_callback[m[K(int, uint32_t, uint32_t, uint32_t)[m[K’ defined but not used [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-function-Wunused-function]8;;[m[K]
+[21.164s]   225 | static void [01;35m[Kleft_speed_callback[m[K(int pi,uint32_t gpio, uint32_t level, uint32_t tick){
+[21.164s]       |             [01;35m[K^~~~~~~~~~~~~~~~~~~[m[K
+[21.232s] gmake[2]: *** [CMakeFiles/car_s_controller.dir/build.make:76: CMakeFiles/car_s_controller.dir/src/pi_car_s_controller.cpp.o] Error 1
+[21.233s] gmake[1]: *** [CMakeFiles/Makefile2:137: CMakeFiles/car_s_controller.dir/all] Error 2
+[21.233s] gmake: *** [Makefile:146: all] Error 2
+[21.245s] Invoked command in '/home/graham/ros2_ws/src/car_s/build/car_s' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/graham/ros2_ws/src/car_s/build/car_s -- -j4 -l4

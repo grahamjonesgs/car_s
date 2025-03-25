@@ -130,7 +130,7 @@ void set_substep(int steps) {
         bool M2;
 
         bin_steps = (steps==0) ? 0 : (log((double)steps)/log(2.0));
-        ROS_INFO("substeps set to %i",steps);
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"substeps set to %i",steps);
 
         M0=bin_steps&1;
         M1=bin_steps&2;
@@ -149,7 +149,7 @@ void motor_control(float speed, float turn){
         // Possitive turn clockwise - slower right
         float left_velocity;
         float right_velocity;
-        ROS_INFO("In motor control, speed %f, turn %f", speed, turn);
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"In motor control, speed %f, turn %f", speed, turn);
 
         if(speed<-1||speed>1) return;  // Ignore invalid values
         if(turn<-1||turn>1) return;    // Ignore invalid values
@@ -172,12 +172,12 @@ void motor_control(float speed, float turn){
                         right_velocity=speed*(1+turn);
                 }
         }
-        ROS_INFO("Left v %f, right speed %f", left_velocity,right_velocity);
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Left v %f, right speed %f", left_velocity,right_velocity);
         if ((speed==0 && turn==0)) {
-                hardware_PWM(pi,LEFT_FRONT_STEP_PIN,0,0);
-                hardware_PWM(pi,LEFT_BACK_STEP_PIN,0,0);
-                hardware_PWM(pi,RIGHT_FRONT_STEP_PIN,0,0);
-                hardware_PWM(pi,RIGHT_BACK_STEP_PIN,0,0);
+                //hardware_PWM(pi,LEFT_FRONT_STEP_PIN,0,0);
+                //hardware_PWM(pi,LEFT_BACK_STEP_PIN,0,0);
+                //hardware_PWM(pi,RIGHT_FRONT_STEP_PIN,0,0);
+                //hardware_PWM(pi,RIGHT_BACK_STEP_PIN,0,0);
         }
         else {
 
@@ -205,7 +205,7 @@ void message_timeout_callback (const rclcpp::TimerEvent&){
         if((last_left_velocity!=0||last_right_velocity!=0)&&motor_mode==MODE_AUTO) {
                 motor_control(0.0,0.0);
                 message_timeout.setPeriod(rclcpp::Duration(MESSAGE_TIMOUT),true);    // reset no message timeout
-                ROS_INFO("Timeout");
+                RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Timeout");
         }
 }
 
@@ -264,11 +264,11 @@ void odom_timer_callback (const rclcpp::TimerEvent&){
         current_angle=angle.data;
         if (abs((current_angle-target_angle)>angle_delta)&&(turn_started==false)){
           turn_started=true;
-          ROS_INFO("Turn started set to true");
+          RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Turn started set to true");
         }
 
         if (turn_started&&abs(current_angle-target_angle)<angle_delta&&motor_mode==MODE_360&&(last_left_velocity!=0||last_right_velocity!=0)) {
-                ROS_INFO("Target angle reached");
+                RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Target angle reached");
                 motor_control(0.0,0.0);
         }
 
@@ -324,14 +324,14 @@ void velocity_callback(const geometry_msgs::Twist::ConstPtr& msg)
 void steps_callback(const std_msgs::Int32::ConstPtr& msg)
 {
         // ROS callback on message received
-        ROS_INFO("Setting to %i steps",msg->data);
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Setting to %i steps",msg->data);
         set_substep(msg->data);
 }
 
 void freq_callback(const std_msgs::Int32::ConstPtr& msg)
 {
         // ROS callback on message received
-        ROS_INFO("Setting freq to %iHz",msg->data);
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Setting freq to %iHz",msg->data);
         max_speed_freq=msg->data;
 }
 
@@ -342,18 +342,18 @@ void motor_mode_callback(const std_msgs::Int32::ConstPtr& msg)
         switch (msg->data) {
         case MODE_AUTO:
                 motor_mode=msg->data;
-                ROS_INFO("Set to auto mode");
+                RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Set to auto mode");
                 break;
         case MODE_CONINUOUS:
                 motor_mode=msg->data;
-                ROS_INFO("Set to continuous mode");
+                RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Set to continuous mode");
                 break;
         case MODE_360:
                 motor_mode=msg->data;
-                ROS_INFO("Set to 360 mode");
+                RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Set to 360 mode");
                 break;
         default:
-                ROS_INFO("Invalid mode received %i",msg->data);
+                RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Invalid mode received %i",msg->data);
                 break;
         }
 }
@@ -372,13 +372,13 @@ void motor_callback(const std_msgs::Bool::ConstPtr& msg)
 int main (int argc, char **argv)
 {
         rclcpp::init(argc, argv, "pi_car_s_controller", rclcpp::init_options::NoSigintHandler);
-        ROS_INFO("Started Pi Car Stepper Controller");
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Started Pi Car Stepper Controller");
         rclcpp::NodeHandle nh;
         signal(SIGINT, sigintHandler);
         signal(SIGTERM, sigintHandler);
         signal(SIGKILL, sigintHandler);
         /*if (pi=pigpio_start(NULL,NULL)<0) {
-                ROS_INFO("gpio init failed");
+                RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"gpio init failed");
                 return 1;
         }
 

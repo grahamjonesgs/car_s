@@ -1,0 +1,709 @@
+[0.000000] (-) TimerEvent: {}
+[0.000402] (car_s) JobQueued: {'identifier': 'car_s', 'dependencies': OrderedDict()}
+[0.000521] (car_s) JobStarted: {'identifier': 'car_s'}
+[0.042005] (car_s) JobProgress: {'identifier': 'car_s', 'progress': 'cmake'}
+[0.047758] (car_s) JobProgress: {'identifier': 'car_s', 'progress': 'build'}
+[0.053332] (car_s) Command: {'cmd': ['/usr/bin/cmake', '--build', '/home/graham/ros2_ws/src/car_s/build/car_s', '--', '-j4', '-l4'], 'cwd': '/home/graham/ros2_ws/src/car_s/build/car_s', 'env': OrderedDict({'GJS_DEBUG_TOPICS': 'JS ERROR;JS LOG', 'LESSOPEN': '| /usr/bin/lesspipe %s', 'USER': 'graham', 'XDG_SESSION_TYPE': 'wayland', 'GIT_ASKPASS': '/usr/share/code/resources/app/extensions/git/dist/askpass.sh', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/jazzy/opt/rviz_ogre_vendor/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/opt/gz_math_vendor/lib:/opt/ros/jazzy/opt/gz_utils_vendor/lib:/opt/ros/jazzy/opt/gz_cmake_vendor/lib:/opt/ros/jazzy/lib', 'HOME': '/home/graham', 'CHROME_DESKTOP': 'code.desktop', 'TERM_PROGRAM_VERSION': '1.98.2', 'DESKTOP_SESSION': 'ubuntu', 'GIO_LAUNCHED_DESKTOP_FILE': '/usr/share/applications/code.desktop', 'ROS_PYTHON_VERSION': '3', 'GNOME_SHELL_SESSION_MODE': 'ubuntu', 'GTK_MODULES': 'gail:atk-bridge', 'VSCODE_GIT_ASKPASS_MAIN': '/usr/share/code/resources/app/extensions/git/dist/askpass-main.js', 'VSCODE_GIT_ASKPASS_NODE': '/usr/share/code/code', 'MANAGERPID': '2592', 'SYSTEMD_EXEC_PID': '2844', 'IM_CONFIG_CHECK_ENV': '1', 'GSM_SKIP_SSH_AGENT_WORKAROUND': 'true', 'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus', 'COLORTERM': 'truecolor', 'GIO_LAUNCHED_DESKTOP_FILE_PID': '26792', 'DEBUGINFOD_URLS': 'https://debuginfod.ubuntu.com', 'IM_CONFIG_PHASE': '1', 'WAYLAND_DISPLAY': 'wayland-0', 'ROS_DISTRO': 'jazzy', 'LOGNAME': 'graham', 'JOURNAL_STREAM': '9:19551', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'MEMORY_PRESSURE_WATCH': '/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/session.slice/org.gnome.Shell@wayland.service/memory.pressure', 'XDG_SESSION_CLASS': 'user', 'USERNAME': 'graham', 'TERM': 'xterm-256color', 'GNOME_DESKTOP_SESSION_ID': 'this-is-deprecated', 'PATH': '/opt/ros/jazzy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin:/home/graham/.config/Code/User/globalStorage/github.copilot-chat/debugCommand', 'SESSION_MANAGER': 'local/Ubuntu-ROS:@/tmp/.ICE-unix/2812,unix/Ubuntu-ROS:/tmp/.ICE-unix/2812', 'INVOCATION_ID': '76ca3d42153b4ed095658cf4140cbb3f', 'XDG_MENU_PREFIX': 'gnome-', 'GNOME_SETUP_DISPLAY': ':1', 'XDG_RUNTIME_DIR': '/run/user/1000', 'GDK_BACKEND': 'x11', 'DISPLAY': ':0', 'LANG': 'en_US.UTF-8', 'XDG_CURRENT_DESKTOP': 'Unity', 'XMODIFIERS': '@im=ibus', 'XDG_SESSION_DESKTOP': 'ubuntu', 'XAUTHORITY': '/run/user/1000/.mutter-Xwaylandauth.RIPG42', 'LS_COLORS': 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.avif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:*~=00;90:*#=00;90:*.bak=00;90:*.crdownload=00;90:*.dpkg-dist=00;90:*.dpkg-new=00;90:*.dpkg-old=00;90:*.dpkg-tmp=00;90:*.old=00;90:*.orig=00;90:*.part=00;90:*.rej=00;90:*.rpmnew=00;90:*.rpmorig=00;90:*.rpmsave=00;90:*.swp=00;90:*.tmp=00;90:*.ucf-dist=00;90:*.ucf-new=00;90:*.ucf-old=00;90:', 'VSCODE_GIT_IPC_HANDLE': '/run/user/1000/vscode-git-53d95c2dc5.sock', 'TERM_PROGRAM': 'vscode', 'SSH_AUTH_SOCK': '/run/user/1000/keyring/ssh', 'AMENT_PREFIX_PATH': '/opt/ros/jazzy', 'ORIGINAL_XDG_CURRENT_DESKTOP': 'ubuntu:GNOME', 'SHELL': '/bin/bash', 'QT_ACCESSIBILITY': '1', 'GDMSESSION': 'ubuntu', 'LESSCLOSE': '/usr/bin/lesspipe %s %s', 'GJS_DEBUG_OUTPUT': 'stderr', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'SUBNET', 'VSCODE_GIT_ASKPASS_EXTRA_ARGS': '', 'QT_IM_MODULE': 'ibus', 'PWD': '/home/graham/ros2_ws/src/car_s/build/car_s', 'LC_ALL': 'en_US.UTF-8', 'XDG_CONFIG_DIRS': '/etc/xdg/xdg-ubuntu:/etc/xdg', 'XDG_DATA_DIRS': '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop', 'PYTHONPATH': '/opt/ros/jazzy/lib/python3.12/site-packages', 'COLCON': '1', 'MEMORY_PRESSURE_WRITE': 'c29tZSAyMDAwMDAgMjAwMDAwMAA=', 'CMAKE_PREFIX_PATH': '/opt/ros/jazzy/opt/gz_math_vendor:/opt/ros/jazzy/opt/gz_utils_vendor:/opt/ros/jazzy/opt/gz_cmake_vendor:/opt/ros/jazzy'}), 'shell': False}
+[0.098975] (-) TimerEvent: {}
+[0.203591] (-) TimerEvent: {}
+[0.306392] (-) TimerEvent: {}
+[0.408456] (-) TimerEvent: {}
+[0.454161] (car_s) StdoutLine: {'line': b'[ 50%] \x1b[32mBuilding CXX object CMakeFiles/car_s_controller.dir/src/pi_car_s_controller.cpp.o\x1b[0m\n'}
+[0.516475] (-) TimerEvent: {}
+[0.617354] (-) TimerEvent: {}
+[0.718112] (-) TimerEvent: {}
+[0.821846] (-) TimerEvent: {}
+[0.925480] (-) TimerEvent: {}
+[1.029484] (-) TimerEvent: {}
+[1.135145] (-) TimerEvent: {}
+[1.236740] (-) TimerEvent: {}
+[1.337984] (-) TimerEvent: {}
+[1.439034] (-) TimerEvent: {}
+[1.541584] (-) TimerEvent: {}
+[1.644859] (-) TimerEvent: {}
+[1.746718] (-) TimerEvent: {}
+[1.848651] (-) TimerEvent: {}
+[1.950151] (-) TimerEvent: {}
+[2.050997] (-) TimerEvent: {}
+[2.151762] (-) TimerEvent: {}
+[2.253802] (-) TimerEvent: {}
+[2.354579] (-) TimerEvent: {}
+[2.455541] (-) TimerEvent: {}
+[2.556392] (-) TimerEvent: {}
+[2.657309] (-) TimerEvent: {}
+[2.758917] (-) TimerEvent: {}
+[2.862205] (-) TimerEvent: {}
+[2.965287] (-) TimerEvent: {}
+[3.067068] (-) TimerEvent: {}
+[3.171646] (-) TimerEvent: {}
+[3.273353] (-) TimerEvent: {}
+[3.375922] (-) TimerEvent: {}
+[3.482401] (-) TimerEvent: {}
+[3.583611] (-) TimerEvent: {}
+[3.688767] (-) TimerEvent: {}
+[3.793781] (-) TimerEvent: {}
+[3.898953] (-) TimerEvent: {}
+[3.999981] (-) TimerEvent: {}
+[4.105460] (-) TimerEvent: {}
+[4.206886] (-) TimerEvent: {}
+[4.311355] (-) TimerEvent: {}
+[4.419359] (-) TimerEvent: {}
+[4.519929] (-) TimerEvent: {}
+[4.621439] (-) TimerEvent: {}
+[4.722647] (-) TimerEvent: {}
+[4.832068] (-) TimerEvent: {}
+[4.935777] (-) TimerEvent: {}
+[5.038041] (-) TimerEvent: {}
+[5.143726] (-) TimerEvent: {}
+[5.248209] (-) TimerEvent: {}
+[5.352630] (-) TimerEvent: {}
+[5.458023] (-) TimerEvent: {}
+[5.563534] (-) TimerEvent: {}
+[5.668777] (-) TimerEvent: {}
+[5.771491] (-) TimerEvent: {}
+[5.873544] (-) TimerEvent: {}
+[5.976143] (-) TimerEvent: {}
+[6.079464] (-) TimerEvent: {}
+[6.181514] (-) TimerEvent: {}
+[6.284609] (-) TimerEvent: {}
+[6.387904] (-) TimerEvent: {}
+[6.490460] (-) TimerEvent: {}
+[6.597500] (-) TimerEvent: {}
+[6.701784] (-) TimerEvent: {}
+[6.806283] (-) TimerEvent: {}
+[6.911812] (-) TimerEvent: {}
+[7.013336] (-) TimerEvent: {}
+[7.116630] (-) TimerEvent: {}
+[7.217431] (-) TimerEvent: {}
+[7.320700] (-) TimerEvent: {}
+[7.422604] (-) TimerEvent: {}
+[7.526526] (-) TimerEvent: {}
+[7.630367] (-) TimerEvent: {}
+[7.735811] (-) TimerEvent: {}
+[7.838679] (-) TimerEvent: {}
+[7.942681] (-) TimerEvent: {}
+[8.062387] (-) TimerEvent: {}
+[8.167657] (-) TimerEvent: {}
+[8.269060] (-) TimerEvent: {}
+[8.371177] (-) TimerEvent: {}
+[8.475453] (-) TimerEvent: {}
+[8.576397] (-) TimerEvent: {}
+[8.677992] (-) TimerEvent: {}
+[8.819130] (-) TimerEvent: {}
+[8.921340] (-) TimerEvent: {}
+[9.033152] (-) TimerEvent: {}
+[9.133936] (-) TimerEvent: {}
+[9.243163] (-) TimerEvent: {}
+[9.345942] (-) TimerEvent: {}
+[9.450533] (-) TimerEvent: {}
+[9.552194] (-) TimerEvent: {}
+[9.658014] (-) TimerEvent: {}
+[9.762442] (-) TimerEvent: {}
+[9.866531] (-) TimerEvent: {}
+[9.970000] (-) TimerEvent: {}
+[10.073138] (-) TimerEvent: {}
+[10.175022] (-) TimerEvent: {}
+[10.275899] (-) TimerEvent: {}
+[10.378434] (-) TimerEvent: {}
+[10.480271] (-) TimerEvent: {}
+[10.582053] (-) TimerEvent: {}
+[10.684187] (-) TimerEvent: {}
+[10.788171] (-) TimerEvent: {}
+[10.888938] (-) TimerEvent: {}
+[10.992441] (-) TimerEvent: {}
+[11.094008] (-) TimerEvent: {}
+[11.197819] (-) TimerEvent: {}
+[11.302028] (-) TimerEvent: {}
+[11.402863] (-) TimerEvent: {}
+[11.431671] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:91:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KTimer\x1b[m\x1b[K\xe2\x80\x99 in namespace \xe2\x80\x98\x1b[01m\x1b[Krclcpp\x1b[m\x1b[K\xe2\x80\x99 does not name a type; did you mean \xe2\x80\x98\x1b[01m\x1b[KTime\x1b[m\x1b[K\xe2\x80\x99?\n'}
+[11.432269] (car_s) StderrLine: {'line': b'   91 | rclcpp::\x1b[01;31m\x1b[KTimer\x1b[m\x1b[K message_timeout;    // Timer for stop motors if no message\n'}
+[11.432603] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~\x1b[m\x1b[K\n'}
+[11.432802] (car_s) StderrLine: {'line': b'      |         \x1b[32m\x1b[KTime\x1b[m\x1b[K\n'}
+[11.432992] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:92:19:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kclass template argument deduction failed:\n'}
+[11.433120] (car_s) StderrLine: {'line': b'   92 | rclcpp::Publisher \x1b[01;31m\x1b[Kodom_pub\x1b[m\x1b[K;\n'}
+[11.438091] (car_s) StderrLine: {'line': b'      |                   \x1b[01;31m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.438784] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:92:19:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kno matching function for call to \xe2\x80\x98\x1b[01m\x1b[KPublisher()\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.439111] (car_s) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/topic_statistics/subscription_topic_statistics.hpp:31\x1b[m\x1b[K,\n'}
+[11.449202] (car_s) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/subscription.hpp:50\x1b[m\x1b[K,\n'}
+[11.449960] (car_s) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/any_executable.hpp:25\x1b[m\x1b[K,\n'}
+[11.450398] (car_s) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategy.hpp:25\x1b[m\x1b[K,\n'}
+[11.450777] (car_s) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/memory_strategies.hpp:18\x1b[m\x1b[K,\n'}
+[11.451123] (car_s) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/executor_options.hpp:22\x1b[m\x1b[K,\n'}
+[11.462791] (car_s) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/executor.hpp:38\x1b[m\x1b[K,\n'}
+[11.466780] (car_s) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors/multi_threaded_executor.hpp:25\x1b[m\x1b[K,\n'}
+[11.481979] (car_s) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors.hpp:21\x1b[m\x1b[K,\n'}
+[11.486756] (car_s) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/rclcpp.hpp:172\x1b[m\x1b[K,\n'}
+[11.488873] (car_s) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:29\x1b[m\x1b[K:\n'}
+[11.489794] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:134:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Ktemplate<class MessageT, class AllocatorT> \x1b[01;32m\x1b[KPublisher\x1b[m\x1b[K(rclcpp::node_interfaces::NodeBaseInterface*, const std::string&, const rclcpp::QoS&, const rclcpp::PublisherOptionsWithAllocator<AllocatorT>&)-> rclcpp::Publisher<MessageT, AllocatorT>\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.490737] (car_s) StderrLine: {'line': b'  134 |   \x1b[01;36m\x1b[KPublisher\x1b[m\x1b[K(\n'}
+[11.491476] (car_s) StderrLine: {'line': b'      |   \x1b[01;36m\x1b[K^~~~~~~~~\x1b[m\x1b[K\n'}
+[11.494840] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:134:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  template argument deduction/substitution failed:\n'}
+[11.495598] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:92:19:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  candidate expects 4 arguments, 0 provided\n'}
+[11.495987] (car_s) StderrLine: {'line': b'   92 | rclcpp::Publisher \x1b[01;36m\x1b[Kodom_pub\x1b[m\x1b[K;\n'}
+[11.496602] (car_s) StderrLine: {'line': b'      |                   \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.497462] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:80:7:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Ktemplate<class MessageT, class AllocatorT> \x1b[01;32m\x1b[KPublisher\x1b[m\x1b[K(rclcpp::Publisher<MessageT, AllocatorT>)-> rclcpp::Publisher<MessageT, AllocatorT>\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.497668] (car_s) StderrLine: {'line': b'   80 | class \x1b[01;36m\x1b[KPublisher\x1b[m\x1b[K : public PublisherBase\n'}
+[11.497775] (car_s) StderrLine: {'line': b'      |       \x1b[01;36m\x1b[K^~~~~~~~~\x1b[m\x1b[K\n'}
+[11.499291] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:80:7:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  template argument deduction/substitution failed:\n'}
+[11.499534] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:92:19:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  candidate expects 1 argument, 0 provided\n'}
+[11.499781] (car_s) StderrLine: {'line': b'   92 | rclcpp::Publisher \x1b[01;36m\x1b[Kodom_pub\x1b[m\x1b[K;\n'}
+[11.499966] (car_s) StderrLine: {'line': b'      |                   \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.500098] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:93:19:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kclass template argument deduction failed:\n'}
+[11.500309] (car_s) StderrLine: {'line': b'   93 | rclcpp::Publisher \x1b[01;31m\x1b[Kleft_speed_pub\x1b[m\x1b[K;\n'}
+[11.500494] (car_s) StderrLine: {'line': b'      |                   \x1b[01;31m\x1b[K^~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.500646] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:93:19:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kno matching function for call to \xe2\x80\x98\x1b[01m\x1b[KPublisher()\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.500826] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:134:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Ktemplate<class MessageT, class AllocatorT> \x1b[01;32m\x1b[KPublisher\x1b[m\x1b[K(rclcpp::node_interfaces::NodeBaseInterface*, const std::string&, const rclcpp::QoS&, const rclcpp::PublisherOptionsWithAllocator<AllocatorT>&)-> rclcpp::Publisher<MessageT, AllocatorT>\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.501001] (car_s) StderrLine: {'line': b'  134 |   \x1b[01;36m\x1b[KPublisher\x1b[m\x1b[K(\n'}
+[11.501691] (car_s) StderrLine: {'line': b'      |   \x1b[01;36m\x1b[K^~~~~~~~~\x1b[m\x1b[K\n'}
+[11.501966] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:134:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  template argument deduction/substitution failed:\n'}
+[11.502159] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:93:19:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  candidate expects 4 arguments, 0 provided\n'}
+[11.502528] (car_s) StderrLine: {'line': b'   93 | rclcpp::Publisher \x1b[01;36m\x1b[Kleft_speed_pub\x1b[m\x1b[K;\n'}
+[11.502681] (car_s) StderrLine: {'line': b'      |                   \x1b[01;36m\x1b[K^~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.502819] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:80:7:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Ktemplate<class MessageT, class AllocatorT> \x1b[01;32m\x1b[KPublisher\x1b[m\x1b[K(rclcpp::Publisher<MessageT, AllocatorT>)-> rclcpp::Publisher<MessageT, AllocatorT>\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.502964] (-) TimerEvent: {}
+[11.504015] (car_s) StderrLine: {'line': b'   80 | class \x1b[01;36m\x1b[KPublisher\x1b[m\x1b[K : public PublisherBase\n'}
+[11.504679] (car_s) StderrLine: {'line': b'      |       \x1b[01;36m\x1b[K^~~~~~~~~\x1b[m\x1b[K\n'}
+[11.504934] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:80:7:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  template argument deduction/substitution failed:\n'}
+[11.505090] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:93:19:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  candidate expects 1 argument, 0 provided\n'}
+[11.505186] (car_s) StderrLine: {'line': b'   93 | rclcpp::Publisher \x1b[01;36m\x1b[Kleft_speed_pub\x1b[m\x1b[K;\n'}
+[11.506340] (car_s) StderrLine: {'line': b'      |                   \x1b[01;36m\x1b[K^~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.506645] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:94:19:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kclass template argument deduction failed:\n'}
+[11.506914] (car_s) StderrLine: {'line': b'   94 | rclcpp::Publisher \x1b[01;31m\x1b[Kright_speed_pub\x1b[m\x1b[K;\n'}
+[11.507191] (car_s) StderrLine: {'line': b'      |                   \x1b[01;31m\x1b[K^~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.507590] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:94:19:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kno matching function for call to \xe2\x80\x98\x1b[01m\x1b[KPublisher()\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.507870] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:134:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Ktemplate<class MessageT, class AllocatorT> \x1b[01;32m\x1b[KPublisher\x1b[m\x1b[K(rclcpp::node_interfaces::NodeBaseInterface*, const std::string&, const rclcpp::QoS&, const rclcpp::PublisherOptionsWithAllocator<AllocatorT>&)-> rclcpp::Publisher<MessageT, AllocatorT>\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.508142] (car_s) StderrLine: {'line': b'  134 |   \x1b[01;36m\x1b[KPublisher\x1b[m\x1b[K(\n'}
+[11.508513] (car_s) StderrLine: {'line': b'      |   \x1b[01;36m\x1b[K^~~~~~~~~\x1b[m\x1b[K\n'}
+[11.509737] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:134:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  template argument deduction/substitution failed:\n'}
+[11.510024] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:94:19:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  candidate expects 4 arguments, 0 provided\n'}
+[11.510209] (car_s) StderrLine: {'line': b'   94 | rclcpp::Publisher \x1b[01;36m\x1b[Kright_speed_pub\x1b[m\x1b[K;\n'}
+[11.510389] (car_s) StderrLine: {'line': b'      |                   \x1b[01;36m\x1b[K^~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.510657] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:80:7:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Ktemplate<class MessageT, class AllocatorT> \x1b[01;32m\x1b[KPublisher\x1b[m\x1b[K(rclcpp::Publisher<MessageT, AllocatorT>)-> rclcpp::Publisher<MessageT, AllocatorT>\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.510969] (car_s) StderrLine: {'line': b'   80 | class \x1b[01;36m\x1b[KPublisher\x1b[m\x1b[K : public PublisherBase\n'}
+[11.511082] (car_s) StderrLine: {'line': b'      |       \x1b[01;36m\x1b[K^~~~~~~~~\x1b[m\x1b[K\n'}
+[11.511176] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:80:7:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  template argument deduction/substitution failed:\n'}
+[11.511357] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:94:19:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  candidate expects 1 argument, 0 provided\n'}
+[11.511456] (car_s) StderrLine: {'line': b'   94 | rclcpp::Publisher \x1b[01;36m\x1b[Kright_speed_pub\x1b[m\x1b[K;\n'}
+[11.511546] (car_s) StderrLine: {'line': b'      |                   \x1b[01;36m\x1b[K^~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.511633] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:95:19:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kclass template argument deduction failed:\n'}
+[11.515353] (car_s) StderrLine: {'line': b'   95 | rclcpp::Publisher \x1b[01;31m\x1b[Kangle_pub\x1b[m\x1b[K;\n'}
+[11.515665] (car_s) StderrLine: {'line': b'      |                   \x1b[01;31m\x1b[K^~~~~~~~~\x1b[m\x1b[K\n'}
+[11.515849] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:95:19:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kno matching function for call to \xe2\x80\x98\x1b[01m\x1b[KPublisher()\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.516400] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:134:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Ktemplate<class MessageT, class AllocatorT> \x1b[01;32m\x1b[KPublisher\x1b[m\x1b[K(rclcpp::node_interfaces::NodeBaseInterface*, const std::string&, const rclcpp::QoS&, const rclcpp::PublisherOptionsWithAllocator<AllocatorT>&)-> rclcpp::Publisher<MessageT, AllocatorT>\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.516634] (car_s) StderrLine: {'line': b'  134 |   \x1b[01;36m\x1b[KPublisher\x1b[m\x1b[K(\n'}
+[11.516830] (car_s) StderrLine: {'line': b'      |   \x1b[01;36m\x1b[K^~~~~~~~~\x1b[m\x1b[K\n'}
+[11.516998] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:134:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  template argument deduction/substitution failed:\n'}
+[11.517162] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:95:19:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  candidate expects 4 arguments, 0 provided\n'}
+[11.517445] (car_s) StderrLine: {'line': b'   95 | rclcpp::Publisher \x1b[01;36m\x1b[Kangle_pub\x1b[m\x1b[K;\n'}
+[11.517618] (car_s) StderrLine: {'line': b'      |                   \x1b[01;36m\x1b[K^~~~~~~~~\x1b[m\x1b[K\n'}
+[11.517794] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:80:7:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Ktemplate<class MessageT, class AllocatorT> \x1b[01;32m\x1b[KPublisher\x1b[m\x1b[K(rclcpp::Publisher<MessageT, AllocatorT>)-> rclcpp::Publisher<MessageT, AllocatorT>\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.517940] (car_s) StderrLine: {'line': b'   80 | class \x1b[01;36m\x1b[KPublisher\x1b[m\x1b[K : public PublisherBase\n'}
+[11.518067] (car_s) StderrLine: {'line': b'      |       \x1b[01;36m\x1b[K^~~~~~~~~\x1b[m\x1b[K\n'}
+[11.518190] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/publisher.hpp:80:7:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  template argument deduction/substitution failed:\n'}
+[11.518405] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:95:19:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  candidate expects 1 argument, 0 provided\n'}
+[11.518557] (car_s) StderrLine: {'line': b'   95 | rclcpp::Publisher \x1b[01;36m\x1b[Kangle_pub\x1b[m\x1b[K;\n'}
+[11.518924] (car_s) StderrLine: {'line': b'      |                   \x1b[01;36m\x1b[K^~~~~~~~~\x1b[m\x1b[K\n'}
+[11.519080] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:96:1:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Ktf\x1b[m\x1b[K\xe2\x80\x99 does not name a type; did you mean \xe2\x80\x98\x1b[01m\x1b[Ktm\x1b[m\x1b[K\xe2\x80\x99?\n'}
+[11.519311] (car_s) StderrLine: {'line': b'   96 | \x1b[01;31m\x1b[Ktf\x1b[m\x1b[K::TransformBroadcaster *odom_broadcaster;\n'}
+[11.519583] (car_s) StderrLine: {'line': b'      | \x1b[01;31m\x1b[K^~\x1b[m\x1b[K\n'}
+[11.519689] (car_s) StderrLine: {'line': b'      | \x1b[32m\x1b[Ktm\x1b[m\x1b[K\n'}
+[11.519782] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:\x1b[m\x1b[K In function \xe2\x80\x98\x1b[01m\x1b[Kvoid\x1b[01;32m\x1b[K sigintHandler\x1b[m\x1b[K(int)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[11.519875] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:120:24:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kunused parameter \xe2\x80\x98\x1b[01m\x1b[Ksig\x1b[m\x1b[K\xe2\x80\x99 [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter\x07-Wunused-parameter\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[11.519988] (car_s) StderrLine: {'line': b'  120 | void sigintHandler(\x1b[01;35m\x1b[Kint sig\x1b[m\x1b[K) {\n'}
+[11.521882] (car_s) StderrLine: {'line': b'      |                    \x1b[01;35m\x1b[K~~~~^~~\x1b[m\x1b[K\n'}
+[11.522096] (car_s) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/copy_all_parameter_values.hpp:27\x1b[m\x1b[K,\n'}
+[11.522260] (car_s) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/rclcpp.hpp:171\x1b[m\x1b[K:\n'}
+[11.522414] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:\x1b[m\x1b[K In function \xe2\x80\x98\x1b[01m\x1b[Kvoid\x1b[01;32m\x1b[K set_substep\x1b[m\x1b[K(int)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[11.525359] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:133:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kstatic assertion failed: First argument to logging macros must be an rclcpp::Logger\n'}
+[11.527401] (car_s) StderrLine: {'line': b'  133 |         \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("substeps set to %i",steps);\n'}
+[11.527776] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.527926] (car_s) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/logging.hpp:24\x1b[m\x1b[K:\n'}
+[11.528067] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:133:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Krequest for member \xe2\x80\x98\x1b[01m\x1b[Kget_name\x1b[m\x1b[K\xe2\x80\x99 in \xe2\x80\x98\x1b[01m\x1b[K("substeps set to %i")\x1b[m\x1b[K\xe2\x80\x99, which is of non-class type \xe2\x80\x98\x1b[01m\x1b[Kconst char [19]\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.528206] (car_s) StderrLine: {'line': b'  133 |         \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("substeps set to %i",steps);\n'}
+[11.528476] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.528626] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:133:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Krequest for member \xe2\x80\x98\x1b[01m\x1b[Kget_name\x1b[m\x1b[K\xe2\x80\x99 in \xe2\x80\x98\x1b[01m\x1b[K("substeps set to %i")\x1b[m\x1b[K\xe2\x80\x99, which is of non-class type \xe2\x80\x98\x1b[01m\x1b[Kconst char [19]\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.528776] (car_s) StderrLine: {'line': b'  133 |         \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("substeps set to %i",steps);\n'}
+[11.528903] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.529034] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:\x1b[m\x1b[K In function \xe2\x80\x98\x1b[01m\x1b[Kvoid\x1b[01;32m\x1b[K motor_control\x1b[m\x1b[K(float, float)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[11.529180] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:152:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kstatic assertion failed: First argument to logging macros must be an rclcpp::Logger\n'}
+[11.529432] (car_s) StderrLine: {'line': b'  152 |         \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("In motor control, speed %f, turn %f", speed, turn);\n'}
+[11.529604] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.529745] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:152:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Krequest for member \xe2\x80\x98\x1b[01m\x1b[Kget_name\x1b[m\x1b[K\xe2\x80\x99 in \xe2\x80\x98\x1b[01m\x1b[K("In motor control, speed %f, turn %f")\x1b[m\x1b[K\xe2\x80\x99, which is of non-class type \xe2\x80\x98\x1b[01m\x1b[Kconst char [36]\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.529907] (car_s) StderrLine: {'line': b'  152 |         \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("In motor control, speed %f, turn %f", speed, turn);\n'}
+[11.530504] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.530763] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:152:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Krequest for member \xe2\x80\x98\x1b[01m\x1b[Kget_name\x1b[m\x1b[K\xe2\x80\x99 in \xe2\x80\x98\x1b[01m\x1b[K("In motor control, speed %f, turn %f")\x1b[m\x1b[K\xe2\x80\x99, which is of non-class type \xe2\x80\x98\x1b[01m\x1b[Kconst char [36]\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.531354] (car_s) StderrLine: {'line': b'  152 |         \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("In motor control, speed %f, turn %f", speed, turn);\n'}
+[11.531575] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.531750] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:175:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kstatic assertion failed: First argument to logging macros must be an rclcpp::Logger\n'}
+[11.531944] (car_s) StderrLine: {'line': b'  175 |         \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("Left v %f, right speed %f", left_velocity,right_velocity);\n'}
+[11.532279] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.532475] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:175:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Krequest for member \xe2\x80\x98\x1b[01m\x1b[Kget_name\x1b[m\x1b[K\xe2\x80\x99 in \xe2\x80\x98\x1b[01m\x1b[K("Left v %f, right speed %f")\x1b[m\x1b[K\xe2\x80\x99, which is of non-class type \xe2\x80\x98\x1b[01m\x1b[Kconst char [26]\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.532599] (car_s) StderrLine: {'line': b'  175 |         \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("Left v %f, right speed %f", left_velocity,right_velocity);\n'}
+[11.532727] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.532852] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:175:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Krequest for member \xe2\x80\x98\x1b[01m\x1b[Kget_name\x1b[m\x1b[K\xe2\x80\x99 in \xe2\x80\x98\x1b[01m\x1b[K("Left v %f, right speed %f")\x1b[m\x1b[K\xe2\x80\x99, which is of non-class type \xe2\x80\x98\x1b[01m\x1b[Kconst char [26]\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.533058] (car_s) StderrLine: {'line': b'  175 |         \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("Left v %f, right speed %f", left_velocity,right_velocity);\n'}
+[11.533159] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.542999] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:\x1b[m\x1b[K At global scope:\n'}
+[11.543780] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:203:46:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KTimerEvent\x1b[m\x1b[K\xe2\x80\x99 in namespace \xe2\x80\x98\x1b[01m\x1b[Krclcpp\x1b[m\x1b[K\xe2\x80\x99 does not name a type\n'}
+[11.544468] (car_s) StderrLine: {'line': b'  203 | void message_timeout_callback (const rclcpp::\x1b[01;31m\x1b[KTimerEvent\x1b[m\x1b[K&){\n'}
+[11.544840] (car_s) StderrLine: {'line': b'      |                                              \x1b[01;31m\x1b[K^~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.554951] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:\x1b[m\x1b[K In function \xe2\x80\x98\x1b[01m\x1b[Kvoid\x1b[01;32m\x1b[K message_timeout_callback\x1b[m\x1b[K(const int&)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[11.555631] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:207:17:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kmessage_timeout\x1b[m\x1b[K\xe2\x80\x99 was not declared in this scope\n'}
+[11.556015] (car_s) StderrLine: {'line': b'  207 |                 \x1b[01;31m\x1b[Kmessage_timeout\x1b[m\x1b[K.setPeriod(rclcpp::Duration(MESSAGE_TIMOUT),true);    // reset no message timeout\n'}
+[11.559072] (car_s) StderrLine: {'line': b'      |                 \x1b[01;31m\x1b[K^~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.566791] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:207:74:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kno matching function for call to \xe2\x80\x98\x1b[01m\x1b[Krclcpp::Duration::Duration(double)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.567048] (car_s) StderrLine: {'line': b'  207 |                 message_timeout.setPeriod(rclcpp::Duration(MESSAGE_TIMOUT\x1b[01;31m\x1b[K)\x1b[m\x1b[K,true);    // reset no message timeout\n'}
+[11.567276] (car_s) StderrLine: {'line': b'      |                                                                          \x1b[01;31m\x1b[K^\x1b[m\x1b[K\n'}
+[11.568559] (car_s) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/time.hpp:24\x1b[m\x1b[K,\n'}
+[11.568743] (car_s) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/clock.hpp:24\x1b[m\x1b[K,\n'}
+[11.568899] (car_s) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/client.hpp:38\x1b[m\x1b[K,\n'}
+[11.569077] (car_s) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/callback_group.hpp:24\x1b[m\x1b[K,\n'}
+[11.569315] (car_s) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/any_executable.hpp:20\x1b[m\x1b[K:\n'}
+[11.569536] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:49:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Ktemplate<class Rep, class Period> rclcpp::Duration::\x1b[01;32m\x1b[KDuration\x1b[m\x1b[K(const std::chrono::duration<_Rep1, _Period1>&)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.569802] (car_s) StderrLine: {'line': b'   49 |   \x1b[01;36m\x1b[KDuration\x1b[m\x1b[K(const std::chrono::duration<Rep, Period> & duration)  // NOLINT(runtime/explicit)\n'}
+[11.569999] (car_s) StderrLine: {'line': b'      |   \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.574851] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:49:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  template argument deduction/substitution failed:\n'}
+[11.575080] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:207:74:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  mismatched types \xe2\x80\x98\x1b[01m\x1b[Kconst std::chrono::duration<_Rep1, _Period1>\x1b[m\x1b[K\xe2\x80\x99 and \xe2\x80\x98\x1b[01m\x1b[Kdouble\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.575208] (car_s) StderrLine: {'line': b'  207 |                 message_timeout.setPeriod(rclcpp::Duration(MESSAGE_TIMOUT\x1b[01;36m\x1b[K)\x1b[m\x1b[K,true);    // reset no message timeout\n'}
+[11.575429] (car_s) StderrLine: {'line': b'      |                                                                          \x1b[01;36m\x1b[K^\x1b[m\x1b[K\n'}
+[11.575542] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:159:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Krclcpp::Duration::\x1b[01;32m\x1b[KDuration\x1b[m\x1b[K()\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.575645] (car_s) StderrLine: {'line': b'  159 |   \x1b[01;36m\x1b[KDuration\x1b[m\x1b[K() = default;\n'}
+[11.575741] (car_s) StderrLine: {'line': b'      |   \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.575834] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:159:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  candidate expects 0 arguments, 1 provided\n'}
+[11.575933] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:62:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Krclcpp::Duration::\x1b[01;32m\x1b[KDuration\x1b[m\x1b[K(const rclcpp::Duration&)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.576087] (car_s) StderrLine: {'line': b'   62 |   \x1b[01;36m\x1b[KDuration\x1b[m\x1b[K(const Duration & rhs);\n'}
+[11.576643] (car_s) StderrLine: {'line': b'      |   \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.577059] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:62:29:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  no known conversion for argument 1 from \xe2\x80\x98\x1b[01m\x1b[Kdouble\x1b[m\x1b[K\xe2\x80\x99 to \xe2\x80\x98\x1b[01m\x1b[Kconst rclcpp::Duration&\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.580661] (car_s) StderrLine: {'line': b'   62 |   Duration(\x1b[01;36m\x1b[Kconst Duration & rhs\x1b[m\x1b[K);\n'}
+[11.580943] (car_s) StderrLine: {'line': b'      |            \x1b[01;36m\x1b[K~~~~~~~~~~~~~~~~~^~~\x1b[m\x1b[K\n'}
+[11.583076] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:60:12:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Krclcpp::Duration::\x1b[01;32m\x1b[KDuration\x1b[m\x1b[K(const rcl_duration_t&)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.583529] (car_s) StderrLine: {'line': b'   60 |   explicit \x1b[01;36m\x1b[KDuration\x1b[m\x1b[K(const rcl_duration_t & duration);\n'}
+[11.583784] (car_s) StderrLine: {'line': b'      |            \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.593638] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:60:44:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  no known conversion for argument 1 from \xe2\x80\x98\x1b[01m\x1b[Kdouble\x1b[m\x1b[K\xe2\x80\x99 to \xe2\x80\x98\x1b[01m\x1b[Kconst rcl_duration_t&\x1b[m\x1b[K\xe2\x80\x99 {aka \xe2\x80\x98\x1b[01m\x1b[Kconst rcl_duration_s&\x1b[m\x1b[K\xe2\x80\x99}\n'}
+[11.594638] (car_s) StderrLine: {'line': b'   60 |   explicit Duration(\x1b[01;36m\x1b[Kconst rcl_duration_t & duration\x1b[m\x1b[K);\n'}
+[11.595076] (car_s) StderrLine: {'line': b'      |                     \x1b[01;36m\x1b[K~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~\x1b[m\x1b[K\n'}
+[11.599628] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:54:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Krclcpp::Duration::\x1b[01;32m\x1b[KDuration\x1b[m\x1b[K(const builtin_interfaces::msg::Duration&)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.600155] (car_s) StderrLine: {'line': b'   54 |   \x1b[01;36m\x1b[KDuration\x1b[m\x1b[K(const builtin_interfaces::msg::Duration & duration_msg);  // NOLINT(runtime/explicit)\n'}
+[11.600675] (car_s) StderrLine: {'line': b'      |   \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.601011] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:54:54:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  no known conversion for argument 1 from \xe2\x80\x98\x1b[01m\x1b[Kdouble\x1b[m\x1b[K\xe2\x80\x99 to \xe2\x80\x98\x1b[01m\x1b[Kconst builtin_interfaces::msg::Duration&\x1b[m\x1b[K\xe2\x80\x99 {aka \xe2\x80\x98\x1b[01m\x1b[Kconst builtin_interfaces::msg::Duration_<std::allocator<void> >&\x1b[m\x1b[K\xe2\x80\x99}\n'}
+[11.602816] (car_s) StderrLine: {'line': b'   54 |   Duration(\x1b[01;36m\x1b[Kconst builtin_interfaces::msg::Duration & duration_msg\x1b[m\x1b[K);  // NOLINT(runtime/explicit)\n'}
+[11.605709] (-) TimerEvent: {}
+[11.606428] (car_s) StderrLine: {'line': b'      |            \x1b[01;36m\x1b[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.606906] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:43:12:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Krclcpp::Duration::\x1b[01;32m\x1b[KDuration\x1b[m\x1b[K(std::chrono::nanoseconds)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.607510] (car_s) StderrLine: {'line': b'   43 |   explicit \x1b[01;36m\x1b[KDuration\x1b[m\x1b[K(std::chrono::nanoseconds nanoseconds);\n'}
+[11.607925] (car_s) StderrLine: {'line': b'      |            \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.608037] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:43:46:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  no known conversion for argument 1 from \xe2\x80\x98\x1b[01m\x1b[Kdouble\x1b[m\x1b[K\xe2\x80\x99 to \xe2\x80\x98\x1b[01m\x1b[Kstd::chrono::nanoseconds\x1b[m\x1b[K\xe2\x80\x99 {aka \xe2\x80\x98\x1b[01m\x1b[Kstd::chrono::duration<long int, std::ratio<1, 1000000000> >\x1b[m\x1b[K\xe2\x80\x99}\n'}
+[11.608189] (car_s) StderrLine: {'line': b'   43 |   explicit Duration(\x1b[01;36m\x1b[Kstd::chrono::nanoseconds nanoseconds\x1b[m\x1b[K);\n'}
+[11.613048] (car_s) StderrLine: {'line': b'      |                     \x1b[01;36m\x1b[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.614806] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:40:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Krclcpp::Duration::\x1b[01;32m\x1b[KDuration\x1b[m\x1b[K(int32_t, uint32_t)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.620174] (car_s) StderrLine: {'line': b'   40 |   \x1b[01;36m\x1b[KDuration\x1b[m\x1b[K(int32_t seconds, uint32_t nanoseconds);\n'}
+[11.632002] (car_s) StderrLine: {'line': b'      |   \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.632358] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:40:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  candidate expects 2 arguments, 1 provided\n'}
+[11.632534] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:208:17:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kstatic assertion failed: First argument to logging macros must be an rclcpp::Logger\n'}
+[11.632655] (car_s) StderrLine: {'line': b'  208 |                 \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("Timeout");\n'}
+[11.632761] (car_s) StderrLine: {'line': b'      |                 \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.632868] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:208:17:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Krequest for member \xe2\x80\x98\x1b[01m\x1b[Kget_name\x1b[m\x1b[K\xe2\x80\x99 in \xe2\x80\x98\x1b[01m\x1b[K("Timeout")\x1b[m\x1b[K\xe2\x80\x99, which is of non-class type \xe2\x80\x98\x1b[01m\x1b[Kconst char [8]\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.633016] (car_s) StderrLine: {'line': b'  208 |                 \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("Timeout");\n'}
+[11.633128] (car_s) StderrLine: {'line': b'      |                 \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.639418] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:208:17:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Krequest for member \xe2\x80\x98\x1b[01m\x1b[Kget_name\x1b[m\x1b[K\xe2\x80\x99 in \xe2\x80\x98\x1b[01m\x1b[K("Timeout")\x1b[m\x1b[K\xe2\x80\x99, which is of non-class type \xe2\x80\x98\x1b[01m\x1b[Kconst char [8]\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.639881] (car_s) StderrLine: {'line': b'  208 |                 \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("Timeout");\n'}
+[11.640121] (car_s) StderrLine: {'line': b'      |                 \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.640276] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:208:17:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kexpected primary-expression before \xe2\x80\x98\x1b[01m\x1b[K)\x1b[m\x1b[K\xe2\x80\x99 token\n'}
+[11.640409] (car_s) StderrLine: {'line': b'  208 |                 \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("Timeout");\n'}
+[11.640503] (car_s) StderrLine: {'line': b'      |                 \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.640593] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:\x1b[m\x1b[K At global scope:\n'}
+[11.640684] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:212:40:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KTimerEvent\x1b[m\x1b[K\xe2\x80\x99 in namespace \xe2\x80\x98\x1b[01m\x1b[Krclcpp\x1b[m\x1b[K\xe2\x80\x99 does not name a type\n'}
+[11.640776] (car_s) StderrLine: {'line': b'  212 | void LED_timer_callback (const rclcpp::\x1b[01;31m\x1b[KTimerEvent\x1b[m\x1b[K&){\n'}
+[11.640867] (car_s) StderrLine: {'line': b'      |                                        \x1b[01;31m\x1b[K^~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.640959] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:\x1b[m\x1b[K In function \xe2\x80\x98\x1b[01m\x1b[Kvoid\x1b[01;32m\x1b[K left_speed_callback\x1b[m\x1b[K(int, uint32_t, uint32_t, uint32_t)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[11.641063] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:225:37:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kunused parameter \xe2\x80\x98\x1b[01m\x1b[Kpi\x1b[m\x1b[K\xe2\x80\x99 [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter\x07-Wunused-parameter\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[11.641169] (car_s) StderrLine: {'line': b'  225 | static void left_speed_callback(\x1b[01;35m\x1b[Kint pi\x1b[m\x1b[K,uint32_t gpio, uint32_t level, uint32_t tick){\n'}
+[11.641704] (car_s) StderrLine: {'line': b'      |                                 \x1b[01;35m\x1b[K~~~~^~\x1b[m\x1b[K\n'}
+[11.642462] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:225:49:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kunused parameter \xe2\x80\x98\x1b[01m\x1b[Kgpio\x1b[m\x1b[K\xe2\x80\x99 [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter\x07-Wunused-parameter\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[11.644588] (car_s) StderrLine: {'line': b'  225 | static void left_speed_callback(int pi,\x1b[01;35m\x1b[Kuint32_t gpio\x1b[m\x1b[K, uint32_t level, uint32_t tick){\n'}
+[11.644705] (car_s) StderrLine: {'line': b'      |                                        \x1b[01;35m\x1b[K~~~~~~~~~^~~~\x1b[m\x1b[K\n'}
+[11.644802] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:225:64:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kunused parameter \xe2\x80\x98\x1b[01m\x1b[Klevel\x1b[m\x1b[K\xe2\x80\x99 [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter\x07-Wunused-parameter\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[11.647681] (car_s) StderrLine: {'line': b'  225 | static void left_speed_callback(int pi,uint32_t gpio, \x1b[01;35m\x1b[Kuint32_t level\x1b[m\x1b[K, uint32_t tick){\n'}
+[11.648956] (car_s) StderrLine: {'line': b'      |                                                       \x1b[01;35m\x1b[K~~~~~~~~~^~~~~\x1b[m\x1b[K\n'}
+[11.652954] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:225:80:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kunused parameter \xe2\x80\x98\x1b[01m\x1b[Ktick\x1b[m\x1b[K\xe2\x80\x99 [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter\x07-Wunused-parameter\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[11.654273] (car_s) StderrLine: {'line': b'  225 | static void left_speed_callback(int pi,uint32_t gpio, uint32_t level, \x1b[01;35m\x1b[Kuint32_t tick\x1b[m\x1b[K){\n'}
+[11.655596] (car_s) StderrLine: {'line': b'      |                                                                       \x1b[01;35m\x1b[K~~~~~~~~~^~~~\x1b[m\x1b[K\n'}
+[11.655825] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:\x1b[m\x1b[K In function \xe2\x80\x98\x1b[01m\x1b[Kvoid\x1b[01;32m\x1b[K right_speed_callback\x1b[m\x1b[K(int, uint32_t, uint32_t, uint32_t)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[11.655974] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:230:38:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kunused parameter \xe2\x80\x98\x1b[01m\x1b[Kpi\x1b[m\x1b[K\xe2\x80\x99 [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter\x07-Wunused-parameter\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[11.656122] (car_s) StderrLine: {'line': b'  230 | static void right_speed_callback(\x1b[01;35m\x1b[Kint pi\x1b[m\x1b[K,uint32_t gpio, uint32_t level, uint32_t tick){\n'}
+[11.656748] (car_s) StderrLine: {'line': b'      |                                  \x1b[01;35m\x1b[K~~~~^~\x1b[m\x1b[K\n'}
+[11.657043] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:230:50:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kunused parameter \xe2\x80\x98\x1b[01m\x1b[Kgpio\x1b[m\x1b[K\xe2\x80\x99 [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter\x07-Wunused-parameter\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[11.657496] (car_s) StderrLine: {'line': b'  230 | static void right_speed_callback(int pi,\x1b[01;35m\x1b[Kuint32_t gpio\x1b[m\x1b[K, uint32_t level, uint32_t tick){\n'}
+[11.657876] (car_s) StderrLine: {'line': b'      |                                         \x1b[01;35m\x1b[K~~~~~~~~~^~~~\x1b[m\x1b[K\n'}
+[11.658186] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:230:65:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kunused parameter \xe2\x80\x98\x1b[01m\x1b[Klevel\x1b[m\x1b[K\xe2\x80\x99 [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter\x07-Wunused-parameter\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[11.658624] (car_s) StderrLine: {'line': b'  230 | static void right_speed_callback(int pi,uint32_t gpio, \x1b[01;35m\x1b[Kuint32_t level\x1b[m\x1b[K, uint32_t tick){\n'}
+[11.658780] (car_s) StderrLine: {'line': b'      |                                                        \x1b[01;35m\x1b[K~~~~~~~~~^~~~~\x1b[m\x1b[K\n'}
+[11.658927] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:230:81:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kunused parameter \xe2\x80\x98\x1b[01m\x1b[Ktick\x1b[m\x1b[K\xe2\x80\x99 [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-parameter\x07-Wunused-parameter\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[11.659171] (car_s) StderrLine: {'line': b'  230 | static void right_speed_callback(int pi,uint32_t gpio, uint32_t level, \x1b[01;35m\x1b[Kuint32_t tick\x1b[m\x1b[K){\n'}
+[11.659441] (car_s) StderrLine: {'line': b'      |                                                                        \x1b[01;35m\x1b[K~~~~~~~~~^~~~\x1b[m\x1b[K\n'}
+[11.659604] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:\x1b[m\x1b[K At global scope:\n'}
+[11.659844] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:235:41:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KTimerEvent\x1b[m\x1b[K\xe2\x80\x99 in namespace \xe2\x80\x98\x1b[01m\x1b[Krclcpp\x1b[m\x1b[K\xe2\x80\x99 does not name a type\n'}
+[11.660019] (car_s) StderrLine: {'line': b'  235 | void odom_timer_callback (const rclcpp::\x1b[01;31m\x1b[KTimerEvent\x1b[m\x1b[K&){\n'}
+[11.660496] (car_s) StderrLine: {'line': b'      |                                         \x1b[01;31m\x1b[K^~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.660856] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:\x1b[m\x1b[K In function \xe2\x80\x98\x1b[01m\x1b[Kvoid\x1b[01;32m\x1b[K odom_timer_callback\x1b[m\x1b[K(const int&)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[11.661102] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:237:19:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KFloat32\x1b[m\x1b[K\xe2\x80\x99 is not a member of \xe2\x80\x98\x1b[01m\x1b[Kstd_msgs\x1b[m\x1b[K\xe2\x80\x99; did you mean \xe2\x80\x98\x1b[01m\x1b[Kstd_msgs::msg::Float32\x1b[m\x1b[K\xe2\x80\x99?\n'}
+[11.661929] (car_s) StderrLine: {'line': b'  237 |         std_msgs::\x1b[01;31m\x1b[KFloat32\x1b[m\x1b[K left_speed;\n'}
+[11.662703] (car_s) StderrLine: {'line': b'      |                   \x1b[01;31m\x1b[K^~~~~~~\x1b[m\x1b[K\n'}
+[11.663204] (car_s) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/opt/ros/jazzy/include/std_msgs/std_msgs/msg/float32.hpp:7\x1b[m\x1b[K,\n'}
+[11.663768] (car_s) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:31\x1b[m\x1b[K:\n'}
+[11.664195] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/std_msgs/std_msgs/msg/detail/float32__struct.hpp:125:7:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kstd_msgs::msg::Float32\x1b[m\x1b[K\xe2\x80\x99 declared here\n'}
+[11.664666] (car_s) StderrLine: {'line': b'  125 | using \x1b[01;36m\x1b[KFloat32\x1b[m\x1b[K =\n'}
+[11.664958] (car_s) StderrLine: {'line': b'      |       \x1b[01;36m\x1b[K^~~~~~~\x1b[m\x1b[K\n'}
+[11.665202] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:238:19:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KFloat32\x1b[m\x1b[K\xe2\x80\x99 is not a member of \xe2\x80\x98\x1b[01m\x1b[Kstd_msgs\x1b[m\x1b[K\xe2\x80\x99; did you mean \xe2\x80\x98\x1b[01m\x1b[Kstd_msgs::msg::Float32\x1b[m\x1b[K\xe2\x80\x99?\n'}
+[11.665663] (car_s) StderrLine: {'line': b'  238 |         std_msgs::\x1b[01;31m\x1b[KFloat32\x1b[m\x1b[K right_speed;\n'}
+[11.665894] (car_s) StderrLine: {'line': b'      |                   \x1b[01;31m\x1b[K^~~~~~~\x1b[m\x1b[K\n'}
+[11.666842] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/std_msgs/std_msgs/msg/detail/float32__struct.hpp:125:7:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kstd_msgs::msg::Float32\x1b[m\x1b[K\xe2\x80\x99 declared here\n'}
+[11.667473] (car_s) StderrLine: {'line': b'  125 | using \x1b[01;36m\x1b[KFloat32\x1b[m\x1b[K =\n'}
+[11.668208] (car_s) StderrLine: {'line': b'      |       \x1b[01;36m\x1b[K^~~~~~~\x1b[m\x1b[K\n'}
+[11.668749] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:239:19:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KFloat32\x1b[m\x1b[K\xe2\x80\x99 is not a member of \xe2\x80\x98\x1b[01m\x1b[Kstd_msgs\x1b[m\x1b[K\xe2\x80\x99; did you mean \xe2\x80\x98\x1b[01m\x1b[Kstd_msgs::msg::Float32\x1b[m\x1b[K\xe2\x80\x99?\n'}
+[11.669110] (car_s) StderrLine: {'line': b'  239 |         std_msgs::\x1b[01;31m\x1b[KFloat32\x1b[m\x1b[K angle;\n'}
+[11.669552] (car_s) StderrLine: {'line': b'      |                   \x1b[01;31m\x1b[K^~~~~~~\x1b[m\x1b[K\n'}
+[11.669797] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/std_msgs/std_msgs/msg/detail/float32__struct.hpp:125:7:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kstd_msgs::msg::Float32\x1b[m\x1b[K\xe2\x80\x99 declared here\n'}
+[11.669967] (car_s) StderrLine: {'line': b'  125 | using \x1b[01;36m\x1b[KFloat32\x1b[m\x1b[K =\n'}
+[11.670183] (car_s) StderrLine: {'line': b'      |       \x1b[01;36m\x1b[K^~~~~~~\x1b[m\x1b[K\n'}
+[11.670609] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:252:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kleft_speed\x1b[m\x1b[K\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98\x1b[01m\x1b[Kleft_speed_pub\x1b[m\x1b[K\xe2\x80\x99?\n'}
+[11.670755] (car_s) StderrLine: {'line': b'  252 |         \x1b[01;31m\x1b[Kleft_speed\x1b[m\x1b[K.data = left_delta / ODOM_TIMOUT;\n'}
+[11.670911] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.671044] (car_s) StderrLine: {'line': b'      |         \x1b[32m\x1b[Kleft_speed_pub\x1b[m\x1b[K\n'}
+[11.671644] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:253:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kright_speed\x1b[m\x1b[K\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98\x1b[01m\x1b[Kright_speed_pub\x1b[m\x1b[K\xe2\x80\x99?\n'}
+[11.672012] (car_s) StderrLine: {'line': b'  253 |         \x1b[01;31m\x1b[Kright_speed\x1b[m\x1b[K.data =  right_delta / ODOM_TIMOUT;\n'}
+[11.672155] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.672413] (car_s) StderrLine: {'line': b'      |         \x1b[32m\x1b[Kright_speed_pub\x1b[m\x1b[K\n'}
+[11.672550] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:263:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kangle\x1b[m\x1b[K\xe2\x80\x99 was not declared in this scope\n'}
+[11.672836] (car_s) StderrLine: {'line': b'  263 |         \x1b[01;31m\x1b[Kangle\x1b[m\x1b[K.data = 180*theta/PI;  // Send angle in degrees\n'}
+[11.672969] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~\x1b[m\x1b[K\n'}
+[11.674456] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:267:11:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kstatic assertion failed: First argument to logging macros must be an rclcpp::Logger\n'}
+[11.674753] (car_s) StderrLine: {'line': b'  267 |           \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("Turn started set to true");\n'}
+[11.675025] (car_s) StderrLine: {'line': b'      |           \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.675164] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:267:11:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Krequest for member \xe2\x80\x98\x1b[01m\x1b[Kget_name\x1b[m\x1b[K\xe2\x80\x99 in \xe2\x80\x98\x1b[01m\x1b[K("Turn started set to true")\x1b[m\x1b[K\xe2\x80\x99, which is of non-class type \xe2\x80\x98\x1b[01m\x1b[Kconst char [25]\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.675377] (car_s) StderrLine: {'line': b'  267 |           \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("Turn started set to true");\n'}
+[11.675479] (car_s) StderrLine: {'line': b'      |           \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.675575] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:267:11:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Krequest for member \xe2\x80\x98\x1b[01m\x1b[Kget_name\x1b[m\x1b[K\xe2\x80\x99 in \xe2\x80\x98\x1b[01m\x1b[K("Turn started set to true")\x1b[m\x1b[K\xe2\x80\x99, which is of non-class type \xe2\x80\x98\x1b[01m\x1b[Kconst char [25]\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.675695] (car_s) StderrLine: {'line': b'  267 |           \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("Turn started set to true");\n'}
+[11.675789] (car_s) StderrLine: {'line': b'      |           \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.675883] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:267:11:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kexpected primary-expression before \xe2\x80\x98\x1b[01m\x1b[K)\x1b[m\x1b[K\xe2\x80\x99 token\n'}
+[11.675976] (car_s) StderrLine: {'line': b'  267 |           \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("Turn started set to true");\n'}
+[11.676070] (car_s) StderrLine: {'line': b'      |           \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.676194] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:271:17:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kstatic assertion failed: First argument to logging macros must be an rclcpp::Logger\n'}
+[11.676895] (car_s) StderrLine: {'line': b'  271 |                 \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("Target angle reached");\n'}
+[11.677424] (car_s) StderrLine: {'line': b'      |                 \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.677614] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:271:17:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Krequest for member \xe2\x80\x98\x1b[01m\x1b[Kget_name\x1b[m\x1b[K\xe2\x80\x99 in \xe2\x80\x98\x1b[01m\x1b[K("Target angle reached")\x1b[m\x1b[K\xe2\x80\x99, which is of non-class type \xe2\x80\x98\x1b[01m\x1b[Kconst char [21]\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.677816] (car_s) StderrLine: {'line': b'  271 |                 \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("Target angle reached");\n'}
+[11.677958] (car_s) StderrLine: {'line': b'      |                 \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.678091] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:271:17:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Krequest for member \xe2\x80\x98\x1b[01m\x1b[Kget_name\x1b[m\x1b[K\xe2\x80\x99 in \xe2\x80\x98\x1b[01m\x1b[K("Target angle reached")\x1b[m\x1b[K\xe2\x80\x99, which is of non-class type \xe2\x80\x98\x1b[01m\x1b[Kconst char [21]\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.679086] (car_s) StderrLine: {'line': b'  271 |                 \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("Target angle reached");\n'}
+[11.680031] (car_s) StderrLine: {'line': b'      |                 \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.680429] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:271:17:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kexpected primary-expression before \xe2\x80\x98\x1b[01m\x1b[K)\x1b[m\x1b[K\xe2\x80\x99 token\n'}
+[11.680612] (car_s) StderrLine: {'line': b'  271 |                 \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("Target angle reached");\n'}
+[11.680803] (car_s) StderrLine: {'line': b'      |                 \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.681089] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:280:24:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KQuaternion\x1b[m\x1b[K\xe2\x80\x99 is not a member of \xe2\x80\x98\x1b[01m\x1b[Kgeometry_msgs\x1b[m\x1b[K\xe2\x80\x99; did you mean \xe2\x80\x98\x1b[01m\x1b[Kgeometry_msgs::msg::Quaternion\x1b[m\x1b[K\xe2\x80\x99?\n'}
+[11.681842] (car_s) StderrLine: {'line': b'  280 |         geometry_msgs::\x1b[01;31m\x1b[KQuaternion\x1b[m\x1b[K odom_quat = tf::createQuaternionMsgFromYaw(theta);\n'}
+[11.682076] (car_s) StderrLine: {'line': b'      |                        \x1b[01;31m\x1b[K^~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.682202] (car_s) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/opt/ros/jazzy/include/geometry_msgs/geometry_msgs/msg/detail/transform__struct.hpp:25\x1b[m\x1b[K,\n'}
+[11.682409] (car_s) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/opt/ros/jazzy/include/geometry_msgs/geometry_msgs/msg/detail/transform_stamped__struct.hpp:25\x1b[m\x1b[K,\n'}
+[11.682514] (car_s) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/opt/ros/jazzy/include/geometry_msgs/geometry_msgs/msg/transform_stamped.hpp:7\x1b[m\x1b[K,\n'}
+[11.682614] (car_s) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/opt/ros/jazzy/include/tf2_ros/tf2_ros/transform_broadcaster.h:44\x1b[m\x1b[K,\n'}
+[11.682760] (car_s) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:34\x1b[m\x1b[K:\n'}
+[11.682891] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/geometry_msgs/geometry_msgs/msg/detail/quaternion__struct.hpp:177:7:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kgeometry_msgs::msg::Quaternion\x1b[m\x1b[K\xe2\x80\x99 declared here\n'}
+[11.682997] (car_s) StderrLine: {'line': b'  177 | using \x1b[01;36m\x1b[KQuaternion\x1b[m\x1b[K =\n'}
+[11.683105] (car_s) StderrLine: {'line': b'      |       \x1b[01;36m\x1b[K^~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.683206] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:283:24:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KTransformStamped\x1b[m\x1b[K\xe2\x80\x99 is not a member of \xe2\x80\x98\x1b[01m\x1b[Kgeometry_msgs\x1b[m\x1b[K\xe2\x80\x99; did you mean \xe2\x80\x98\x1b[01m\x1b[Kgeometry_msgs::msg::TransformStamped\x1b[m\x1b[K\xe2\x80\x99?\n'}
+[11.683870] (car_s) StderrLine: {'line': b'  283 |         geometry_msgs::\x1b[01;31m\x1b[KTransformStamped\x1b[m\x1b[K odom_trans;\n'}
+[11.684026] (car_s) StderrLine: {'line': b'      |                        \x1b[01;31m\x1b[K^~~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.684163] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/geometry_msgs/geometry_msgs/msg/detail/transform_stamped__struct.hpp:159:7:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kgeometry_msgs::msg::TransformStamped\x1b[m\x1b[K\xe2\x80\x99 declared here\n'}
+[11.684630] (car_s) StderrLine: {'line': b'  159 | using \x1b[01;36m\x1b[KTransformStamped\x1b[m\x1b[K =\n'}
+[11.685086] (car_s) StderrLine: {'line': b'      |       \x1b[01;36m\x1b[K^~~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.685464] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:284:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kodom_trans\x1b[m\x1b[K\xe2\x80\x99 was not declared in this scope\n'}
+[11.685731] (car_s) StderrLine: {'line': b'  284 |         \x1b[01;31m\x1b[Kodom_trans\x1b[m\x1b[K.header.stamp = rclcpp::Time::now();\n'}
+[11.685984] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.686373] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:284:49:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Know\x1b[m\x1b[K\xe2\x80\x99 is not a member of \xe2\x80\x98\x1b[01m\x1b[Krclcpp::Time\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.686679] (car_s) StderrLine: {'line': b'  284 |         odom_trans.header.stamp = rclcpp::Time::\x1b[01;31m\x1b[Know\x1b[m\x1b[K();\n'}
+[11.686919] (car_s) StderrLine: {'line': b'      |                                                 \x1b[01;31m\x1b[K^~~\x1b[m\x1b[K\n'}
+[11.687169] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:291:41:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kodom_quat\x1b[m\x1b[K\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98\x1b[01m\x1b[Kodom_pub\x1b[m\x1b[K\xe2\x80\x99?\n'}
+[11.687574] (car_s) StderrLine: {'line': b'  291 |         odom_trans.transform.rotation = \x1b[01;31m\x1b[Kodom_quat\x1b[m\x1b[K;\n'}
+[11.687879] (car_s) StderrLine: {'line': b'      |                                         \x1b[01;31m\x1b[K^~~~~~~~~\x1b[m\x1b[K\n'}
+[11.688522] (car_s) StderrLine: {'line': b'      |                                         \x1b[32m\x1b[Kodom_pub\x1b[m\x1b[K\n'}
+[11.696425] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:293:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kodom_broadcaster\x1b[m\x1b[K\xe2\x80\x99 was not declared in this scope\n'}
+[11.696963] (car_s) StderrLine: {'line': b'  293 |         \x1b[01;31m\x1b[Kodom_broadcaster\x1b[m\x1b[K->sendTransform(odom_trans);\n'}
+[11.697082] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.704025] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:296:19:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KOdometry\x1b[m\x1b[K\xe2\x80\x99 is not a member of \xe2\x80\x98\x1b[01m\x1b[Knav_msgs\x1b[m\x1b[K\xe2\x80\x99; did you mean \xe2\x80\x98\x1b[01m\x1b[Knav_msgs::msg::Odometry\x1b[m\x1b[K\xe2\x80\x99?\n'}
+[11.705338] (-) TimerEvent: {}
+[11.705558] (car_s) StderrLine: {'line': b'  296 |         nav_msgs::\x1b[01;31m\x1b[KOdometry\x1b[m\x1b[K odom;\n'}
+[11.705749] (car_s) StderrLine: {'line': b'      |                   \x1b[01;31m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.708737] (car_s) StderrLine: {'line': b'In file included from \x1b[01m\x1b[K/opt/ros/jazzy/include/nav_msgs/nav_msgs/msg/odometry.hpp:7\x1b[m\x1b[K,\n'}
+[11.718921] (car_s) StderrLine: {'line': b'                 from \x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:35\x1b[m\x1b[K:\n'}
+[11.719200] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/nav_msgs/nav_msgs/msg/detail/odometry__struct.hpp:175:7:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Knav_msgs::msg::Odometry\x1b[m\x1b[K\xe2\x80\x99 declared here\n'}
+[11.719535] (car_s) StderrLine: {'line': b'  175 | using \x1b[01;36m\x1b[KOdometry\x1b[m\x1b[K =\n'}
+[11.719674] (car_s) StderrLine: {'line': b'      |       \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.741409] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:297:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kodom\x1b[m\x1b[K\xe2\x80\x99 was not declared in this scope\n'}
+[11.746681] (car_s) StderrLine: {'line': b'  297 |         \x1b[01;31m\x1b[Kodom\x1b[m\x1b[K.header.stamp = rclcpp::Time::now();\n'}
+[11.750491] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~\x1b[m\x1b[K\n'}
+[11.750766] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:297:43:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Know\x1b[m\x1b[K\xe2\x80\x99 is not a member of \xe2\x80\x98\x1b[01m\x1b[Krclcpp::Time\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.750970] (car_s) StderrLine: {'line': b'  297 |         odom.header.stamp = rclcpp::Time::\x1b[01;31m\x1b[Know\x1b[m\x1b[K();\n'}
+[11.751087] (car_s) StderrLine: {'line': b'      |                                           \x1b[01;31m\x1b[K^~~\x1b[m\x1b[K\n'}
+[11.751184] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:\x1b[m\x1b[K At global scope:\n'}
+[11.751400] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:317:45:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KTwist\x1b[m\x1b[K\xe2\x80\x99 in namespace \xe2\x80\x98\x1b[01m\x1b[Kgeometry_msgs\x1b[m\x1b[K\xe2\x80\x99 does not name a type\n'}
+[11.751515] (car_s) StderrLine: {'line': b'  317 | void velocity_callback(const geometry_msgs::\x1b[01;31m\x1b[KTwist\x1b[m\x1b[K::ConstPtr& msg)\n'}
+[11.751612] (car_s) StderrLine: {'line': b'      |                                             \x1b[01;31m\x1b[K^~~~~\x1b[m\x1b[K\n'}
+[11.751797] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:317:60:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kexpected unqualified-id before \xe2\x80\x98\x1b[01m\x1b[K&\x1b[m\x1b[K\xe2\x80\x99 token\n'}
+[11.751900] (car_s) StderrLine: {'line': b'  317 | void velocity_callback(const geometry_msgs::Twist::ConstPtr\x1b[01;31m\x1b[K&\x1b[m\x1b[K msg)\n'}
+[11.751991] (car_s) StderrLine: {'line': b'      |                                                            \x1b[01;31m\x1b[K^\x1b[m\x1b[K\n'}
+[11.752085] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:317:60:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kexpected \xe2\x80\x98\x1b[01m\x1b[K)\x1b[m\x1b[K\xe2\x80\x99 before \xe2\x80\x98\x1b[01m\x1b[K&\x1b[m\x1b[K\xe2\x80\x99 token\n'}
+[11.752179] (car_s) StderrLine: {'line': b'  317 | void velocity_callback\x1b[34m\x1b[K(\x1b[m\x1b[Kconst geometry_msgs::Twist::ConstPtr\x1b[01;31m\x1b[K&\x1b[m\x1b[K msg)\n'}
+[11.752352] (car_s) StderrLine: {'line': b'      |                       \x1b[34m\x1b[K~\x1b[m\x1b[K                                    \x1b[01;31m\x1b[K^\x1b[m\x1b[K\n'}
+[11.755521] (car_s) StderrLine: {'line': b'      |                                                            \x1b[32m\x1b[K)\x1b[m\x1b[K\n'}
+[11.757621] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:317:62:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kexpected initializer before \xe2\x80\x98\x1b[01m\x1b[Kmsg\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.758126] (car_s) StderrLine: {'line': b'  317 | void velocity_callback(const geometry_msgs::Twist::ConstPtr& \x1b[01;31m\x1b[Kmsg\x1b[m\x1b[K)\n'}
+[11.758470] (car_s) StderrLine: {'line': b'      |                                                              \x1b[01;31m\x1b[K^~~\x1b[m\x1b[K\n'}
+[11.758623] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:324:37:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KInt32\x1b[m\x1b[K\xe2\x80\x99 in namespace \xe2\x80\x98\x1b[01m\x1b[Kstd_msgs\x1b[m\x1b[K\xe2\x80\x99 does not name a type\n'}
+[11.758802] (car_s) StderrLine: {'line': b'  324 | void steps_callback(const std_msgs::\x1b[01;31m\x1b[KInt32\x1b[m\x1b[K::ConstPtr& msg)\n'}
+[11.758936] (car_s) StderrLine: {'line': b'      |                                     \x1b[01;31m\x1b[K^~~~~\x1b[m\x1b[K\n'}
+[11.759063] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:324:52:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kexpected unqualified-id before \xe2\x80\x98\x1b[01m\x1b[K&\x1b[m\x1b[K\xe2\x80\x99 token\n'}
+[11.759197] (car_s) StderrLine: {'line': b'  324 | void steps_callback(const std_msgs::Int32::ConstPtr\x1b[01;31m\x1b[K&\x1b[m\x1b[K msg)\n'}
+[11.763728] (car_s) StderrLine: {'line': b'      |                                                    \x1b[01;31m\x1b[K^\x1b[m\x1b[K\n'}
+[11.763959] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:324:52:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kexpected \xe2\x80\x98\x1b[01m\x1b[K)\x1b[m\x1b[K\xe2\x80\x99 before \xe2\x80\x98\x1b[01m\x1b[K&\x1b[m\x1b[K\xe2\x80\x99 token\n'}
+[11.764186] (car_s) StderrLine: {'line': b'  324 | void steps_callback\x1b[34m\x1b[K(\x1b[m\x1b[Kconst std_msgs::Int32::ConstPtr\x1b[01;31m\x1b[K&\x1b[m\x1b[K msg)\n'}
+[11.764456] (car_s) StderrLine: {'line': b'      |                    \x1b[34m\x1b[K~\x1b[m\x1b[K                               \x1b[01;31m\x1b[K^\x1b[m\x1b[K\n'}
+[11.764563] (car_s) StderrLine: {'line': b'      |                                                    \x1b[32m\x1b[K)\x1b[m\x1b[K\n'}
+[11.764667] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:324:54:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kexpected initializer before \xe2\x80\x98\x1b[01m\x1b[Kmsg\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.764773] (car_s) StderrLine: {'line': b'  324 | void steps_callback(const std_msgs::Int32::ConstPtr& \x1b[01;31m\x1b[Kmsg\x1b[m\x1b[K)\n'}
+[11.764870] (car_s) StderrLine: {'line': b'      |                                                      \x1b[01;31m\x1b[K^~~\x1b[m\x1b[K\n'}
+[11.764967] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:331:36:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KInt32\x1b[m\x1b[K\xe2\x80\x99 in namespace \xe2\x80\x98\x1b[01m\x1b[Kstd_msgs\x1b[m\x1b[K\xe2\x80\x99 does not name a type\n'}
+[11.765067] (car_s) StderrLine: {'line': b'  331 | void freq_callback(const std_msgs::\x1b[01;31m\x1b[KInt32\x1b[m\x1b[K::ConstPtr& msg)\n'}
+[11.765165] (car_s) StderrLine: {'line': b'      |                                    \x1b[01;31m\x1b[K^~~~~\x1b[m\x1b[K\n'}
+[11.765355] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:331:51:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kexpected unqualified-id before \xe2\x80\x98\x1b[01m\x1b[K&\x1b[m\x1b[K\xe2\x80\x99 token\n'}
+[11.765470] (car_s) StderrLine: {'line': b'  331 | void freq_callback(const std_msgs::Int32::ConstPtr\x1b[01;31m\x1b[K&\x1b[m\x1b[K msg)\n'}
+[11.765567] (car_s) StderrLine: {'line': b'      |                                                   \x1b[01;31m\x1b[K^\x1b[m\x1b[K\n'}
+[11.765662] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:331:51:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kexpected \xe2\x80\x98\x1b[01m\x1b[K)\x1b[m\x1b[K\xe2\x80\x99 before \xe2\x80\x98\x1b[01m\x1b[K&\x1b[m\x1b[K\xe2\x80\x99 token\n'}
+[11.765760] (car_s) StderrLine: {'line': b'  331 | void freq_callback\x1b[34m\x1b[K(\x1b[m\x1b[Kconst std_msgs::Int32::ConstPtr\x1b[01;31m\x1b[K&\x1b[m\x1b[K msg)\n'}
+[11.765856] (car_s) StderrLine: {'line': b'      |                   \x1b[34m\x1b[K~\x1b[m\x1b[K                               \x1b[01;31m\x1b[K^\x1b[m\x1b[K\n'}
+[11.766019] (car_s) StderrLine: {'line': b'      |                                                   \x1b[32m\x1b[K)\x1b[m\x1b[K\n'}
+[11.769744] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:331:53:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kexpected initializer before \xe2\x80\x98\x1b[01m\x1b[Kmsg\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.769853] (car_s) StderrLine: {'line': b'  331 | void freq_callback(const std_msgs::Int32::ConstPtr& \x1b[01;31m\x1b[Kmsg\x1b[m\x1b[K)\n'}
+[11.770155] (car_s) StderrLine: {'line': b'      |                                                     \x1b[01;31m\x1b[K^~~\x1b[m\x1b[K\n'}
+[11.770427] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:339:42:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KInt32\x1b[m\x1b[K\xe2\x80\x99 in namespace \xe2\x80\x98\x1b[01m\x1b[Kstd_msgs\x1b[m\x1b[K\xe2\x80\x99 does not name a type\n'}
+[11.770547] (car_s) StderrLine: {'line': b'  339 | void motor_mode_callback(const std_msgs::\x1b[01;31m\x1b[KInt32\x1b[m\x1b[K::ConstPtr& msg)\n'}
+[11.770639] (car_s) StderrLine: {'line': b'      |                                          \x1b[01;31m\x1b[K^~~~~\x1b[m\x1b[K\n'}
+[11.770822] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:339:57:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kexpected unqualified-id before \xe2\x80\x98\x1b[01m\x1b[K&\x1b[m\x1b[K\xe2\x80\x99 token\n'}
+[11.771068] (car_s) StderrLine: {'line': b'  339 | void motor_mode_callback(const std_msgs::Int32::ConstPtr\x1b[01;31m\x1b[K&\x1b[m\x1b[K msg)\n'}
+[11.771278] (car_s) StderrLine: {'line': b'      |                                                         \x1b[01;31m\x1b[K^\x1b[m\x1b[K\n'}
+[11.771473] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:339:57:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kexpected \xe2\x80\x98\x1b[01m\x1b[K)\x1b[m\x1b[K\xe2\x80\x99 before \xe2\x80\x98\x1b[01m\x1b[K&\x1b[m\x1b[K\xe2\x80\x99 token\n'}
+[11.771649] (car_s) StderrLine: {'line': b'  339 | void motor_mode_callback\x1b[34m\x1b[K(\x1b[m\x1b[Kconst std_msgs::Int32::ConstPtr\x1b[01;31m\x1b[K&\x1b[m\x1b[K msg)\n'}
+[11.771793] (car_s) StderrLine: {'line': b'      |                         \x1b[34m\x1b[K~\x1b[m\x1b[K                               \x1b[01;31m\x1b[K^\x1b[m\x1b[K\n'}
+[11.771937] (car_s) StderrLine: {'line': b'      |                                                         \x1b[32m\x1b[K)\x1b[m\x1b[K\n'}
+[11.772083] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:339:59:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kexpected initializer before \xe2\x80\x98\x1b[01m\x1b[Kmsg\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.775400] (car_s) StderrLine: {'line': b'  339 | void motor_mode_callback(const std_msgs::Int32::ConstPtr& \x1b[01;31m\x1b[Kmsg\x1b[m\x1b[K)\n'}
+[11.775720] (car_s) StderrLine: {'line': b'      |                                                           \x1b[01;31m\x1b[K^~~\x1b[m\x1b[K\n'}
+[11.775870] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:361:37:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KBool\x1b[m\x1b[K\xe2\x80\x99 in namespace \xe2\x80\x98\x1b[01m\x1b[Kstd_msgs\x1b[m\x1b[K\xe2\x80\x99 does not name a type\n'}
+[11.776016] (car_s) StderrLine: {'line': b'  361 | void motor_callback(const std_msgs::\x1b[01;31m\x1b[KBool\x1b[m\x1b[K::ConstPtr& msg)\n'}
+[11.776155] (car_s) StderrLine: {'line': b'      |                                     \x1b[01;31m\x1b[K^~~~\x1b[m\x1b[K\n'}
+[11.776381] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:361:51:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kexpected unqualified-id before \xe2\x80\x98\x1b[01m\x1b[K&\x1b[m\x1b[K\xe2\x80\x99 token\n'}
+[11.776558] (car_s) StderrLine: {'line': b'  361 | void motor_callback(const std_msgs::Bool::ConstPtr\x1b[01;31m\x1b[K&\x1b[m\x1b[K msg)\n'}
+[11.776806] (car_s) StderrLine: {'line': b'      |                                                   \x1b[01;31m\x1b[K^\x1b[m\x1b[K\n'}
+[11.777072] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:361:51:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kexpected \xe2\x80\x98\x1b[01m\x1b[K)\x1b[m\x1b[K\xe2\x80\x99 before \xe2\x80\x98\x1b[01m\x1b[K&\x1b[m\x1b[K\xe2\x80\x99 token\n'}
+[11.777313] (car_s) StderrLine: {'line': b'  361 | void motor_callback\x1b[34m\x1b[K(\x1b[m\x1b[Kconst std_msgs::Bool::ConstPtr\x1b[01;31m\x1b[K&\x1b[m\x1b[K msg)\n'}
+[11.777545] (car_s) StderrLine: {'line': b'      |                    \x1b[34m\x1b[K~\x1b[m\x1b[K                              \x1b[01;31m\x1b[K^\x1b[m\x1b[K\n'}
+[11.777697] (car_s) StderrLine: {'line': b'      |                                                   \x1b[32m\x1b[K)\x1b[m\x1b[K\n'}
+[11.777855] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:361:53:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kexpected initializer before \xe2\x80\x98\x1b[01m\x1b[Kmsg\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.778023] (car_s) StderrLine: {'line': b'  361 | void motor_callback(const std_msgs::Bool::ConstPtr& \x1b[01;31m\x1b[Kmsg\x1b[m\x1b[K)\n'}
+[11.778172] (car_s) StderrLine: {'line': b'      |                                                     \x1b[01;31m\x1b[K^~~\x1b[m\x1b[K\n'}
+[11.781617] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:\x1b[m\x1b[K In function \xe2\x80\x98\x1b[01m\x1b[Kint\x1b[01;32m\x1b[K main\x1b[m\x1b[K(int, char**)\x1b[m\x1b[K\xe2\x80\x99:\n'}
+[11.781858] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:374:65:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Krclcpp::init_options\x1b[m\x1b[K\xe2\x80\x99 has not been declared\n'}
+[11.782007] (car_s) StderrLine: {'line': b'  374 |         rclcpp::init(argc, argv, "pi_car_s_controller", rclcpp::\x1b[01;31m\x1b[Kinit_options\x1b[m\x1b[K::NoSigintHandler);\n'}
+[11.782155] (car_s) StderrLine: {'line': b'      |                                                                 \x1b[01;31m\x1b[K^~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.782422] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:375:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kstatic assertion failed: First argument to logging macros must be an rclcpp::Logger\n'}
+[11.782638] (car_s) StderrLine: {'line': b'  375 |         \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("Started Pi Car Stepper Controller");\n'}
+[11.782783] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.782921] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:375:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Krequest for member \xe2\x80\x98\x1b[01m\x1b[Kget_name\x1b[m\x1b[K\xe2\x80\x99 in \xe2\x80\x98\x1b[01m\x1b[K("Started Pi Car Stepper Controller")\x1b[m\x1b[K\xe2\x80\x99, which is of non-class type \xe2\x80\x98\x1b[01m\x1b[Kconst char [34]\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.783169] (car_s) StderrLine: {'line': b'  375 |         \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("Started Pi Car Stepper Controller");\n'}
+[11.783669] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.783878] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:375:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Krequest for member \xe2\x80\x98\x1b[01m\x1b[Kget_name\x1b[m\x1b[K\xe2\x80\x99 in \xe2\x80\x98\x1b[01m\x1b[K("Started Pi Car Stepper Controller")\x1b[m\x1b[K\xe2\x80\x99, which is of non-class type \xe2\x80\x98\x1b[01m\x1b[Kconst char [34]\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.784026] (car_s) StderrLine: {'line': b'  375 |         \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("Started Pi Car Stepper Controller");\n'}
+[11.784166] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.784424] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:375:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kexpected primary-expression before \xe2\x80\x98\x1b[01m\x1b[K)\x1b[m\x1b[K\xe2\x80\x99 token\n'}
+[11.787401] (car_s) StderrLine: {'line': b'  375 |         \x1b[01;31m\x1b[KRCLCPP_INFO\x1b[m\x1b[K("Started Pi Car Stepper Controller");\n'}
+[11.787608] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.787776] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:376:17:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KNodeHandle\x1b[m\x1b[K\xe2\x80\x99 is not a member of \xe2\x80\x98\x1b[01m\x1b[Krclcpp\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.787948] (car_s) StderrLine: {'line': b'  376 |         rclcpp::\x1b[01;31m\x1b[KNodeHandle\x1b[m\x1b[K nh;\n'}
+[11.788105] (car_s) StderrLine: {'line': b'      |                 \x1b[01;31m\x1b[K^~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.788306] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:404:17:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KSubscriber\x1b[m\x1b[K\xe2\x80\x99 is not a member of \xe2\x80\x98\x1b[01m\x1b[Krclcpp\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.788487] (car_s) StderrLine: {'line': b'  404 |         rclcpp::\x1b[01;31m\x1b[KSubscriber\x1b[m\x1b[K sub_velocity = nh.subscribe(TOPIC_CMD_VEL,2,velocity_callback);\n'}
+[11.788813] (car_s) StderrLine: {'line': b'      |                 \x1b[01;31m\x1b[K^~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.788984] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:405:17:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KSubscriber\x1b[m\x1b[K\xe2\x80\x99 is not a member of \xe2\x80\x98\x1b[01m\x1b[Krclcpp\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.789177] (car_s) StderrLine: {'line': b'  405 |         rclcpp::\x1b[01;31m\x1b[KSubscriber\x1b[m\x1b[K sub_motor = nh.subscribe(TOPIC_MOTOR,1,motor_callback);\n'}
+[11.790955] (car_s) StderrLine: {'line': b'      |                 \x1b[01;31m\x1b[K^~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.791708] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:406:17:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KSubscriber\x1b[m\x1b[K\xe2\x80\x99 is not a member of \xe2\x80\x98\x1b[01m\x1b[Krclcpp\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.792047] (car_s) StderrLine: {'line': b'  406 |         rclcpp::\x1b[01;31m\x1b[KSubscriber\x1b[m\x1b[K sub_motor_mode = nh.subscribe(TOPIC_MODE,1,motor_mode_callback);\n'}
+[11.792677] (car_s) StderrLine: {'line': b'      |                 \x1b[01;31m\x1b[K^~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.793081] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:407:17:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KSubscriber\x1b[m\x1b[K\xe2\x80\x99 is not a member of \xe2\x80\x98\x1b[01m\x1b[Krclcpp\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.793810] (car_s) StderrLine: {'line': b'  407 |         rclcpp::\x1b[01;31m\x1b[KSubscriber\x1b[m\x1b[K sub_set_steps = nh.subscribe(TOPIC_STEPS,1,steps_callback);\n'}
+[11.794178] (car_s) StderrLine: {'line': b'      |                 \x1b[01;31m\x1b[K^~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.794922] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:408:17:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KSubscriber\x1b[m\x1b[K\xe2\x80\x99 is not a member of \xe2\x80\x98\x1b[01m\x1b[Krclcpp\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.796193] (car_s) StderrLine: {'line': b'  408 |         rclcpp::\x1b[01;31m\x1b[KSubscriber\x1b[m\x1b[K sub_set_freq = nh.subscribe(TOPIC_FREQ,1,freq_callback);\n'}
+[11.796937] (car_s) StderrLine: {'line': b'      |                 \x1b[01;31m\x1b[K^~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.797711] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:409:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kmessage_timeout\x1b[m\x1b[K\xe2\x80\x99 was not declared in this scope\n'}
+[11.798020] (car_s) StderrLine: {'line': b'  409 |         \x1b[01;31m\x1b[Kmessage_timeout\x1b[m\x1b[K = nh.createTimer(rclcpp::Duration(MESSAGE_TIMOUT), message_timeout_callback);\n'}
+[11.798358] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.798632] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:409:27:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Knh\x1b[m\x1b[K\xe2\x80\x99 was not declared in this scope\n'}
+[11.798911] (car_s) StderrLine: {'line': b'  409 |         message_timeout = \x1b[01;31m\x1b[Knh\x1b[m\x1b[K.createTimer(rclcpp::Duration(MESSAGE_TIMOUT), message_timeout_callback);\n'}
+[11.799195] (car_s) StderrLine: {'line': b'      |                           \x1b[01;31m\x1b[K^~\x1b[m\x1b[K\n'}
+[11.799677] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:409:73:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kno matching function for call to \xe2\x80\x98\x1b[01m\x1b[Krclcpp::Duration::Duration(double)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.800107] (car_s) StderrLine: {'line': b'  409 |         message_timeout = nh.createTimer(rclcpp::Duration(MESSAGE_TIMOUT\x1b[01;31m\x1b[K)\x1b[m\x1b[K, message_timeout_callback);\n'}
+[11.802292] (car_s) StderrLine: {'line': b'      |                                                                         \x1b[01;31m\x1b[K^\x1b[m\x1b[K\n'}
+[11.802510] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:49:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Ktemplate<class Rep, class Period> rclcpp::Duration::\x1b[01;32m\x1b[KDuration\x1b[m\x1b[K(const std::chrono::duration<_Rep1, _Period1>&)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.802671] (car_s) StderrLine: {'line': b'   49 |   \x1b[01;36m\x1b[KDuration\x1b[m\x1b[K(const std::chrono::duration<Rep, Period> & duration)  // NOLINT(runtime/explicit)\n'}
+[11.802812] (car_s) StderrLine: {'line': b'      |   \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.802953] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:49:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  template argument deduction/substitution failed:\n'}
+[11.803096] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:409:73:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  mismatched types \xe2\x80\x98\x1b[01m\x1b[Kconst std::chrono::duration<_Rep1, _Period1>\x1b[m\x1b[K\xe2\x80\x99 and \xe2\x80\x98\x1b[01m\x1b[Kdouble\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.803335] (car_s) StderrLine: {'line': b'  409 |         message_timeout = nh.createTimer(rclcpp::Duration(MESSAGE_TIMOUT\x1b[01;36m\x1b[K)\x1b[m\x1b[K, message_timeout_callback);\n'}
+[11.803696] (car_s) StderrLine: {'line': b'      |                                                                         \x1b[01;36m\x1b[K^\x1b[m\x1b[K\n'}
+[11.804043] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:159:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Krclcpp::Duration::\x1b[01;32m\x1b[KDuration\x1b[m\x1b[K()\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.805163] (car_s) StderrLine: {'line': b'  159 |   \x1b[01;36m\x1b[KDuration\x1b[m\x1b[K() = default;\n'}
+[11.805416] (-) TimerEvent: {}
+[11.805714] (car_s) StderrLine: {'line': b'      |   \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.805920] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:159:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  candidate expects 0 arguments, 1 provided\n'}
+[11.806062] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:62:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Krclcpp::Duration::\x1b[01;32m\x1b[KDuration\x1b[m\x1b[K(const rclcpp::Duration&)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.806212] (car_s) StderrLine: {'line': b'   62 |   \x1b[01;36m\x1b[KDuration\x1b[m\x1b[K(const Duration & rhs);\n'}
+[11.806457] (car_s) StderrLine: {'line': b'      |   \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.806595] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:62:29:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  no known conversion for argument 1 from \xe2\x80\x98\x1b[01m\x1b[Kdouble\x1b[m\x1b[K\xe2\x80\x99 to \xe2\x80\x98\x1b[01m\x1b[Kconst rclcpp::Duration&\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.806742] (car_s) StderrLine: {'line': b'   62 |   Duration(\x1b[01;36m\x1b[Kconst Duration & rhs\x1b[m\x1b[K);\n'}
+[11.806870] (car_s) StderrLine: {'line': b'      |            \x1b[01;36m\x1b[K~~~~~~~~~~~~~~~~~^~~\x1b[m\x1b[K\n'}
+[11.807142] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:60:12:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Krclcpp::Duration::\x1b[01;32m\x1b[KDuration\x1b[m\x1b[K(const rcl_duration_t&)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.807485] (car_s) StderrLine: {'line': b'   60 |   explicit \x1b[01;36m\x1b[KDuration\x1b[m\x1b[K(const rcl_duration_t & duration);\n'}
+[11.808395] (car_s) StderrLine: {'line': b'      |            \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.808668] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:60:44:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  no known conversion for argument 1 from \xe2\x80\x98\x1b[01m\x1b[Kdouble\x1b[m\x1b[K\xe2\x80\x99 to \xe2\x80\x98\x1b[01m\x1b[Kconst rcl_duration_t&\x1b[m\x1b[K\xe2\x80\x99 {aka \xe2\x80\x98\x1b[01m\x1b[Kconst rcl_duration_s&\x1b[m\x1b[K\xe2\x80\x99}\n'}
+[11.808835] (car_s) StderrLine: {'line': b'   60 |   explicit Duration(\x1b[01;36m\x1b[Kconst rcl_duration_t & duration\x1b[m\x1b[K);\n'}
+[11.808971] (car_s) StderrLine: {'line': b'      |                     \x1b[01;36m\x1b[K~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~\x1b[m\x1b[K\n'}
+[11.809114] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:54:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Krclcpp::Duration::\x1b[01;32m\x1b[KDuration\x1b[m\x1b[K(const builtin_interfaces::msg::Duration&)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.811005] (car_s) StderrLine: {'line': b'   54 |   \x1b[01;36m\x1b[KDuration\x1b[m\x1b[K(const builtin_interfaces::msg::Duration & duration_msg);  // NOLINT(runtime/explicit)\n'}
+[11.811548] (car_s) StderrLine: {'line': b'      |   \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.812179] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:54:54:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  no known conversion for argument 1 from \xe2\x80\x98\x1b[01m\x1b[Kdouble\x1b[m\x1b[K\xe2\x80\x99 to \xe2\x80\x98\x1b[01m\x1b[Kconst builtin_interfaces::msg::Duration&\x1b[m\x1b[K\xe2\x80\x99 {aka \xe2\x80\x98\x1b[01m\x1b[Kconst builtin_interfaces::msg::Duration_<std::allocator<void> >&\x1b[m\x1b[K\xe2\x80\x99}\n'}
+[11.812434] (car_s) StderrLine: {'line': b'   54 |   Duration(\x1b[01;36m\x1b[Kconst builtin_interfaces::msg::Duration & duration_msg\x1b[m\x1b[K);  // NOLINT(runtime/explicit)\n'}
+[11.813059] (car_s) StderrLine: {'line': b'      |            \x1b[01;36m\x1b[K~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.813200] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:43:12:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Krclcpp::Duration::\x1b[01;32m\x1b[KDuration\x1b[m\x1b[K(std::chrono::nanoseconds)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.813474] (car_s) StderrLine: {'line': b'   43 |   explicit \x1b[01;36m\x1b[KDuration\x1b[m\x1b[K(std::chrono::nanoseconds nanoseconds);\n'}
+[11.813626] (car_s) StderrLine: {'line': b'      |            \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.813762] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:43:46:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  no known conversion for argument 1 from \xe2\x80\x98\x1b[01m\x1b[Kdouble\x1b[m\x1b[K\xe2\x80\x99 to \xe2\x80\x98\x1b[01m\x1b[Kstd::chrono::nanoseconds\x1b[m\x1b[K\xe2\x80\x99 {aka \xe2\x80\x98\x1b[01m\x1b[Kstd::chrono::duration<long int, std::ratio<1, 1000000000> >\x1b[m\x1b[K\xe2\x80\x99}\n'}
+[11.813897] (car_s) StderrLine: {'line': b'   43 |   explicit Duration(\x1b[01;36m\x1b[Kstd::chrono::nanoseconds nanoseconds\x1b[m\x1b[K);\n'}
+[11.814022] (car_s) StderrLine: {'line': b'      |                     \x1b[01;36m\x1b[K~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.814148] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:40:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Krclcpp::Duration::\x1b[01;32m\x1b[KDuration\x1b[m\x1b[K(int32_t, uint32_t)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.814385] (car_s) StderrLine: {'line': b'   40 |   \x1b[01;36m\x1b[KDuration\x1b[m\x1b[K(int32_t seconds, uint32_t nanoseconds);\n'}
+[11.814528] (car_s) StderrLine: {'line': b'      |   \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.814670] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/duration.hpp:40:3:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  candidate expects 2 arguments, 1 provided\n'}
+[11.814804] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:410:17:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KTimer\x1b[m\x1b[K\xe2\x80\x99 is not a member of \xe2\x80\x98\x1b[01m\x1b[Krclcpp\x1b[m\x1b[K\xe2\x80\x99; did you mean \xe2\x80\x98\x1b[01m\x1b[KTime\x1b[m\x1b[K\xe2\x80\x99?\n'}
+[11.815111] (car_s) StderrLine: {'line': b'  410 |         rclcpp::\x1b[01;31m\x1b[KTimer\x1b[m\x1b[K odom_timer = nh.createTimer(rclcpp::Duration(ODOM_TIMOUT), odom_timer_callback);\n'}
+[11.815635] (car_s) StderrLine: {'line': b'      |                 \x1b[01;31m\x1b[K^~~~~\x1b[m\x1b[K\n'}
+[11.815786] (car_s) StderrLine: {'line': b'      |                 \x1b[32m\x1b[KTime\x1b[m\x1b[K\n'}
+[11.815925] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:411:17:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KTimer\x1b[m\x1b[K\xe2\x80\x99 is not a member of \xe2\x80\x98\x1b[01m\x1b[Krclcpp\x1b[m\x1b[K\xe2\x80\x99; did you mean \xe2\x80\x98\x1b[01m\x1b[KTime\x1b[m\x1b[K\xe2\x80\x99?\n'}
+[11.816069] (car_s) StderrLine: {'line': b'  411 |         rclcpp::\x1b[01;31m\x1b[KTimer\x1b[m\x1b[K LED_timer = nh.createTimer(rclcpp::Duration(LED_FLASH_TIMER), LED_timer_callback);\n'}
+[11.816201] (car_s) StderrLine: {'line': b'      |                 \x1b[01;31m\x1b[K^~~~~\x1b[m\x1b[K\n'}
+[11.816435] (car_s) StderrLine: {'line': b'      |                 \x1b[32m\x1b[KTime\x1b[m\x1b[K\n'}
+[11.816572] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:412:43:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KOdometry\x1b[m\x1b[K\xe2\x80\x99 is not a member of \xe2\x80\x98\x1b[01m\x1b[Knav_msgs\x1b[m\x1b[K\xe2\x80\x99; did you mean \xe2\x80\x98\x1b[01m\x1b[Knav_msgs::msg::Odometry\x1b[m\x1b[K\xe2\x80\x99?\n'}
+[11.816706] (car_s) StderrLine: {'line': b'  412 |         odom_pub = nh.advertise<nav_msgs::\x1b[01;31m\x1b[KOdometry\x1b[m\x1b[K>("odom", 50);\n'}
+[11.816887] (car_s) StderrLine: {'line': b'      |                                           \x1b[01;31m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.820015] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/nav_msgs/nav_msgs/msg/detail/odometry__struct.hpp:175:7:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Knav_msgs::msg::Odometry\x1b[m\x1b[K\xe2\x80\x99 declared here\n'}
+[11.820338] (car_s) StderrLine: {'line': b'  175 | using \x1b[01;36m\x1b[KOdometry\x1b[m\x1b[K =\n'}
+[11.820592] (car_s) StderrLine: {'line': b'      |       \x1b[01;36m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.820831] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:412:53:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kleft operand of comma operator has no effect [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-value\x07-Wunused-value\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[11.821083] (car_s) StderrLine: {'line': b'  412 |         odom_pub = nh.advertise<nav_msgs::Odometry>(\x1b[01;35m\x1b[K"odom"\x1b[m\x1b[K, 50);\n'}
+[11.821648] (car_s) StderrLine: {'line': b'      |                                                     \x1b[01;35m\x1b[K^~~~~~\x1b[m\x1b[K\n'}
+[11.821808] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:413:49:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KFloat32\x1b[m\x1b[K\xe2\x80\x99 is not a member of \xe2\x80\x98\x1b[01m\x1b[Kstd_msgs\x1b[m\x1b[K\xe2\x80\x99; did you mean \xe2\x80\x98\x1b[01m\x1b[Kstd_msgs::msg::Float32\x1b[m\x1b[K\xe2\x80\x99?\n'}
+[11.821976] (car_s) StderrLine: {'line': b'  413 |         left_speed_pub = nh.advertise<std_msgs::\x1b[01;31m\x1b[KFloat32\x1b[m\x1b[K>(TOPIC_LEFT_SPEED, 2);\n'}
+[11.822146] (car_s) StderrLine: {'line': b'      |                                                 \x1b[01;31m\x1b[K^~~~~~~\x1b[m\x1b[K\n'}
+[11.827703] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/std_msgs/std_msgs/msg/detail/float32__struct.hpp:125:7:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kstd_msgs::msg::Float32\x1b[m\x1b[K\xe2\x80\x99 declared here\n'}
+[11.827992] (car_s) StderrLine: {'line': b'  125 | using \x1b[01;36m\x1b[KFloat32\x1b[m\x1b[K =\n'}
+[11.828172] (car_s) StderrLine: {'line': b'      |       \x1b[01;36m\x1b[K^~~~~~~\x1b[m\x1b[K\n'}
+[11.832051] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:82:26:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kleft operand of comma operator has no effect [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-value\x07-Wunused-value\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[11.836323] (car_s) StderrLine: {'line': b'   82 | #define TOPIC_LEFT_SPEED \x1b[01;35m\x1b[K"left_speed"\x1b[m\x1b[K\n'}
+[11.836850] (car_s) StderrLine: {'line': b'      |                          \x1b[01;35m\x1b[K^~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.847123] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:413:58:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kin expansion of macro \xe2\x80\x98\x1b[01m\x1b[KTOPIC_LEFT_SPEED\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.850532] (car_s) StderrLine: {'line': b'  413 |         left_speed_pub = nh.advertise<std_msgs::Float32>(\x1b[01;36m\x1b[KTOPIC_LEFT_SPEED\x1b[m\x1b[K, 2);\n'}
+[11.854455] (car_s) StderrLine: {'line': b'      |                                                          \x1b[01;36m\x1b[K^~~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.855343] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:414:50:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KFloat32\x1b[m\x1b[K\xe2\x80\x99 is not a member of \xe2\x80\x98\x1b[01m\x1b[Kstd_msgs\x1b[m\x1b[K\xe2\x80\x99; did you mean \xe2\x80\x98\x1b[01m\x1b[Kstd_msgs::msg::Float32\x1b[m\x1b[K\xe2\x80\x99?\n'}
+[11.855585] (car_s) StderrLine: {'line': b'  414 |         right_speed_pub = nh.advertise<std_msgs::\x1b[01;31m\x1b[KFloat32\x1b[m\x1b[K>(TOPIC_RIGHT_SPEED, 2);\n'}
+[11.855760] (car_s) StderrLine: {'line': b'      |                                                  \x1b[01;31m\x1b[K^~~~~~~\x1b[m\x1b[K\n'}
+[11.855929] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/std_msgs/std_msgs/msg/detail/float32__struct.hpp:125:7:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kstd_msgs::msg::Float32\x1b[m\x1b[K\xe2\x80\x99 declared here\n'}
+[11.856111] (car_s) StderrLine: {'line': b'  125 | using \x1b[01;36m\x1b[KFloat32\x1b[m\x1b[K =\n'}
+[11.856317] (car_s) StderrLine: {'line': b'      |       \x1b[01;36m\x1b[K^~~~~~~\x1b[m\x1b[K\n'}
+[11.856625] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:83:27:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kleft operand of comma operator has no effect [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-value\x07-Wunused-value\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[11.857047] (car_s) StderrLine: {'line': b'   83 | #define TOPIC_RIGHT_SPEED \x1b[01;35m\x1b[K"right_speed"\x1b[m\x1b[K\n'}
+[11.858298] (car_s) StderrLine: {'line': b'      |                           \x1b[01;35m\x1b[K^~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.858676] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:414:59:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kin expansion of macro \xe2\x80\x98\x1b[01m\x1b[KTOPIC_RIGHT_SPEED\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.860264] (car_s) StderrLine: {'line': b'  414 |         right_speed_pub = nh.advertise<std_msgs::Float32>(\x1b[01;36m\x1b[KTOPIC_RIGHT_SPEED\x1b[m\x1b[K, 2);\n'}
+[11.860542] (car_s) StderrLine: {'line': b'      |                                                           \x1b[01;36m\x1b[K^~~~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.860765] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:415:44:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KFloat32\x1b[m\x1b[K\xe2\x80\x99 is not a member of \xe2\x80\x98\x1b[01m\x1b[Kstd_msgs\x1b[m\x1b[K\xe2\x80\x99; did you mean \xe2\x80\x98\x1b[01m\x1b[Kstd_msgs::msg::Float32\x1b[m\x1b[K\xe2\x80\x99?\n'}
+[11.861105] (car_s) StderrLine: {'line': b'  415 |         angle_pub = nh.advertise<std_msgs::\x1b[01;31m\x1b[KFloat32\x1b[m\x1b[K>(TOPIC_ANGLE, 2);\n'}
+[11.869766] (car_s) StderrLine: {'line': b'      |                                            \x1b[01;31m\x1b[K^~~~~~~\x1b[m\x1b[K\n'}
+[11.870283] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/std_msgs/std_msgs/msg/detail/float32__struct.hpp:125:7:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kstd_msgs::msg::Float32\x1b[m\x1b[K\xe2\x80\x99 declared here\n'}
+[11.870490] (car_s) StderrLine: {'line': b'  125 | using \x1b[01;36m\x1b[KFloat32\x1b[m\x1b[K =\n'}
+[11.870685] (car_s) StderrLine: {'line': b'      |       \x1b[01;36m\x1b[K^~~~~~~\x1b[m\x1b[K\n'}
+[11.870874] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:85:21:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[Kleft operand of comma operator has no effect [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-value\x07-Wunused-value\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[11.871006] (car_s) StderrLine: {'line': b'   85 | #define TOPIC_ANGLE \x1b[01;35m\x1b[K"angle"\x1b[m\x1b[K\n'}
+[11.871101] (car_s) StderrLine: {'line': b'      |                     \x1b[01;35m\x1b[K^~~~~~~\x1b[m\x1b[K\n'}
+[11.871195] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:415:53:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kin expansion of macro \xe2\x80\x98\x1b[01m\x1b[KTOPIC_ANGLE\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.873406] (car_s) StderrLine: {'line': b'  415 |         angle_pub = nh.advertise<std_msgs::Float32>(\x1b[01;36m\x1b[KTOPIC_ANGLE\x1b[m\x1b[K, 2);\n'}
+[11.873850] (car_s) StderrLine: {'line': b'      |                                                     \x1b[01;36m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.874432] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:416:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kodom_broadcaster\x1b[m\x1b[K\xe2\x80\x99 was not declared in this scope\n'}
+[11.874900] (car_s) StderrLine: {'line': b'  416 |         \x1b[01;31m\x1b[Kodom_broadcaster\x1b[m\x1b[K = new tf::TransformBroadcaster;\n'}
+[11.880964] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.881433] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:416:32:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Ktf\x1b[m\x1b[K\xe2\x80\x99 does not name a type; did you mean \xe2\x80\x98\x1b[01m\x1b[Ktm\x1b[m\x1b[K\xe2\x80\x99?\n'}
+[11.881831] (car_s) StderrLine: {'line': b'  416 |         odom_broadcaster = new \x1b[01;31m\x1b[Ktf\x1b[m\x1b[K::TransformBroadcaster;\n'}
+[11.882055] (car_s) StderrLine: {'line': b'      |                                \x1b[01;31m\x1b[K^~\x1b[m\x1b[K\n'}
+[11.882176] (car_s) StderrLine: {'line': b'      |                                \x1b[32m\x1b[Ktm\x1b[m\x1b[K\n'}
+[11.882432] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:418:41:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[KRISING_EDGE\x1b[m\x1b[K\xe2\x80\x99 was not declared in this scope\n'}
+[11.882563] (car_s) StderrLine: {'line': b'  418 |         callback(pi,LEFT_FRONT_STEP_PIN,\x1b[01;31m\x1b[KRISING_EDGE\x1b[m\x1b[K,left_speed_callback);\n'}
+[11.882706] (car_s) StderrLine: {'line': b'      |                                         \x1b[01;31m\x1b[K^~~~~~~~~~~\x1b[m\x1b[K\n'}
+[11.885760] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:418:9:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kcallback\x1b[m\x1b[K\xe2\x80\x99 was not declared in this scope; did you mean \xe2\x80\x98\x1b[01m\x1b[Kcalloc\x1b[m\x1b[K\xe2\x80\x99?\n'}
+[11.886137] (car_s) StderrLine: {'line': b'  418 |         \x1b[01;31m\x1b[Kcallback\x1b[m\x1b[K(pi,LEFT_FRONT_STEP_PIN,RISING_EDGE,left_speed_callback);\n'}
+[11.886581] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K^~~~~~~~\x1b[m\x1b[K\n'}
+[11.886818] (car_s) StderrLine: {'line': b'      |         \x1b[32m\x1b[Kcalloc\x1b[m\x1b[K\n'}
+[11.887004] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:423:21:\x1b[m\x1b[K \x1b[01;31m\x1b[Kerror: \x1b[m\x1b[Kno matching function for call to \xe2\x80\x98\x1b[01m\x1b[Kspin()\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.887199] (car_s) StderrLine: {'line': b'  423 |         \x1b[01;31m\x1b[Krclcpp::spin()\x1b[m\x1b[K;\n'}
+[11.887632] (car_s) StderrLine: {'line': b'      |         \x1b[01;31m\x1b[K~~~~~~~~~~~~^~\x1b[m\x1b[K\n'}
+[11.888107] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors.hpp:58:1:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Kvoid rclcpp::\x1b[01;32m\x1b[Kspin\x1b[m\x1b[K(node_interfaces::NodeBaseInterface::SharedPtr)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.890044] (car_s) StderrLine: {'line': b'   58 | \x1b[01;36m\x1b[Kspin\x1b[m\x1b[K(rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_ptr);\n'}
+[11.890665] (car_s) StderrLine: {'line': b'      | \x1b[01;36m\x1b[K^~~~\x1b[m\x1b[K\n'}
+[11.891926] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors.hpp:58:1:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  candidate expects 1 argument, 0 provided\n'}
+[11.897875] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors.hpp:62:1:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[Kcandidate: \xe2\x80\x98\x1b[01m\x1b[Kvoid rclcpp::\x1b[01;32m\x1b[Kspin\x1b[m\x1b[K(Node::SharedPtr)\x1b[m\x1b[K\xe2\x80\x99\n'}
+[11.898306] (car_s) StderrLine: {'line': b'   62 | \x1b[01;36m\x1b[Kspin\x1b[m\x1b[K(rclcpp::Node::SharedPtr node_ptr);\n'}
+[11.898480] (car_s) StderrLine: {'line': b'      | \x1b[01;36m\x1b[K^~~~\x1b[m\x1b[K\n'}
+[11.898627] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/opt/ros/jazzy/include/rclcpp/rclcpp/executors.hpp:62:1:\x1b[m\x1b[K \x1b[01;36m\x1b[Knote: \x1b[m\x1b[K  candidate expects 1 argument, 0 provided\n'}
+[11.906201] (-) TimerEvent: {}
+[12.007918] (-) TimerEvent: {}
+[12.114296] (-) TimerEvent: {}
+[12.217011] (-) TimerEvent: {}
+[12.319555] (-) TimerEvent: {}
+[12.420739] (-) TimerEvent: {}
+[12.523414] (-) TimerEvent: {}
+[12.624402] (-) TimerEvent: {}
+[12.725062] (-) TimerEvent: {}
+[12.826474] (-) TimerEvent: {}
+[12.927677] (-) TimerEvent: {}
+[13.028344] (-) TimerEvent: {}
+[13.131629] (-) TimerEvent: {}
+[13.233433] (-) TimerEvent: {}
+[13.333951] (-) TimerEvent: {}
+[13.434554] (-) TimerEvent: {}
+[13.535333] (-) TimerEvent: {}
+[13.636095] (-) TimerEvent: {}
+[13.736824] (-) TimerEvent: {}
+[13.837732] (-) TimerEvent: {}
+[13.929895] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:\x1b[m\x1b[K At global scope:\n'}
+[13.930311] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:230:13:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kvoid\x1b[01;32m\x1b[K right_speed_callback\x1b[m\x1b[K(int, uint32_t, uint32_t, uint32_t)\x1b[m\x1b[K\xe2\x80\x99 defined but not used [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-function\x07-Wunused-function\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[13.930513] (car_s) StderrLine: {'line': b'  230 | static void \x1b[01;35m\x1b[Kright_speed_callback\x1b[m\x1b[K(int pi,uint32_t gpio, uint32_t level, uint32_t tick){\n'}
+[13.930697] (car_s) StderrLine: {'line': b'      |             \x1b[01;35m\x1b[K^~~~~~~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[13.930799] (car_s) StderrLine: {'line': b'\x1b[01m\x1b[K/home/graham/ros2_ws/src/car_s/src/pi_car_s_controller.cpp:225:13:\x1b[m\x1b[K \x1b[01;35m\x1b[Kwarning: \x1b[m\x1b[K\xe2\x80\x98\x1b[01m\x1b[Kvoid\x1b[01;32m\x1b[K left_speed_callback\x1b[m\x1b[K(int, uint32_t, uint32_t, uint32_t)\x1b[m\x1b[K\xe2\x80\x99 defined but not used [\x1b[01;35m\x1b[K\x1b]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-function\x07-Wunused-function\x1b]8;;\x07\x1b[m\x1b[K]\n'}
+[13.930981] (car_s) StderrLine: {'line': b'  225 | static void \x1b[01;35m\x1b[Kleft_speed_callback\x1b[m\x1b[K(int pi,uint32_t gpio, uint32_t level, uint32_t tick){\n'}
+[13.931122] (car_s) StderrLine: {'line': b'      |             \x1b[01;35m\x1b[K^~~~~~~~~~~~~~~~~~~\x1b[m\x1b[K\n'}
+[13.938275] (-) TimerEvent: {}
+[13.976286] (car_s) StderrLine: {'line': b'gmake[2]: *** [CMakeFiles/car_s_controller.dir/build.make:76: CMakeFiles/car_s_controller.dir/src/pi_car_s_controller.cpp.o] Error 1\n'}
+[13.976927] (car_s) StderrLine: {'line': b'gmake[1]: *** [CMakeFiles/Makefile2:137: CMakeFiles/car_s_controller.dir/all] Error 2\n'}
+[13.977446] (car_s) StderrLine: {'line': b'gmake: *** [Makefile:146: all] Error 2\n'}
+[13.982146] (car_s) CommandEnded: {'returncode': 2}
+[14.010525] (car_s) JobEnded: {'identifier': 'car_s', 'rc': 2}
+[14.024612] (-) EventReactorShutdown: {}

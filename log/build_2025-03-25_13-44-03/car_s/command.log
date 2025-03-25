@@ -1,0 +1,2 @@
+Invoking command in '/home/graham/ros2_ws/src/car_s/build/car_s': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/graham/ros2_ws/src/car_s/build/car_s -- -j4 -l4
+Invoked command in '/home/graham/ros2_ws/src/car_s/build/car_s' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/graham/ros2_ws/src/car_s/build/car_s -- -j4 -l4

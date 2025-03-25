@@ -1,0 +1,34 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "colcon: build (debug)",
+        "type": "shell",
+        "command": [
+          "source /opt/ros/humble/setup.bash;",
+          "colcon build",
+          "--symlink-install",
+          "--event-handlers console_cohesion+",
+          "--base-paths workspace-path",
+          "--cmake-args -DCMAKE_BUILD_TYPE=Debug"
+        ]
+      },
+      {
+        "label": "colcon: clean",
+        "type": "shell",
+        "command": ["cd project-workspace;", "rm -rf build/ install/ log/;"]
+      },
+      {
+        "label": "colcon: test",
+        "type": "shell",
+        "command": [
+          "cd project-workspace;",
+          "source /opt/ros/humble/setup.bash;",
+          "source install/setup.bash;",
+          "colcon test",
+          "--packages-select <package-name>",
+          "--event-handlers console_direct+;"
+        ]
+      }
+    ]
+  }
