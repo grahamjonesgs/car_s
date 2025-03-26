@@ -32,18 +32,20 @@
 #include "std_msgs/msg/int32.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "tf2_ros/transform_broadcaster.h"
+#include "tf2/LinearMath/Quaternion.hpp"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include <iostream>
-//#include <pigpiod_if2.h>
+// #include <pigpiod_if2.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <math.h>
 
 // Pin definition
-#define LEFT_FRONT_STEP_PIN 13  //Y Controller
-#define LEFT_BACK_STEP_PIN 19   //X Controller
-#define RIGHT_FRONT_STEP_PIN 18 //A Controller
-#define RIGHT_BACK_STEP_PIN 12  //Z Controller
+#define LEFT_FRONT_STEP_PIN 13  // Y Controller
+#define LEFT_BACK_STEP_PIN 19   // X Controller
+#define RIGHT_FRONT_STEP_PIN 18 // A Controller
+#define RIGHT_BACK_STEP_PIN 12  // Z Controller
 
 #define LEFT_FRONT_DIR_PIN 6
 #define LEFT_BACK_DIR_PIN 26
@@ -62,13 +64,13 @@
 
 // Hardware PWM frequency and constants
 #define MAX_SPEED_FREQ 24000
-#define MESSAGE_TIMOUT 0.2    // Time to stop if no message received
-#define ODOM_TIMOUT 0.1      // Sets frequency of speed check and report
+#define MESSAGE_TIMOUT 0.2 // Time to stop if no message received
+#define ODOM_TIMOUT 0.1    // Sets frequency of speed check and report
 #define LED_FLASH_TIMER 1
 #define SUB_STEPS 32
 #define STEPS_PER_REVOLUTION 200
 #define M_PER_REVOLUTION 0.21
-#define WHEEL_SEPARATION 0.2337 //0.25 * 360 / 385
+#define WHEEL_SEPARATION 0.2337 // 0.25 * 360 / 385
 #define PI 3.1415926
 #define ANGLE_DELTA 3
 
@@ -88,200 +90,232 @@
 #define TOPIC_MODE "motor_mode"
 
 // Global variables
-rclcpp::Timer message_timeout;    // Timer for stop motors if no message
-rclcpp::Publisher odom_pub;
-rclcpp::Publisher left_speed_pub;
-rclcpp::Publisher right_speed_pub;
-rclcpp::Publisher angle_pub;
-tf::TransformBroadcaster *odom_broadcaster;
-int pi;                        // Pi ID from Pigpio
-int left_step_count=0;        // Count of edges on PWM
-int right_step_count=0;       // Count of edges on PWM
-bool motor_on=false;           // start in safe mode
+rclcpp::TimerBase::SharedPtr message_timeout; // Timer for stop motors if no message
+rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
+rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr left_speed_pub;
+rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr right_speed_pub;
+rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr angle_pub;
+std::shared_ptr<tf2_ros::TransformBroadcaster> odom_broadcaster;
+rclcpp::Node::SharedPtr nh;
+int pi;                   // Pi ID from Pigpio
+int left_step_count = 0;  // Count of edges on PWM
+int right_step_count = 0; // Count of edges on PWM
+bool motor_on = false;    // start in safe mode
 int motor_mode = MODE_AUTO;
 
 double x_pos = 0.0;
 double y_pos = 0.0;
 double theta = 0.0;
 
-bool left_forwards=true;
-bool right_forwards=true;
+bool left_forwards = true;
+bool right_forwards = true;
 
-float last_left_velocity=0;
-float last_right_velocity=0;
+float last_left_velocity = 0;
+float last_right_velocity = 0;
 
-int sub_steps=SUB_STEPS;
-int max_speed_freq=MAX_SPEED_FREQ;
+int sub_steps = SUB_STEPS;
+int max_speed_freq = MAX_SPEED_FREQ;
 float target_angle;
 float current_angle;
-float angle_delta=ANGLE_DELTA;  // Aloowable angle deviance for defined turn
-bool turn_started=false;         // Check if the turn has started to avoid immediate stop
+float angle_delta = ANGLE_DELTA; // Aloowable angle deviance for defined turn
+bool turn_started = false;       // Check if the turn has started to avoid immediate stop
 
-void sigintHandler(int sig) {
+void sigintHandler(int sig)
+{
         // Shuting down, turn off blue LED and all motors and PWM
-        //gpio_write(pi,ENABLE_PIN,PI_HIGH);
+        // gpio_write(pi,ENABLE_PIN,PI_HIGH);
         rclcpp::shutdown();
 }
 
-void set_substep(int steps) {
+void set_substep(int steps)
+{
         int bin_steps;
         bool M0;
         bool M1;
         bool M2;
 
-        bin_steps = (steps==0) ? 0 : (log((double)steps)/log(2.0));
-        RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"substeps set to %i",steps);
+        bin_steps = (steps == 0) ? 0 : (log((double)steps) / log(2.0));
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "substeps set to %i", steps);
 
-        M0=bin_steps&1;
-        M1=bin_steps&2;
-        M2=bin_steps&4;
+        M0 = bin_steps & 1;
+        M1 = bin_steps & 2;
+        M2 = bin_steps & 4;
 
-       // gpio_write(pi,M0_SUBSTEP, (M0==1) ? PI_HIGH : PI_LOW);
-       // gpio_write(pi,M1_SUBSTEP, (M1==1) ? PI_HIGH : PI_LOW);
-       // gpio_write(pi,M2_SUBSTEP, (M2==1) ? PI_HIGH : PI_LOW);
+        // gpio_write(pi,M0_SUBSTEP, (M0==1) ? PI_HIGH : PI_LOW);
+        // gpio_write(pi,M1_SUBSTEP, (M1==1) ? PI_HIGH : PI_LOW);
+        // gpio_write(pi,M2_SUBSTEP, (M2==1) ? PI_HIGH : PI_LOW);
 
-        sub_steps=steps;
+        sub_steps = steps;
 }
 
-void motor_control(float speed, float turn){
+void motor_control(float speed, float turn)
+{
         // Send output to motors based on spped and turn
         // Possitive speed forwards
         // Possitive turn clockwise - slower right
         float left_velocity;
         float right_velocity;
-        RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"In motor control, speed %f, turn %f", speed, turn);
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "In motor control, speed %f, turn %f", speed, turn);
 
-        if(speed<-1||speed>1) return;  // Ignore invalid values
-        if(turn<-1||turn>1) return;    // Ignore invalid values
-        if(speed==0) {      // For turn on spot
-                left_velocity=turn;
-                right_velocity=-turn;
+        if (speed < -1 || speed > 1)
+                return; // Ignore invalid values
+        if (turn < -1 || turn > 1)
+                return; // Ignore invalid values
+        if (speed == 0)
+        { // For turn on spot
+                left_velocity = turn;
+                right_velocity = -turn;
         }
-        else {
-                if(motor_mode==MODE_360) {
-                        target_angle=current_angle;
-                        turn_started=false;
+        else
+        {
+                if (motor_mode == MODE_360)
+                {
+                        target_angle = current_angle;
+                        turn_started = false;
                 }
-                if (turn < 0) {
-                        left_velocity=speed*(1-turn);
-                        right_velocity=speed*(1+turn);
+                if (turn < 0)
+                {
+                        left_velocity = speed * (1 - turn);
+                        right_velocity = speed * (1 + turn);
+                }
+                else
+                {
+                        left_velocity = speed * (1 - turn);
+                        right_velocity = speed * (1 + turn);
+                }
+        }
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Left v %f, right speed %f", left_velocity, right_velocity);
+        if ((speed == 0 && turn == 0))
+        {
+                // hardware_PWM(pi,LEFT_FRONT_STEP_PIN,0,0);
+                // hardware_PWM(pi,LEFT_BACK_STEP_PIN,0,0);
+                // hardware_PWM(pi,RIGHT_FRONT_STEP_PIN,0,0);
+                // hardware_PWM(pi,RIGHT_BACK_STEP_PIN,0,0);
+        }
+        else
+        {
 
+                if (last_left_velocity != left_velocity)
+                {
+                        // gpio_write(pi,LEFT_FRONT_DIR_PIN,  (left_velocity < 0) ? PI_LOW : PI_HIGH);
+                        // gpio_write(pi,LEFT_BACK_DIR_PIN,  (left_velocity < 0) ? PI_LOW : PI_HIGH);
+                        // hardware_PWM(pi,LEFT_FRONT_STEP_PIN,max_speed_freq*abs(left_velocity),1e6*0.5);
+                        // hardware_PWM(pi,LEFT_BACK_STEP_PIN,max_speed_freq*abs(left_velocity),1e6*0.5);
                 }
-                else {
-                        left_velocity=speed*(1-turn);
-                        right_velocity=speed*(1+turn);
-                }
-        }
-        RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Left v %f, right speed %f", left_velocity,right_velocity);
-        if ((speed==0 && turn==0)) {
-                //hardware_PWM(pi,LEFT_FRONT_STEP_PIN,0,0);
-                //hardware_PWM(pi,LEFT_BACK_STEP_PIN,0,0);
-                //hardware_PWM(pi,RIGHT_FRONT_STEP_PIN,0,0);
-                //hardware_PWM(pi,RIGHT_BACK_STEP_PIN,0,0);
-        }
-        else {
-
-                if (last_left_velocity!=left_velocity) {
-                        //gpio_write(pi,LEFT_FRONT_DIR_PIN,  (left_velocity < 0) ? PI_LOW : PI_HIGH);
-                       // gpio_write(pi,LEFT_BACK_DIR_PIN,  (left_velocity < 0) ? PI_LOW : PI_HIGH);
-                        //hardware_PWM(pi,LEFT_FRONT_STEP_PIN,max_speed_freq*abs(left_velocity),1e6*0.5);
-                        //hardware_PWM(pi,LEFT_BACK_STEP_PIN,max_speed_freq*abs(left_velocity),1e6*0.5);
-                }
-                if(last_right_velocity!=right_velocity) {
-                        //gpio_write(pi,RIGHT_FRONT_DIR_PIN,  (right_velocity > 0) ? PI_LOW : PI_HIGH);
-                        //gpio_write(pi,RIGHT_BACK_DIR_PIN,  (right_velocity > 0) ? PI_LOW : PI_HIGH);
-                        //hardware_PWM(pi,RIGHT_FRONT_STEP_PIN,max_speed_freq*abs(right_velocity),1e6*0.5);
-                        //hardware_PWM(pi,RIGHT_BACK_STEP_PIN,max_speed_freq*abs(right_velocity),1e6*0.5);
+                if (last_right_velocity != right_velocity)
+                {
+                        // gpio_write(pi,RIGHT_FRONT_DIR_PIN,  (right_velocity > 0) ? PI_LOW : PI_HIGH);
+                        // gpio_write(pi,RIGHT_BACK_DIR_PIN,  (right_velocity > 0) ? PI_LOW : PI_HIGH);
+                        // hardware_PWM(pi,RIGHT_FRONT_STEP_PIN,max_speed_freq*abs(right_velocity),1e6*0.5);
+                        // hardware_PWM(pi,RIGHT_BACK_STEP_PIN,max_speed_freq*abs(right_velocity),1e6*0.5);
                 }
         }
-        left_forwards=(left_velocity>=0) ? 1 : 0;
-        right_forwards=(right_velocity>=0) ? 1 : 0;
-        last_left_velocity=left_velocity;
-        last_right_velocity=right_velocity;
+        left_forwards = (left_velocity >= 0) ? 1 : 0;
+        right_forwards = (right_velocity >= 0) ? 1 : 0;
+        last_left_velocity = left_velocity;
+        last_right_velocity = right_velocity;
 }
 
-void message_timeout_callback (const rclcpp::TimerEvent&){
+void message_timeout_callback()
+{
         // ROS callback if not message received to stop motors
-        if((last_left_velocity!=0||last_right_velocity!=0)&&motor_mode==MODE_AUTO) {
-                motor_control(0.0,0.0);
-                message_timeout.setPeriod(rclcpp::Duration(MESSAGE_TIMOUT),true);    // reset no message timeout
-                RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Timeout");
+        if ((last_left_velocity != 0 || last_right_velocity != 0) && motor_mode == MODE_AUTO)
+        {
+                motor_control(0.0, 0.0);
+                message_timeout->reset(); // reset no message timeout
+                RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Timeout");
         }
 }
 
-void LED_timer_callback (const rclcpp::TimerEvent&){
+void LED_timer_callback()
+{
         // ROS callback for LED messages
-        if (!motor_on) {
+        if (!motor_on)
+        {
                 // Switch to disable
-                //gpio_write(pi,BLUE_LED_PIN,PI_HIGH);
+                // gpio_write(pi,BLUE_LED_PIN,PI_HIGH);
         }
-        else {
+        else
+        {
                 // Switch to enable
-                //gpio_write(pi,BLUE_LED_PIN,!gpio_read(pi,BLUE_LED_PIN));
+                // gpio_write(pi,BLUE_LED_PIN,!gpio_read(pi,BLUE_LED_PIN));
         }
-
 }
 
-static void left_speed_callback(int pi,uint32_t gpio, uint32_t level, uint32_t tick){
+static void left_speed_callback(int pi, uint32_t gpio, uint32_t level, uint32_t tick)
+{
         // Pigpio callback on speed encoded pin rising edge
         (left_forwards) ? left_step_count++ : left_step_count--;
 }
 
-static void right_speed_callback(int pi,uint32_t gpio, uint32_t level, uint32_t tick){
+static void right_speed_callback(int pi, uint32_t gpio, uint32_t level, uint32_t tick)
+{
         // Pigpio callback on speed encoded pin rising edge
         (right_forwards) ? right_step_count++ : right_step_count--;
 }
 
-void odom_timer_callback (const rclcpp::TimerEvent&){
+auto createQuaternionMsgFromYaw(double yaw)
+{
+  tf2::Quaternion q;
+  q.setRPY(0, 0, yaw);
+  return tf2::toMsg(q);
+}
+
+void odom_timer_callback()
+{
         // ROS callback on time to send wheel speeds and odom
-        std_msgs::Float32 left_speed;
-        std_msgs::Float32 right_speed;
-        std_msgs::Float32 angle;
+        std_msgs::msg::Float32 left_speed;
+        std_msgs::msg::Float32 right_speed;
+        std_msgs::msg::Float32 angle;
         float left_delta;
         float right_delta;
         float x_delta;
         float y_delta;
         float theta_delta;
 
-        left_delta=left_step_count* M_PER_REVOLUTION / (sub_steps*STEPS_PER_REVOLUTION);
-        right_delta=right_step_count* M_PER_REVOLUTION / (sub_steps*STEPS_PER_REVOLUTION);
+        left_delta = left_step_count * M_PER_REVOLUTION / (sub_steps * STEPS_PER_REVOLUTION);
+        right_delta = right_step_count * M_PER_REVOLUTION / (sub_steps * STEPS_PER_REVOLUTION);
 
-        left_step_count=0;
-        right_step_count=0;
+        left_step_count = 0;
+        right_step_count = 0;
 
         left_speed.data = left_delta / ODOM_TIMOUT;
-        right_speed.data =  right_delta / ODOM_TIMOUT;
-        theta_delta=(right_delta-left_delta)/WHEEL_SEPARATION;
+        right_speed.data = right_delta / ODOM_TIMOUT;
+        theta_delta = (right_delta - left_delta) / WHEEL_SEPARATION;
 
-        theta+=theta_delta;
-        if (theta > PI) {
-                theta -= 2*PI;
+        theta += theta_delta;
+        if (theta > PI)
+        {
+                theta -= 2 * PI;
         }
-        if (theta < -PI) {
-                theta+= 2*PI;
+        if (theta < -PI)
+        {
+                theta += 2 * PI;
         }
-        angle.data = 180*theta/PI;  // Send angle in degrees
-        current_angle=angle.data;
-        if (abs((current_angle-target_angle)>angle_delta)&&(turn_started==false)){
-          turn_started=true;
-          RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Turn started set to true");
-        }
-
-        if (turn_started&&abs(current_angle-target_angle)<angle_delta&&motor_mode==MODE_360&&(last_left_velocity!=0||last_right_velocity!=0)) {
-                RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Target angle reached");
-                motor_control(0.0,0.0);
+        angle.data = 180 * theta / PI; // Send angle in degrees
+        current_angle = angle.data;
+        if (abs((current_angle - target_angle) > angle_delta) && (turn_started == false))
+        {
+                turn_started = true;
+                RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Turn started set to true");
         }
 
-        x_delta=cos(theta)*(left_speed.data+right_speed.data)/2; // approx for small angle delta
-        y_delta=sin(theta)*(left_speed.data+right_speed.data)/2; // approx for small angle delta
-        x_pos+=x_delta;
-        y_pos+=y_delta;
+        if (turn_started && abs(current_angle - target_angle) < angle_delta && motor_mode == MODE_360 && (last_left_velocity != 0 || last_right_velocity != 0))
+        {
+                RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Target angle reached");
+                motor_control(0.0, 0.0);
+        }
 
-        geometry_msgs::Quaternion odom_quat = tf::createQuaternionMsgFromYaw(theta);
+        x_delta = cos(theta) * (left_speed.data + right_speed.data) / 2; // approx for small angle delta
+        y_delta = sin(theta) * (left_speed.data + right_speed.data) / 2; // approx for small angle delta
+        x_pos += x_delta;
+        y_pos += y_delta;
 
-        //first, we'll publish the transform over tf
-        geometry_msgs::TransformStamped odom_trans;
-        odom_trans.header.stamp = rclcpp::Time::now();
+        geometry_msgs::msg::Quaternion odom_quat = createQuaternionMsgFromYaw(theta);
+
+        // first, we'll publish the transform over tf
+        geometry_msgs::msg::TransformStamped odom_trans;
+        odom_trans.header.stamp = nh->now();
         odom_trans.header.frame_id = "odom";
         odom_trans.child_frame_id = "base_link";
 
@@ -292,9 +326,9 @@ void odom_timer_callback (const rclcpp::TimerEvent&){
 
         odom_broadcaster->sendTransform(odom_trans);
 
-        //next, we'll publish the odometry message over ROS
-        nav_msgs::Odometry odom;
-        odom.header.stamp = rclcpp::Time::now();
+        // next, we'll publish the odometry message over ROS
+        nav_msgs::msg::Odometry odom;
+        odom.header.stamp = nh->now();
         odom.header.frame_id = "odom";
 
         odom.pose.pose.position.x = x_pos;
@@ -302,78 +336,84 @@ void odom_timer_callback (const rclcpp::TimerEvent&){
         odom.pose.pose.position.z = 0.0;
         odom.pose.pose.orientation = odom_quat;
 
-        //set the velocity
+        // set the velocity
         odom.child_frame_id = "base_link";
         odom.twist.twist.linear.x = x_delta;
         odom.twist.twist.linear.y = y_delta;
         odom.twist.twist.angular.z = theta_delta;
 
-        left_speed_pub.publish(left_speed);
-        right_speed_pub.publish(right_speed);
-        angle_pub.publish(angle);
-        odom_pub.publish(odom);
+        left_speed_pub->publish(left_speed);
+        right_speed_pub->publish(right_speed);
+        angle_pub->publish(angle);
+        odom_pub->publish(odom);
 }
 
-void velocity_callback(const geometry_msgs::Twist::ConstPtr& msg)
+void velocity_callback(const geometry_msgs::msg::Twist::ConstPtr &msg)
 {
         // ROS callback on message received
-        message_timeout.setPeriod(rclcpp::Duration(MESSAGE_TIMOUT),true);  // reset no message timeout
-        motor_control(msg->linear.x,msg->angular.z);
+        message_timeout->reset(); // reset no message timeout
+        motor_control(msg->linear.x, msg->angular.z);
 }
 
-void steps_callback(const std_msgs::Int32::ConstPtr& msg)
+void steps_callback(const std_msgs::msg::Int32::ConstPtr &msg)
 {
         // ROS callback on message received
-        RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Setting to %i steps",msg->data);
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Setting to %i steps", msg->data);
         set_substep(msg->data);
 }
 
-void freq_callback(const std_msgs::Int32::ConstPtr& msg)
+void freq_callback(const std_msgs::msg::Int32::ConstPtr &msg)
 {
         // ROS callback on message received
-        RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Setting freq to %iHz",msg->data);
-        max_speed_freq=msg->data;
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Setting freq to %iHz", msg->data);
+        max_speed_freq = msg->data;
 }
 
-
-void motor_mode_callback(const std_msgs::Int32::ConstPtr& msg)
+void motor_mode_callback(const std_msgs::msg::Int32::ConstPtr &msg)
 {
         // ROS callback on message received
-        switch (msg->data) {
+        switch (msg->data)
+        {
         case MODE_AUTO:
-                motor_mode=msg->data;
-                RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Set to auto mode");
+                motor_mode = msg->data;
+                RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Set to auto mode");
                 break;
         case MODE_CONINUOUS:
-                motor_mode=msg->data;
-                RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Set to continuous mode");
+                motor_mode = msg->data;
+                RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Set to continuous mode");
                 break;
         case MODE_360:
-                motor_mode=msg->data;
-                RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Set to 360 mode");
+                motor_mode = msg->data;
+                RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Set to 360 mode");
                 break;
         default:
-                RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Invalid mode received %i",msg->data);
+                RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Invalid mode received %i", msg->data);
                 break;
         }
 }
 
-void motor_callback(const std_msgs::Bool::ConstPtr& msg)
+void motor_callback(const std_msgs::msg::Bool::ConstPtr &msg)
 {
         // ROS callback on message received
-        if(motor_on=msg->data) {
-                //gpio_write(pi,ENABLE_PIN,PI_LOW); // Ensable drive
+        if (motor_on = msg->data)
+        {
+                // gpio_write(pi,ENABLE_PIN,PI_LOW); // Ensable drive
         }
-        else {
-                //gpio_write(pi,ENABLE_PIN,PI_HIGH); // Disable drive
+        else
+        {
+                // gpio_write(pi,ENABLE_PIN,PI_HIGH); // Disable drive
         }
 }
 
-int main (int argc, char **argv)
+int main(int argc, char **argv)
 {
-        rclcpp::init(argc, argv, "pi_car_s_controller", rclcpp::init_options::NoSigintHandler);
-        RCLCPP_INFO(rclcpp::get_logger("rclcpp"),"Started Pi Car Stepper Controller");
-        rclcpp::NodeHandle nh;
+        rclcpp::InitOptions init_options;
+        // Removed invalid member assignment as it does not exist in rclcpp::InitOptions
+        rclcpp::init(argc, argv, init_options);
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Started Pi Car Stepper Controller");
+        // rclcpp::NodeHandle nh;
+        nh = rclcpp::Node::make_shared("pi_car_s_controller");
+
         signal(SIGINT, sigintHandler);
         signal(SIGTERM, sigintHandler);
         signal(SIGKILL, sigintHandler);
@@ -401,24 +441,29 @@ int main (int argc, char **argv)
         gpio_write(pi,BLUE_LED_PIN,PI_HIGH); */
 
         // Set up ROS
-        rclcpp::Subscriber sub_velocity = nh.subscribe(TOPIC_CMD_VEL,2,velocity_callback);
-        rclcpp::Subscriber sub_motor = nh.subscribe(TOPIC_MOTOR,1,motor_callback);
-        rclcpp::Subscriber sub_motor_mode = nh.subscribe(TOPIC_MODE,1,motor_mode_callback);
-        rclcpp::Subscriber sub_set_steps = nh.subscribe(TOPIC_STEPS,1,steps_callback);
-        rclcpp::Subscriber sub_set_freq = nh.subscribe(TOPIC_FREQ,1,freq_callback);
-        message_timeout = nh.createTimer(rclcpp::Duration(MESSAGE_TIMOUT), message_timeout_callback);
-        rclcpp::Timer odom_timer = nh.createTimer(rclcpp::Duration(ODOM_TIMOUT), odom_timer_callback);
-        rclcpp::Timer LED_timer = nh.createTimer(rclcpp::Duration(LED_FLASH_TIMER), LED_timer_callback);
-        odom_pub = nh.advertise<nav_msgs::Odometry>("odom", 50);
-        left_speed_pub = nh.advertise<std_msgs::Float32>(TOPIC_LEFT_SPEED, 2);
-        right_speed_pub = nh.advertise<std_msgs::Float32>(TOPIC_RIGHT_SPEED, 2);
-        angle_pub = nh.advertise<std_msgs::Float32>(TOPIC_ANGLE, 2);
-        odom_broadcaster = new tf::TransformBroadcaster;
+        auto sub_velocity = nh->create_subscription<geometry_msgs::msg::Twist>(
+            TOPIC_CMD_VEL, 2, velocity_callback);
+        auto sub_motor = nh->create_subscription<std_msgs::msg::Bool>(
+            TOPIC_MOTOR, 1, motor_callback);
+        auto sub_motor_mode = nh->create_subscription<std_msgs::msg::Int32>(
+            TOPIC_MODE, 1, motor_mode_callback);
+        auto sub_set_steps = nh->create_subscription<std_msgs::msg::Int32>(
+            TOPIC_STEPS, 1, steps_callback);
+        auto sub_set_freq = nh->create_subscription<std_msgs::msg::Int32>(
+            TOPIC_FREQ, 1, freq_callback);
+        message_timeout = nh->create_wall_timer(std::chrono::duration<double>(MESSAGE_TIMOUT), std::bind(&message_timeout_callback));
+        auto odom_timer = nh->create_wall_timer(std::chrono::duration<double>(ODOM_TIMOUT), [=]() { odom_timer_callback(); });
+        auto LED_timer = nh->create_wall_timer(std::chrono::duration<double>(LED_FLASH_TIMER), std::bind(&LED_timer_callback));
+        odom_pub = nh->create_publisher<nav_msgs::msg::Odometry>("odom", 50);
+        left_speed_pub = nh->create_publisher<std_msgs::msg::Float32>(TOPIC_LEFT_SPEED, 2);
+        right_speed_pub = nh->create_publisher<std_msgs::msg::Float32>(TOPIC_RIGHT_SPEED, 2);
+        angle_pub = nh->create_publisher<std_msgs::msg::Float32>(TOPIC_ANGLE, 2);
+        odom_broadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(nh);
 
-        callback(pi,LEFT_FRONT_STEP_PIN,RISING_EDGE,left_speed_callback);
-        callback(pi,RIGHT_FRONT_STEP_PIN,RISING_EDGE,right_speed_callback);
-        //gpio_write(pi,ENABLE_PIN,PI_HIGH);    // Disable drive
+        // callback(pi,LEFT_FRONT_STEP_PIN,RISING_EDGE,left_speed_callback);
+        // callback(pi,RIGHT_FRONT_STEP_PIN,RISING_EDGE,right_speed_callback);
+        // gpio_write(pi,ENABLE_PIN,PI_HIGH);    // Disable drive
         set_substep(sub_steps);
 
-        rclcpp::spin();
+        rclcpp::spin(nh);
 }

@@ -1,0 +1,2 @@
+Invoking command in '/root/ros_ws/src/car_s/build/car_s': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /root/ros_ws/src/car_s/build/car_s -- -j8 -l8
+Invoked command in '/root/ros_ws/src/car_s/build/car_s' returned '2': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /root/ros_ws/src/car_s/build/car_s -- -j8 -l8
