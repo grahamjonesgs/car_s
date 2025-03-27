@@ -150,7 +150,7 @@ void set_substep(int steps)
 
 void motor_control(float speed, float turn)
 {
-        // Send output to motors based on spped and turn
+        // Send output to motors based on speed and turn
         // Positive speed forwards
         // Positive turn clockwise - slower right
         float left_velocity;
