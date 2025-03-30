@@ -24,13 +24,33 @@ add_executable(car_s_controller src/pi_car_s_controller.cpp)
 target_link_libraries(car_s_controller pigpiod_if2)
 ament_target_dependencies(car_s_controller nav_msgs rclcpp std_msgs geometry_msgs tf2 tf2_ros tf2_geometry_msgs)
 
+add_executable(car_controller src/pi_car_controller.cpp)
+target_link_libraries(car_controller pigpiod_if2)
+ament_target_dependencies(car_controller nav_msgs rclcpp std_msgs geometry_msgs tf2 tf2_ros tf2_geometry_msgs sensor_msgs)
+
 add_executable(imu_normalize src/imu_normalize.cpp)
 target_link_libraries(imu_normalize)
 ament_target_dependencies(imu_normalize rclcpp std_msgs sensor_msgs)
 
+add_executable(pi_car_imu src/pi_car_imu.cpp)
+target_link_libraries(pi_car_imu pigpiod_if2)
+ament_target_dependencies(pi_car_imu rclcpp std_msgs sensor_msgs)
+
+add_executable(pi_car_mag src/pi_car_mag.cpp)
+target_link_libraries(pi_car_mag pigpiod_if2)
+ament_target_dependencies(pi_car_mag rclcpp std_msgs sensor_msgs)
+
+add_executable(pwm_led src/pwm_led.cpp)
+target_link_libraries(pwm_led pigpiod_if2)
+ament_target_dependencies(pwm_led rclcpp std_msgs sensor_msgs)
+
 install(TARGETS
   car_s_controller
   imu_normalize
+  car_controller
+  pi_car_imu
+  pi_car_mag
+  pwm_led
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

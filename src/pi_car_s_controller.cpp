@@ -2,26 +2,26 @@
                 TOP SSD Card
 
    Func     Colour  GPIO  pin	pin  GPIO	Colour	Func
-   IMU Vcc  Brown   3V3   1	  2     5v
-   IMU SDA          2     3   4     5v   5v to board
-   IMU SCL          3     5   6     GND  GND to board
-                    4	    7	  8     14   ENABLE
-   IMU GND          GND   9	  10    15   RF DIR (A) xxxxxx
+   IMU Vcc  Brown   3V3   1	2     5v
+   IMU SDA          2     3     4     5v   5v to board
+   IMU SCL          3     5     6     GND  GND to board
+                    4	  7	8     14   ENABLE
+   IMU GND          GND   9	10    15   RF DIR (A) xxxxxx
                     17    11	12    18   RF STEP (A)
-                    27    13  14	  GND  LED GND
-                    22	  15	16	  23   LED Red
-                    3V3	  17	18	  24   LED Blue
-   M0 SUBSTEP       10	  19	20	  GND
-   M1 SUBSTEP       9	    21	22	  25
-   M2 SUBSTEP       11	  23	24	  8
-                    GND   25	26	  7
-                    0	    27	28	  1
-   SW YELLOW        5	    29	30	  GND
-   LF DIR	(Y)       6	    31	32	  12   RB STEP (Z)
-   LF STEP (Y)      13    33	34	  GND
-   LB STEP (X)      19    35	36	  16   RB DIR (Z) xxxx
-   LB DIR (X)	      26	  37	38	  20
-                    GND   39	40	  21
+                    27    13    14    GND  LED GND
+                    22	  15	16    23   LED Red
+                    3V3	  17	18    24   LED Blue
+   M0 SUBSTEP       10	  19	20    GND
+   M1 SUBSTEP       9	  21	22    25
+   M2 SUBSTEP       11	  23	24    8
+                    GND   25	26    7
+                    0	  27	28    1
+   SW YELLOW        5	  29	30   GND
+   LF DIR (Y)       6	  31    32   12   RB STEP (Z)
+   LF STEP (Y)      13    33	34   GND
+   LB STEP (X)      19    35	36   16   RB DIR (Z) xxxx
+   LB DIR (X)	    26	  37	38   20
+                    GND   39	40   21
 
                   Bottom Camera Port
  */
