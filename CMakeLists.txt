@@ -44,6 +44,10 @@ add_executable(pwm_led src/pwm_led.cpp)
 target_link_libraries(pwm_led pigpiod_if2)
 ament_target_dependencies(pwm_led rclcpp std_msgs sensor_msgs)
 
+add_executable(key_cmd src/key_cmd.cpp)
+target_link_libraries(key_cmd)
+ament_target_dependencies(key_cmd rclcpp std_msgs tf2_geometry_msgs)
+
 install(TARGETS
   car_s_controller
   imu_normalize
@@ -51,6 +55,7 @@ install(TARGETS
   pi_car_imu
   pi_car_mag
   pwm_led
+  key_cmd
   DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
