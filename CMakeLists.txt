@@ -32,13 +32,13 @@ add_executable(imu_normalize src/imu_normalize.cpp)
 target_link_libraries(imu_normalize)
 ament_target_dependencies(imu_normalize rclcpp std_msgs sensor_msgs)
 
-add_executable(pi_car_imu src/pi_car_imu.cpp)
-target_link_libraries(pi_car_imu pigpiod_if2)
-ament_target_dependencies(pi_car_imu rclcpp std_msgs sensor_msgs)
+add_executable(car_imu src/pi_car_imu.cpp)
+target_link_libraries(car_imu pigpiod_if2)
+ament_target_dependencies(car_imu rclcpp std_msgs sensor_msgs)
 
-add_executable(pi_car_mag src/pi_car_mag.cpp)
-target_link_libraries(pi_car_mag pigpiod_if2)
-ament_target_dependencies(pi_car_mag rclcpp std_msgs sensor_msgs)
+add_executable(car_mag src/pi_car_mag.cpp)
+target_link_libraries(car_mag pigpiod_if2)
+ament_target_dependencies(car_mag rclcpp std_msgs sensor_msgs)
 
 add_executable(pwm_led src/pwm_led.cpp)
 target_link_libraries(pwm_led pigpiod_if2)
@@ -52,8 +52,8 @@ install(TARGETS
   car_s_controller
   imu_normalize
   car_controller
-  pi_car_imu
-  pi_car_mag
+  car_imu
+  car_mag
   pwm_led
   key_cmd
   DESTINATION lib/${PROJECT_NAME})
