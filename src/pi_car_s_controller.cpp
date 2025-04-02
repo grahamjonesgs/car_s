@@ -397,11 +397,13 @@ void motor_callback(const std_msgs::msg::Bool &msg)
         // ROS callback on message received
         motor_on = msg.data;
         if (msg.data)
-        {
+        {       
+                RCLCPP_INFO(nh->get_logger(), "Set motor on");
                 gpio_write(pi, ENABLE_PIN, PI_LOW); // Enable drive
         }
         else
         {
+                RCLCPP_INFO(nh->get_logger(), "Set motor off");
                 gpio_write(pi, ENABLE_PIN, PI_HIGH); // Disable drive
         }
 }
