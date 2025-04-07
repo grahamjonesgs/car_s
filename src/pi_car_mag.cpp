@@ -291,6 +291,11 @@ int main(int argc, char **argv)
     }
 
     i2ch = i2c_open(pi, 1, QMC5883L_ADDR, 0);
+    if (i2ch < 0) {
+        RCLCPP_ERROR(nh->get_logger(), "Failed to open I2C device");
+        exit(1);  // or handle accordingly
+    }
+    
     QMC5883L_init();
 
     // Set up ROS
@@ -301,6 +306,4 @@ int main(int argc, char **argv)
     mag_pub = nh->create_publisher<sensor_msgs::msg::MagneticField>(TOPIC_MAG, 2);
     rclcpp::spin(nh);
     rclcpp::shutdown();
-
-    rclcpp::spin(nh);
 }
