@@ -64,8 +64,8 @@
 
 // Hardware PWM frequency and constants
 #define MAX_SPEED_FREQ 24000
-#define MESSAGE_TIMEOUT 0.2 // Time to stop if no message received
-#define ODOM_TIMEOUT 0.1    // Sets frequency of speed check and report
+#define MESSAGE_TIMEOUT 1 // Time to stop if no message received
+#define ODOM_TIMEOUT 1    // Sets frequency of speed check and report
 #define LED_FLASH_TIMER 1
 #define SUB_STEPS 32
 #define STEPS_PER_REVOLUTION 200
