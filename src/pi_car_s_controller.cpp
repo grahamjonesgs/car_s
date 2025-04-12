@@ -71,8 +71,11 @@
 #define STEPS_PER_REVOLUTION 200
 #define M_PER_REVOLUTION 0.21
 #define WHEEL_SEPARATION 0.2337 // 0.25 * 360 / 385
-#define PI 3.1415926
 #define ANGLE_DELTA 3
+
+// Max speed at 32 sub steps is 24000 / (32*200) = 7.5 rev/s which is 1.57 m/s
+// Total formula is (speed / M_PER_REVOLUTION) * STEPS_PER_REVOLUTION * sub_steps
+// Formula for 1 m/s is (1 / M_PER_REVOLUTION) * STEPS_PER_REVOLUTION * sub_steps
 
 // Motor Modes
 #define MODE_CONTINUOUS 1
@@ -100,7 +103,7 @@ rclcpp::Node::SharedPtr nh;
 int pi;                   // Pi ID from Pigpio
 int left_step_count = 0;  // Count of edges on PWM
 int right_step_count = 0; // Count of edges on PWM
-bool motor_on = false;    // start in safe mode
+bool motor_on = false;    // Start in safe mode
 int motor_mode = MODE_AUTO;
 
 double x_pos = 0.0;
@@ -135,7 +138,7 @@ void set_substep(int steps)
         bool M2;
 
         bin_steps = (steps == 0) ? 0 : (log((double)steps) / log(2.0));
-        RCLCPP_INFO(nh->get_logger(), "substeps set to %i", steps);
+        RCLCPP_INFO(nh->get_logger(), "Substeps set to %i", steps);
 
         M0 = bin_steps & 1;
         M1 = bin_steps & 2;
@@ -157,8 +160,14 @@ void motor_control(float speed, float turn)
         float right_velocity;
         RCLCPP_INFO(nh->get_logger(), "In motor control, speed %.2f, turn %.2f", speed, turn);
 
+        /*
+        
+        NOTE Removed code to check for invalid values, as trying abs speed values for ROS2 in m/s
+
+        Need to add code to check from max velocity and set max speed based on measurements
+        
         if (speed < -1 || speed > 1)
-                return; // Ignore invalid values
+                return; // Ignore invalid values */
         if (turn < -1 || turn > 1)
                 return; // Ignore invalid values
         if (speed == 0)
@@ -199,15 +208,15 @@ void motor_control(float speed, float turn)
                 {
                         gpio_write(pi, LEFT_FRONT_DIR_PIN, (left_velocity < 0) ? PI_LOW : PI_HIGH);
                         gpio_write(pi, LEFT_BACK_DIR_PIN, (left_velocity < 0) ? PI_LOW : PI_HIGH);
-                        hardware_PWM(pi, LEFT_FRONT_STEP_PIN, max_speed_freq * abs(left_velocity), 1e6 * 0.5);
-                        hardware_PWM(pi, LEFT_BACK_STEP_PIN, max_speed_freq * abs(left_velocity), 1e6 * 0.5);
+                        hardware_PWM(pi, LEFT_FRONT_STEP_PIN, STEPS_PER_REVOLUTION * sub_steps * abs(left_velocity) / M_PER_REVOLUTION, 1e6 * 0.5);
+                        hardware_PWM(pi, LEFT_BACK_STEP_PIN, STEPS_PER_REVOLUTION * sub_steps * abs(left_velocity) / M_PER_REVOLUTION, 1e6 * 0.5);
                 }
                 if (last_right_velocity != right_velocity)
                 {
                         gpio_write(pi, RIGHT_FRONT_DIR_PIN, (right_velocity > 0) ? PI_LOW : PI_HIGH);
                         gpio_write(pi, RIGHT_BACK_DIR_PIN, (right_velocity > 0) ? PI_LOW : PI_HIGH);
-                        hardware_PWM(pi, RIGHT_FRONT_STEP_PIN, max_speed_freq * abs(right_velocity), 1e6 * 0.5);
-                        hardware_PWM(pi, RIGHT_BACK_STEP_PIN, max_speed_freq * abs(right_velocity), 1e6 * 0.5);
+                        hardware_PWM(pi, RIGHT_FRONT_STEP_PIN, STEPS_PER_REVOLUTION * sub_steps * abs(right_velocity) / M_PER_REVOLUTION, 1e6 * 0.5);
+                        hardware_PWM(pi, RIGHT_BACK_STEP_PIN, STEPS_PER_REVOLUTION * sub_steps * abs(right_velocity) / M_PER_REVOLUTION, 1e6 * 0.5);
                 }
         }
         left_forwards = (left_velocity >= 0) ? 1 : 0;
@@ -284,15 +293,15 @@ void odom_timer_callback()
         theta_delta = (right_delta - left_delta) / WHEEL_SEPARATION;
 
         theta += theta_delta;
-        if (theta > PI)
+        if (theta > M_PI)
         {
-                theta -= 2 * PI;
+                theta -= 2 * M_PI;
         }
-        if (theta < -PI)
+        if (theta < -M_PI)
         {
-                theta += 2 * PI;
+                theta += 2 * M_PI;
         }
-        angle.data = 180 * theta / PI; // Send angle in degrees
+        angle.data = 180 * theta / M_PI; // Send angle in degrees
         current_angle = angle.data;
         if (abs((current_angle - target_angle) > angle_delta) && (turn_started == false))
         {
@@ -397,7 +406,7 @@ void motor_callback(const std_msgs::msg::Bool &msg)
         // ROS callback on message received
         motor_on = msg.data;
         if (msg.data)
-        {       
+        {
                 RCLCPP_INFO(nh->get_logger(), "Set motor on");
                 gpio_write(pi, ENABLE_PIN, PI_LOW); // Enable drive
         }
@@ -476,7 +485,7 @@ int main(int argc, char **argv)
         hardware_PWM(pi, LEFT_BACK_STEP_PIN, 0, 0);
         hardware_PWM(pi, RIGHT_FRONT_STEP_PIN, 0, 0);
         hardware_PWM(pi, RIGHT_BACK_STEP_PIN, 0, 0);
-        pigpio_stop(pi); // Stop pigpio
+        pigpio_stop(pi);                       // Stop pigpio
         gpio_write(pi, BLUE_LED_PIN, PI_HIGH); // Disable blue LED
         gpio_write(pi, RED_LED_PIN, PI_LOW);   // Disable red LED
 }
