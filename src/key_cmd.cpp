@@ -35,19 +35,19 @@ public:
 
 private:
     std::shared_ptr<rclcpp::Node> nh;
-    double linear_, angular_, _scale_;
+    double linear, angular, scale;
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr twist_pub_;
     rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr motor_pub_;
     rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr motor_steps_pub_;
 };
 
-TeleopCmd::TeleopCmd() : linear_(0),
-                         angular_(0),
-                         _scale_(0.2)
+TeleopCmd::TeleopCmd() : linear(0),
+                         angular(0),
+                         scale(0.2)
 {
     nh = rclcpp::Node::make_shared("teleop_cmd");
-    nh->declare_parameter("scale", _scale_);
-    nh->get_parameter("scale", _scale_);
+    nh->declare_parameter("scale", scale);
+    nh->get_parameter("scale", scale);
 
     twist_pub_ = nh->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 1);
     motor_pub_ = nh->create_publisher<std_msgs::msg::Bool>("/motor_on", 1);
@@ -101,7 +101,7 @@ void TeleopCmd::keyLoop()
             exit(-1);
         }
 
-        linear_ = angular_ = 0;
+        linear = angular = 0;
         RCLCPP_DEBUG(nh->get_logger(), "value: 0x%02X\n", c);
 
         switch (c)
@@ -112,49 +112,51 @@ void TeleopCmd::keyLoop()
             break;
         case KEYCODE_8:
             RCLCPP_DEBUG(nh->get_logger(), "TURN LEFT");
-            linear_ = 1.0;
-            angular_ = -0.5;
+            linear = 1.0;
+            angular = -0.5;
             dirty = true;
             break;
         case KEYCODE_9:
             RCLCPP_DEBUG(nh->get_logger(), "TURN RIGHT");
-            linear_ = 1.0;
-            angular_ = 0.5;
+            linear = 1.0;
+            angular = 0.5;
             dirty = true;
             break;
         case KEYCODE_L:
             RCLCPP_DEBUG(nh->get_logger(), "LEFT");
-            angular_ = 1.0;
+            angular = 1.0;
             dirty = true;
             break;
         case KEYCODE_R:
             RCLCPP_DEBUG(nh->get_logger(), "RIGHT");
-            angular_ = -1.0;
+            angular = -1.0;
             dirty = true;
             break;
         case KEYCODE_U:
             RCLCPP_DEBUG(nh->get_logger(), "UP");
-            linear_ = 1.0;
+            linear = 1.0;
             dirty = true;
             break;
         case KEYCODE_D:
             RCLCPP_DEBUG(nh->get_logger(), "DOWN");
-            linear_ = -1.0;
+            linear = -1.0;
             dirty = true;
             break;
         case KEYCODE_F:
             RCLCPP_DEBUG(nh->get_logger(), "FASTER");
-            _scale_ += 0.1;
-            if (_scale_ > 1.0)
-                _scale_ = 1.0;
-            RCLCPP_INFO(nh->get_logger(), "Scale is %0.1f", _scale_);
+            scale += 0.1;
+            /*
+            Removed the following line to allow scale to go above 1.0 for testing
+            if (scale > 1.0)
+                scale = 1.0;*/
+            RCLCPP_INFO(nh->get_logger(), "Scale is %0.1f", scale);
             break;
         case KEYCODE_S:
             RCLCPP_DEBUG(nh->get_logger(), "SLOWER");
-            _scale_ -= 0.1;
-            if (_scale_ < 0.0)
-                _scale_ = 0.0;
-            RCLCPP_INFO(nh->get_logger(), "Scale is %0.1f", _scale_);
+            scale -= 0.1;
+            if (scale < 0.0)
+                scale = 0.0;
+            RCLCPP_INFO(nh->get_logger(), "Scale is %0.1f", scale);
             break;
         case KEYCODE_0:
             motor_steps.data = 0;
@@ -205,8 +207,8 @@ void TeleopCmd::keyLoop()
         }
 
         geometry_msgs::msg::Twist twist;
-        twist.angular.z = _scale_ * angular_;
-        twist.linear.x = _scale_ * linear_;
+        twist.angular.z = scale * angular;
+        twist.linear.x = scale * linear;
         if (dirty == true)
         {
             twist_pub_->publish(twist);
