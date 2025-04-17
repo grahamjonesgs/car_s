@@ -52,6 +52,10 @@ add_executable(key_cmd src/key_cmd.cpp)
 target_link_libraries(key_cmd)
 ament_target_dependencies(key_cmd rclcpp std_msgs tf2_geometry_msgs)
 
+add_executable(pi_power_control src/pi_power_control.cpp)
+target_link_libraries(pi_power_control pigpiod_if2)
+ament_target_dependencies(pi_power_control rclcpp)
+
 install(TARGETS
   car_s_controller
   car_s_controller_accel

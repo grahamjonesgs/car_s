@@ -152,7 +152,7 @@ int main(int argc, char **argv)
     signal(SIGKILL, sigintHandler);
     if ((pi = pigpio_start(NULL, NULL)) < 0)
     {
-        RCLCPP_INFO(nh->get_logger(), "gpio init failed");
+        RCLCPP_ERROR(nh->get_logger(), "gpio init failed");
         return 1;
     }
     // Set up MPU6050

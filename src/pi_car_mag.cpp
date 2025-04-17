@@ -260,8 +260,9 @@ void mag_timer_callback()
     sensor_msgs::msg::MagneticField mag_msg;
 
     status = i2c_read_byte_data(pi, i2ch, QMC5883L_STATUS);
-    if (!status & QMC5883L_STATUS_DRDY)
+    if (!(status & QMC5883L_STATUS_DRDY))
     {
+        RCLCPP_ERROR(nh->get_logger(), "Magnetometer not ready");
         return;
     }
 
@@ -286,7 +287,7 @@ int main(int argc, char **argv)
     signal(SIGKILL, sigintHandler);
     if ((pi = pigpio_start(NULL, NULL)) < 0)
     {
-        RCLCPP_INFO(nh->get_logger(), "gpio init failed");
+        RCLCPP_ERROR(nh->get_logger(), "gpio init failed");
         return 1;
     }
 

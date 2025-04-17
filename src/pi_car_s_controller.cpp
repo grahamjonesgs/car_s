@@ -303,7 +303,7 @@ void odom_timer_callback()
         }
         angle.data = 180 * theta / M_PI; // Send angle in degrees
         current_angle = angle.data;
-        if (abs((current_angle - target_angle) > angle_delta) && (turn_started == false))
+        if ((abs(current_angle - target_angle) > angle_delta) && (turn_started == false))
         {
                 turn_started = true;
                 RCLCPP_INFO(nh->get_logger(), "Turn started set to true");
@@ -429,7 +429,7 @@ int main(int argc, char **argv)
         signal(SIGKILL, sigintHandler);
         if ((pi = pigpio_start(NULL, NULL)) < 0)
         {
-                RCLCPP_INFO(nh->get_logger(), "gpio init failed");
+                RCLCPP_ERROR(nh->get_logger(), "gpio init failed");
                 return 1;
         }
 
