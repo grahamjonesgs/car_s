@@ -1,27 +1,27 @@
 /*
                 TOP SSD Card
 
-   Func     Colour  GPIO  pin	pin  GPIO	Colour	Func
-   IMU Vcc  Brown   3V3   1	2     5v
+   Func     Colour  GPIO  pin   pin  GPIO       Colour  Func
+   IMU Vcc  Brown   3V3   1     2     5v
    IMU SDA          2     3     4     5v   5v to board
    IMU SCL          3     5     6     GND  GND to board
-                    4	  7	8     14   ENABLE
-   IMU GND          GND   9	10    15   RF DIR (A) xxxxxx
-                    17    11	12    18   RF STEP (A)
+                    4     7     8     14   ENABLE
+   IMU GND          GND   9     10    15   RF DIR (A) xxxxxx
+                    17    11    12    18   RF STEP (A)
                     27    13    14    GND  LED GND
-                    22	  15	16    23   LED Red
-                    3V3	  17	18    24   LED Blue
-   M0 SUBSTEP       10	  19	20    GND
-   M1 SUBSTEP       9	  21	22    25
-   M2 SUBSTEP       11	  23	24    8
-                    GND   25	26    7
-                    0	  27	28    1
-   SW YELLOW        5	  29	30   GND
-   LF DIR (Y)       6	  31    32   12   RB STEP (Z)
-   LF STEP (Y)      13    33	34   GND
-   LB STEP (X)      19    35	36   16   RB DIR (Z) xxxx
-   LB DIR (X)	    26	  37	38   20
-                    GND   39	40   21
+                    22    15    16    23   LED Red
+                    3V3   17    18    24   LED Blue
+   M0 SUBSTEP       10    19    20    GND
+   M1 SUBSTEP       9     21    22    25
+   M2 SUBSTEP       11    23    24    8
+                    GND   25    26    7
+                    0     27    28    1
+   SW YELLOW        5     29    30   GND
+   LF DIR (Y)       6     31    32   12   RB STEP (Z)
+   LF STEP (Y)      13    33    34   GND
+   LB STEP (X)      19    35    36   16   RB DIR (Z) xxxx
+   LB DIR (X)       26    37    38   20
+                    GND   39    40   21
 
                   Bottom Camera Port
  */
@@ -32,7 +32,7 @@
 #include "std_msgs/msg/int32.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "tf2_ros/transform_broadcaster.h"
-#include "tf2/LinearMath/Quaternion.hpp"
+#include "tf2/LinearMath/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include <iostream>
@@ -40,6 +40,9 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <math.h>
+#include <chrono>
+
+using namespace std::chrono;
 
 // Pin definition
 #define LEFT_FRONT_STEP_PIN 13  // Y Controller
@@ -64,18 +67,14 @@
 
 // Hardware PWM frequency and constants
 #define MAX_SPEED_FREQ 24000
-#define MESSAGE_TIMEOUT 1 // Time to stop if no message received
-#define ODOM_TIMEOUT 1    // Sets frequency of speed check and report
+#define MESSAGE_TIMEOUT 0.1 // Time to stop if no message received (reduced for smoother response)
+#define ODOM_TIMEOUT 0.05   // Sets frequency of speed check and report (increased for smoother odom)
 #define LED_FLASH_TIMER 1
 #define SUB_STEPS 32
 #define STEPS_PER_REVOLUTION 200
 #define M_PER_REVOLUTION 0.21
 #define WHEEL_SEPARATION 0.2337 // 0.25 * 360 / 385
 #define ANGLE_DELTA 3
-
-// Max speed at 32 sub steps is 24000 / (32*200) = 7.5 rev/s which is 1.57 m/s
-// Total formula is (speed / M_PER_REVOLUTION) * STEPS_PER_REVOLUTION * sub_steps
-// Formula for 1 m/s is (1 / M_PER_REVOLUTION) * STEPS_PER_REVOLUTION * sub_steps
 
 // Motor Modes
 #define MODE_CONTINUOUS 1
@@ -91,6 +90,7 @@
 #define TOPIC_STEPS "motor_steps"
 #define TOPIC_FREQ "motor_max_freq"
 #define TOPIC_MODE "motor_mode"
+#define TOPIC_ACCEL "motor_accel"
 
 // Global variables
 rclcpp::TimerBase::SharedPtr message_timeout; // Timer for stop motors if no message
@@ -113,8 +113,11 @@ double theta = 0.0;
 bool left_forwards = true;
 bool right_forwards = true;
 
-float last_left_velocity = 0;
-float last_right_velocity = 0;
+float last_left_target_velocity = 0.0;
+float last_right_target_velocity = 0.0;
+float current_left_velocity = 0.0;
+float current_right_velocity = 0.0;
+float acceleration_rate = 1.0; // m/s/s
 
 int sub_steps = SUB_STEPS;
 int max_speed_freq = MAX_SPEED_FREQ;
@@ -122,7 +125,9 @@ float target_angle;
 float current_angle;
 float angle_delta = ANGLE_DELTA; // Allowable angle deviance for defined turn
 bool turn_started = false;       // Check if the turn has started to avoid immediate stop
+rclcpp::Time last_control_time;
 
+// Create signal handler to shutdown cleanly
 void sigintHandler([[maybe_unused]] int sig)
 {
         // Shuting down, turn off blue LED and all motors and PWM
@@ -130,6 +135,8 @@ void sigintHandler([[maybe_unused]] int sig)
         rclcpp::shutdown();
 }
 
+// Set the number of substeps for the motor
+// It takes the number of steps as input and sets the corresponding GPIO pins
 void set_substep(int steps)
 {
         int bin_steps;
@@ -151,29 +158,75 @@ void set_substep(int steps)
         sub_steps = steps;
 }
 
+// Apply acceleration to the current velocity
+// This function takes the target velocity, current velocity and time difference as input
+
+void apply_acceleration(float target_velocity, float &current_velocity, double time_diff)
+{
+        if (std::fabs(current_velocity - target_velocity) > 1e-3)
+        {
+                if (target_velocity > current_velocity)
+                {
+                        current_velocity += acceleration_rate * time_diff;
+                        if (current_velocity > target_velocity)
+                        {
+                                current_velocity = target_velocity;
+                        }
+                }
+                else
+                {
+                        current_velocity -= acceleration_rate * time_diff;
+                        if (current_velocity < target_velocity)
+                        {
+                                current_velocity = target_velocity;
+                        }
+                }
+        }
+}
+
+// Set the motor PWM based on the target velocities
+void set_motor_pwm(float left_vel, float right_vel)
+{
+        if (left_vel == 0.0)
+        {
+                hardware_PWM(pi, LEFT_FRONT_STEP_PIN, 0, 0);
+                hardware_PWM(pi, LEFT_BACK_STEP_PIN, 0, 0);
+        }
+        else
+        {
+                gpio_write(pi, LEFT_FRONT_DIR_PIN, (left_vel < 0) ? PI_LOW : PI_HIGH);
+                gpio_write(pi, LEFT_BACK_DIR_PIN, (left_vel < 0) ? PI_LOW : PI_HIGH);
+                hardware_PWM(pi, LEFT_FRONT_STEP_PIN, static_cast<unsigned int>(STEPS_PER_REVOLUTION * sub_steps * std::abs(left_vel) / M_PER_REVOLUTION), 500000); // 0.5 duty cycle
+                hardware_PWM(pi, LEFT_BACK_STEP_PIN, static_cast<unsigned int>(STEPS_PER_REVOLUTION * sub_steps * std::abs(left_vel) / M_PER_REVOLUTION), 500000);  // 0.5 duty cycle
+        }
+
+        if (right_vel == 0.0)
+        {
+                hardware_PWM(pi, RIGHT_FRONT_STEP_PIN, 0, 0);
+                hardware_PWM(pi, RIGHT_BACK_STEP_PIN, 0, 0);
+        }
+        else
+        {
+                gpio_write(pi, RIGHT_FRONT_DIR_PIN, (right_vel > 0) ? PI_LOW : PI_HIGH);
+                gpio_write(pi, RIGHT_BACK_DIR_PIN, (right_vel > 0) ? PI_LOW : PI_HIGH);
+                hardware_PWM(pi, RIGHT_FRONT_STEP_PIN, static_cast<unsigned int>(STEPS_PER_REVOLUTION * sub_steps * std::abs(right_vel) / M_PER_REVOLUTION), 500000); // 0.5 duty cycle
+                hardware_PWM(pi, RIGHT_BACK_STEP_PIN, static_cast<unsigned int>(STEPS_PER_REVOLUTION * sub_steps * std::abs(right_vel) / M_PER_REVOLUTION), 500000);  // 0.5 duty cycle
+        }
+}
+
 void motor_set_target(float speed, float turn)
 {
-        // Send output to motors based on speed and turn
-        // Positive speed forwards
-        // Positive turn clockwise - slower right
-        float left_velocity;
-        float right_velocity;
-        RCLCPP_INFO(nh->get_logger(), "In motor control, speed %.2f, turn %.2f", speed, turn);
+        // Calculate target velocities for left and right wheels
+        float left_target_velocity;
+        float right_target_velocity;
 
-        /*
-        
-        NOTE Removed code to check for invalid values, as trying abs speed values for ROS2 in m/s
-
-        Need to add code to check from max velocity and set max speed based on measurements
-        
-        if (speed < -1 || speed > 1)
-                return; // Ignore invalid values */
         if (turn < -1 || turn > 1)
-                return; // Ignore invalid values
+                return; // Ignore invalid turn values
+
         if (speed == 0)
         { // For turn on spot
-                left_velocity = turn;
-                right_velocity = -turn;
+                left_target_velocity = turn;
+                right_target_velocity = -turn;
         }
         else
         {
@@ -182,59 +235,44 @@ void motor_set_target(float speed, float turn)
                         target_angle = current_angle;
                         turn_started = false;
                 }
-                if (turn < 0)
-                {
-                        left_velocity = speed * (1 - turn);
-                        right_velocity = speed * (1 + turn);
-                }
-                else
-                {
-                        left_velocity = speed * (1 - turn);
-                        right_velocity = speed * (1 + turn);
-                }
+                left_target_velocity = speed * (1 - turn);
+                right_target_velocity = speed * (1 + turn);
         }
-        RCLCPP_INFO(nh->get_logger(), "Left v %.2f, right speed %.2f", left_velocity, right_velocity);
-        if ((speed == 0 && turn == 0))
-        {
-                hardware_PWM(pi, LEFT_FRONT_STEP_PIN, 0, 0);
-                hardware_PWM(pi, LEFT_BACK_STEP_PIN, 0, 0);
-                hardware_PWM(pi, RIGHT_FRONT_STEP_PIN, 0, 0);
-                hardware_PWM(pi, RIGHT_BACK_STEP_PIN, 0, 0);
-        }
-        else
-        {
 
-                if (last_left_velocity != left_velocity)
-                {
-                        gpio_write(pi, LEFT_FRONT_DIR_PIN, (left_velocity < 0) ? PI_LOW : PI_HIGH);
-                        gpio_write(pi, LEFT_BACK_DIR_PIN, (left_velocity < 0) ? PI_LOW : PI_HIGH);
-                        hardware_PWM(pi, LEFT_FRONT_STEP_PIN, STEPS_PER_REVOLUTION * sub_steps * abs(left_velocity) / M_PER_REVOLUTION, 1e6 * 0.5);
-                        hardware_PWM(pi, LEFT_BACK_STEP_PIN, STEPS_PER_REVOLUTION * sub_steps * abs(left_velocity) / M_PER_REVOLUTION, 1e6 * 0.5);
-                }
-                if (last_right_velocity != right_velocity)
-                {
-                        gpio_write(pi, RIGHT_FRONT_DIR_PIN, (right_velocity > 0) ? PI_LOW : PI_HIGH);
-                        gpio_write(pi, RIGHT_BACK_DIR_PIN, (right_velocity > 0) ? PI_LOW : PI_HIGH);
-                        hardware_PWM(pi, RIGHT_FRONT_STEP_PIN, STEPS_PER_REVOLUTION * sub_steps * abs(right_velocity) / M_PER_REVOLUTION, 1e6 * 0.5);
-                        hardware_PWM(pi, RIGHT_BACK_STEP_PIN, STEPS_PER_REVOLUTION * sub_steps * abs(right_velocity) / M_PER_REVOLUTION, 1e6 * 0.5);
-                }
-        }
-        left_forwards = (left_velocity >= 0) ? 1 : 0;
-        right_forwards = (right_velocity >= 0) ? 1 : 0;
-        last_left_velocity = left_velocity;
-        last_right_velocity = right_velocity;
+        last_left_target_velocity = left_target_velocity;
+        last_right_target_velocity = right_target_velocity;
 }
 
+void control_loop()
+{
+        rclcpp::Time current_time = nh->now();
+        double time_diff = (current_time - last_control_time).seconds();
+
+        apply_acceleration(last_left_target_velocity, current_left_velocity, time_diff);
+        apply_acceleration(last_right_target_velocity, current_right_velocity, time_diff);
+
+        set_motor_pwm(current_left_velocity, current_right_velocity);
+
+        left_forwards = (current_left_velocity >= 0) ? 1 : 0;
+        right_forwards = (current_right_velocity >= 0) ? 1 : 0;
+
+        last_control_time = current_time;
+}
+
+// Create callback on message timeout to stop motors
+// This function is used to stop the motors if no message is received within the specified timeout
 void message_timeout_callback()
 {
-        // ROS callback if not message received to stop motors
-        if ((last_left_velocity != 0 || last_right_velocity != 0) && motor_mode == MODE_AUTO)
+        // ROS callback if no message received to stop motors
+        if ((last_left_target_velocity != 0.0 || last_right_target_velocity != 0.0) && motor_mode == MODE_AUTO)
         {
-                motor_set_target(0.0, 0.0);
-                message_timeout->reset(); // reset no message timeout
-                RCLCPP_INFO(nh->get_logger(), "Timeout");
+                motor_set_target(0.0, 0.0); // Set target velocities to zero
+                message_timeout->reset();   // reset no message timeout
+                RCLCPP_INFO(nh->get_logger(), "Timeout - stopping motors");
         }
 }
+
+// Create callback on LED timer to control the blue LED
 
 void LED_timer_callback()
 {
@@ -251,17 +289,31 @@ void LED_timer_callback()
         }
 }
 
+// Create callback on speed encoded pin rising edge
 static void left_speed_callback([[maybe_unused]] int pi, [[maybe_unused]] uint32_t gpio, [[maybe_unused]] uint32_t level, [[maybe_unused]] uint32_t tick)
 {
         // Pigpio callback on speed encoded pin rising edge
         (left_forwards) ? left_step_count++ : left_step_count--;
 }
 
+// Create callback on speed encoded pin rising edge
 static void right_speed_callback([[maybe_unused]] int pi, [[maybe_unused]] uint32_t gpio, [[maybe_unused]] uint32_t level, [[maybe_unused]] uint32_t tick)
 {
         // Pigpio callback on speed encoded pin rising edge
         (right_forwards) ? right_step_count++ : right_step_count--;
 }
+
+// Create callback on motor_accel message to set the acceleration rate
+void motor_accel_callback(const std_msgs::msg::Float32 &msg)
+{
+        // ROS callback on message received
+        acceleration_rate = msg.data;
+        RCLCPP_INFO(nh->get_logger(), "Setting acceleration rate to %.2f", acceleration_rate);
+}
+
+// Create a quaternion message from yaw angle
+// This function is used to convert the yaw angle to a quaternion for odometry
+// This is used to set the orientation of the robot in the odometry message
 
 auto createQuaternionMsgFromYaw(double yaw)
 {
@@ -270,6 +322,10 @@ auto createQuaternionMsgFromYaw(double yaw)
         return tf2::toMsg(q);
 }
 
+// Create odometry message and publish it
+// This function is used to create the odometry message and publish it
+// It calculates the position and orientation of the robot based on the wheel speeds
+// It also publishes the wheel speeds and angle to the corresponding topics
 void odom_timer_callback()
 {
         // ROS callback on time to send wheel speeds and odom
@@ -309,10 +365,10 @@ void odom_timer_callback()
                 RCLCPP_INFO(nh->get_logger(), "Turn started set to true");
         }
 
-        if (turn_started && abs(current_angle - target_angle) < angle_delta && motor_mode == MODE_360 && (last_left_velocity != 0 || last_right_velocity != 0))
+        if (turn_started && abs(current_angle - target_angle) < angle_delta && motor_mode == MODE_360 && (last_left_target_velocity != 0.0 || last_right_target_velocity != 0.0))
         {
                 RCLCPP_INFO(nh->get_logger(), "Target angle reached");
-                motor_set_target(0.0, 0.0);
+                motor_set_target(0.0, 0.0); // Set target velocities to zero to stop
         }
 
         x_delta = cos(theta) * (left_speed.data + right_speed.data) / 2; // approx for small angle delta
@@ -347,9 +403,9 @@ void odom_timer_callback()
 
         // set the velocity
         odom.child_frame_id = "base_link";
-        odom.twist.twist.linear.x = x_delta;
-        odom.twist.twist.linear.y = y_delta;
-        odom.twist.twist.angular.z = theta_delta;
+        odom.twist.twist.linear.x = x_delta / ODOM_TIMEOUT;
+        odom.twist.twist.linear.y = y_delta / ODOM_TIMEOUT;
+        odom.twist.twist.angular.z = theta_delta / ODOM_TIMEOUT;
 
         left_speed_pub->publish(left_speed);
         right_speed_pub->publish(right_speed);
@@ -357,6 +413,7 @@ void odom_timer_callback()
         odom_pub->publish(odom);
 }
 
+// Create callback on velocity message to set the target speed and turn
 void velocity_callback(const geometry_msgs::msg::Twist &msg)
 {
         // ROS callback on message received
@@ -364,6 +421,7 @@ void velocity_callback(const geometry_msgs::msg::Twist &msg)
         motor_set_target(msg.linear.x, msg.angular.z);
 }
 
+// Create callback on steps message to set the number of steps
 void steps_callback(const std_msgs::msg::Int32 &msg)
 {
         // ROS callback on message received
@@ -371,6 +429,7 @@ void steps_callback(const std_msgs::msg::Int32 &msg)
         set_substep(msg.data);
 }
 
+// Create callback on frequency message to set the maximum speed frequency
 void freq_callback(const std_msgs::msg::Int32 &msg)
 {
         // ROS callback on message received
@@ -378,6 +437,8 @@ void freq_callback(const std_msgs::msg::Int32 &msg)
         max_speed_freq = msg.data;
 }
 
+// Create callback on motor mode message to set the motor mode
+// This function is used to set the motor mode based on the received message
 void motor_mode_callback(const std_msgs::msg::Int32 &msg)
 {
         // ROS callback on message received
@@ -401,6 +462,9 @@ void motor_mode_callback(const std_msgs::msg::Int32 &msg)
         }
 }
 
+// Create callback on motor on message to set the motor state
+// This function is used to enable or disable the motor based on the received message
+// It also controls the blue LED state based on the motor state
 void motor_callback(const std_msgs::msg::Bool &msg)
 {
         // ROS callback on message received
@@ -417,12 +481,16 @@ void motor_callback(const std_msgs::msg::Bool &msg)
         }
 }
 
+// Main function
+// This function initializes the GPIO pins, sets up the ROS node and subscriptions, and starts the main loop
+// It also handles the shutdown process and cleans up the GPIO pins
+
 int main(int argc, char **argv)
 {
         rclcpp::InitOptions init_options;
         rclcpp::init(argc, argv, init_options);
-        nh = rclcpp::Node::make_shared("pi_car_s_controller");
-        RCLCPP_INFO(nh->get_logger(), "Started Pi Car Stepper Controller");
+        nh = rclcpp::Node::make_shared("pi_car_s_controller_accel");
+        RCLCPP_INFO(nh->get_logger(), "Started Pi Car Stepper Controller with Acceleration");
 
         signal(SIGINT, sigintHandler);
         signal(SIGTERM, sigintHandler);
@@ -462,15 +530,19 @@ int main(int argc, char **argv)
             TOPIC_STEPS, 1, steps_callback);
         auto sub_set_freq = nh->create_subscription<std_msgs::msg::Int32>(
             TOPIC_FREQ, 1, freq_callback);
+        auto sub_motor_accel = nh->create_subscription<std_msgs::msg::Float32>(
+            TOPIC_ACCEL, 1, motor_accel_callback);
         message_timeout = nh->create_wall_timer(std::chrono::duration<double>(MESSAGE_TIMEOUT), std::bind(&message_timeout_callback));
         auto odom_timer = nh->create_wall_timer(std::chrono::duration<double>(ODOM_TIMEOUT), [=]()
                                                 { odom_timer_callback(); });
+        auto control_timer = nh->create_wall_timer(std::chrono::duration<double>(0.01), std::bind(&control_loop)); // 100Hz control loop
         auto LED_timer = nh->create_wall_timer(std::chrono::duration<double>(LED_FLASH_TIMER), std::bind(&LED_timer_callback));
         odom_pub = nh->create_publisher<nav_msgs::msg::Odometry>("odom", 50);
         left_speed_pub = nh->create_publisher<std_msgs::msg::Float32>(TOPIC_LEFT_SPEED, 2);
         right_speed_pub = nh->create_publisher<std_msgs::msg::Float32>(TOPIC_RIGHT_SPEED, 2);
         angle_pub = nh->create_publisher<std_msgs::msg::Float32>(TOPIC_ANGLE, 2);
         odom_broadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(nh);
+        last_control_time = nh->now(); // Initialize last control time
 
         callback(pi, LEFT_FRONT_STEP_PIN, RISING_EDGE, left_speed_callback);
         callback(pi, RIGHT_FRONT_STEP_PIN, RISING_EDGE, right_speed_callback);

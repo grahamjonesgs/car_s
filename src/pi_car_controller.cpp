@@ -118,7 +118,7 @@ float linear_speed(float input_speed)
     return abs(return_speed);
 }
 
-void motor_control(float speed, float turn)
+void motor_set_target(float speed, float turn)
 {
     // Send output to motors based on speed and turn
     // Positive speed forwards
@@ -215,16 +215,16 @@ void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr msg)
     msg_pub->publish(status_msg);
 
     if (front_block && (current_speed > 0))
-        motor_control(0.0, 0.0);
+        motor_set_target(0.0, 0.0);
     if (back_block && (current_speed < 0))
-        motor_control(0.0, 0.0);
+        motor_set_target(0.0, 0.0);
 }
 
 void message_timeout_callback()
 {
     // ROS callback if not message received to stop motors
     current_speed = 0.0;
-    motor_control(0.0, 0.0);
+    motor_set_target(0.0, 0.0);
 }
 
 void LED_timer_callback()
@@ -269,7 +269,7 @@ void velocity_callback(const geometry_msgs::msg::Twist msg)
     if ((msg.linear.x < 0) && back_block)
         return;
     current_speed = msg.linear.x;
-    motor_control(msg.linear.x, msg.angular.z);
+    motor_set_target(msg.linear.x, msg.angular.z);
 }
 
 void motor_callback(const std_msgs::msg::Bool msg)
