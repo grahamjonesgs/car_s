@@ -278,7 +278,7 @@ void mag_timer_callback()
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
-    auto nh = rclcpp::Node::make_shared("pi_car_mag");
+    nh = rclcpp::Node::make_shared("pi_car_mag");
     RCLCPP_INFO(nh->get_logger(), "Started Pi Car mag");
 
     signal(SIGINT, sigintHandler);
