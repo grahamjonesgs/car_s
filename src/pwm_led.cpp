@@ -47,8 +47,9 @@ int main(int argc, char **argv)
 {
 
     rclcpp::init(argc, argv);
-    RCLCPP_INFO(nh->get_logger(), "Started pwm LED Node");
     nh = rclcpp::Node::make_shared("pwm_led_node");
+    RCLCPP_INFO(nh->get_logger(), "Started pwm LED Node");
+
     if ((pi = pigpio_start(NULL, NULL)) < 0)
     {
         RCLCPP_INFO(nh->get_logger(), "gpio init failed");
