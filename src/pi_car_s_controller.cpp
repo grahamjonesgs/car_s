@@ -485,7 +485,7 @@ int main(int argc, char **argv)
         hardware_PWM(pi, LEFT_BACK_STEP_PIN, 0, 0);
         hardware_PWM(pi, RIGHT_FRONT_STEP_PIN, 0, 0);
         hardware_PWM(pi, RIGHT_BACK_STEP_PIN, 0, 0);
-        pigpio_stop(pi);                       // Stop pigpio
         gpio_write(pi, BLUE_LED_PIN, PI_HIGH); // Disable blue LED
         gpio_write(pi, RED_LED_PIN, PI_LOW);   // Disable red LED
+        pigpio_stop(pi);                       // Stop pigpio
 }

@@ -278,7 +278,7 @@ void mag_timer_callback()
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
-    nh = rclcpp::Node::make_shared("pi_car_mag");
+    auto nh = rclcpp::Node::make_shared("pi_car_mag");
     RCLCPP_INFO(nh->get_logger(), "Started Pi Car mag");
 
     signal(SIGINT, sigintHandler);
@@ -286,24 +286,23 @@ int main(int argc, char **argv)
     signal(SIGKILL, sigintHandler);
     if ((pi = pigpio_start(NULL, NULL)) < 0)
     {
-        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "gpio init failed");
+        RCLCPP_INFO(nh->get_logger(), "gpio init failed");
         return 1;
     }
 
     i2ch = i2c_open(pi, 1, QMC5883L_ADDR, 0);
     if (i2ch < 0) {
         RCLCPP_ERROR(nh->get_logger(), "Failed to open I2C device");
-        exit(1);  // or handle accordingly
+        exit(1);  
     }
     
     QMC5883L_init();
 
     // Set up ROS
-    auto node = rclcpp::Node::make_shared("pi_car_mag");
     mag_timer = nh->create_wall_timer(
         std::chrono::duration<double>(MAG_TIMER),
         std::bind(&mag_timer_callback));
     mag_pub = nh->create_publisher<sensor_msgs::msg::MagneticField>(TOPIC_MAG, 2);
     rclcpp::spin(nh);
-    rclcpp::shutdown();
+    pigpio_stop(pi);                       // Stop pigpio
 }

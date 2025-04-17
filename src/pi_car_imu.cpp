@@ -164,4 +164,5 @@ int main(int argc, char **argv)
     imu_pub = nh->create_publisher<sensor_msgs::msg::Imu>(TOPIC_IMU, 2);
 
     rclcpp::spin(nh);
+    pigpio_stop(pi);                       // Stop pigpio
 }
