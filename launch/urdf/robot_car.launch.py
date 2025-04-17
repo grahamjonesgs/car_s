@@ -60,6 +60,20 @@ def generate_launch_description():
         output='screen',
     )
 
+    picar_imu_node = Node(
+        package='car_s',  # Replace with your package name
+        executable='car_imu', # Replace with your executable name
+        name='car_imu',
+        output='screen',
+    )
+
+    picar_mag_node = Node(
+        package='car_s',  # Replace with your package name
+        executable='car_mag', # Replace with your executable name
+        name='car_mag',
+        output='screen',
+    )
+
     # Create launch description and add actions
     ld = LaunchDescription()
     ld.add_action(declare_robot_name_arg)
@@ -67,4 +81,6 @@ def generate_launch_description():
     ld.add_action(robot_state_publisher_node)
     ld.add_action(laser_scanner_node) # Add the laser scanner node.
     ld.add_action(picar_controller_node)
+    ld.add_action(picar_imu_node)
+    ld.add_action(picar_mag_node)
     return ld

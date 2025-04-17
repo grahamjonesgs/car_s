@@ -255,7 +255,7 @@ void mag_timer_callback() {
   readRaw(&x, &y, &z, &t);
   // ROS_INFO("Raw data %i, %i,%i",x,y,z);
   mag_msg.header.stamp = nh->get_clock()->now();
-  mag_msg.header.frame_id = "imu_link";
+  mag_msg.header.frame_id = "mag_link";
   mag_msg.magnetic_field.x = (int)(x / DigitPermg);
   mag_msg.magnetic_field.y = (int)(y / DigitPermg);
   mag_msg.magnetic_field.z = (int)(z / DigitPermg);
