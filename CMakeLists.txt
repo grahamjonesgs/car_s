@@ -66,6 +66,7 @@ install(TARGETS
   car_s_controller_accel_cpp
   imu_normalize
   car_controller
+  pi_power_control
   car_imu
   car_mag
   pwm_led
