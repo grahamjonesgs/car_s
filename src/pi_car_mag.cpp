@@ -36,7 +36,7 @@
 #define TOPIC_MAG "imu/mag"
 
 // Timers
-#define MAG_TIMER 0.02 // Interval between MAG readings
+#define MAG_TIMER 0.1 // Interval between MAG readings
 
 // MPU6050 definitions
 /* The default I2C address of this chip */
@@ -262,7 +262,6 @@ void mag_timer_callback()
     status = i2c_read_byte_data(pi, i2ch, QMC5883L_STATUS);
     if (!status & QMC5883L_STATUS_DRDY)
     {
-        RCLCPP_ERROR(nh->get_logger(), "Magnetometer not ready");
         return;
     }
 
