@@ -8,5 +8,9 @@
     "python.analysis.extraPaths": [
         "/home/graham/ros2_ws/install/turtlesim/lib/python3.12/site-packages",
         "/opt/ros/jazzy/lib/python3.12/site-packages"
-    ]
+    ],
+    "files.associations": {
+        "*.hs": "haskell",
+        "functional": "cpp"
+    }
 }
