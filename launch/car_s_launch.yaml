@@ -2,7 +2,7 @@ launch:
 
 - node:
     pkg: "car_s"
-    exec: "car_s_controller"
+    exec: "car_s_controller_accel"
    
 
 - node:
