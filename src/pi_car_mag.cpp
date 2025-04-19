@@ -260,7 +260,7 @@ void mag_timer_callback()
     sensor_msgs::msg::MagneticField mag_msg;
 
     status = i2c_read_byte_data(pi, i2ch, QMC5883L_STATUS);
-    if (!(status & QMC5883L_STATUS_DRDY))
+    if (!status & QMC5883L_STATUS_DRDY)
     {
         RCLCPP_ERROR(nh->get_logger(), "Magnetometer not ready");
         return;
