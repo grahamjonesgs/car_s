@@ -77,7 +77,8 @@ const double WHEEL_SEPARATION = 0.2337;
 const double ANGLE_DELTA = 3.0;
 
 // Motor Modes
-enum class MotorMode {
+enum class MotorMode
+{
   CONTINUOUS = 1,
   AUTO = 2,
   TURN_360 = 3
@@ -98,33 +99,34 @@ class PiCarController : public rclcpp::Node
 {
 public:
   PiCarController()
-  : Node("pi_car_s_controller_accel"),
-    pi_(-1),
-    left_step_count_(0),
-    right_step_count_(0),
-    motor_on_(false),
-    motor_mode_(MotorMode::AUTO),
-    x_pos_(0.0),
-    y_pos_(0.0),
-    theta_(0.0),
-    left_forwards_(true),
-    right_forwards_(true),
-    last_left_target_velocity_(0.0),
-    last_right_target_velocity_(0.0),
-    current_left_velocity_(0.0),
-    current_right_velocity_(0.0),
-    acceleration_rate_(1.0),
-    sub_steps_(SUB_STEPS),
-    max_speed_freq_(MAX_SPEED_FREQ),
-    target_angle_(0.0),
-    current_angle_(0.0),
-    angle_delta_(ANGLE_DELTA),
-    turn_started_(false)
+      : Node("pi_car_s_controller_accel"),
+        pi_(-1),
+        left_step_count_(0),
+        right_step_count_(0),
+        motor_on_(false),
+        motor_mode_(MotorMode::AUTO),
+        x_pos_(0.0),
+        y_pos_(0.0),
+        theta_(0.0),
+        left_forwards_(true),
+        right_forwards_(true),
+        last_left_target_velocity_(0.0),
+        last_right_target_velocity_(0.0),
+        current_left_velocity_(0.0),
+        current_right_velocity_(0.0),
+        acceleration_rate_(1.0),
+        sub_steps_(SUB_STEPS),
+        max_speed_freq_(MAX_SPEED_FREQ),
+        target_angle_(0.0),
+        current_angle_(0.0),
+        angle_delta_(ANGLE_DELTA),
+        turn_started_(false)
   {
     RCLCPP_INFO(this->get_logger(), "Started Pi Car Stepper Controller with Acceleration (C++ Class)");
 
     // Initialize pigpio
-    if ((pi_ = pigpio_start(nullptr, nullptr)) < 0) {
+    if ((pi_ = pigpio_start(nullptr, nullptr)) < 0)
+    {
       RCLCPP_ERROR(this->get_logger(), "gpio init failed");
       rclcpp::shutdown();
       return;
@@ -150,17 +152,17 @@ public:
 
     // ROS subscriptions
     sub_velocity_ = this->create_subscription<geometry_msgs::msg::Twist>(
-      TOPIC_CMD_VEL, 2, std::bind(&PiCarController::velocity_callback, this, std::placeholders::_1));
+        TOPIC_CMD_VEL, 2, std::bind(&PiCarController::velocity_callback, this, std::placeholders::_1));
     sub_motor_ = this->create_subscription<std_msgs::msg::Bool>(
-      TOPIC_MOTOR, 1, std::bind(&PiCarController::motor_callback, this, std::placeholders::_1));
+        TOPIC_MOTOR, 1, std::bind(&PiCarController::motor_callback, this, std::placeholders::_1));
     sub_motor_mode_ = this->create_subscription<std_msgs::msg::Int32>(
-      TOPIC_MODE, 1, std::bind(&PiCarController::motor_mode_callback, this, std::placeholders::_1));
+        TOPIC_MODE, 1, std::bind(&PiCarController::motor_mode_callback, this, std::placeholders::_1));
     sub_set_steps_ = this->create_subscription<std_msgs::msg::Int32>(
-      TOPIC_STEPS, 1, std::bind(&PiCarController::steps_callback, this, std::placeholders::_1));
+        TOPIC_STEPS, 1, std::bind(&PiCarController::steps_callback, this, std::placeholders::_1));
     sub_set_freq_ = this->create_subscription<std_msgs::msg::Int32>(
-      TOPIC_FREQ, 1, std::bind(&PiCarController::freq_callback, this, std::placeholders::_1));
+        TOPIC_FREQ, 1, std::bind(&PiCarController::freq_callback, this, std::placeholders::_1));
     sub_motor_accel_ = this->create_subscription<std_msgs::msg::Float32>(
-      TOPIC_ACCEL, 1, std::bind(&PiCarController::motor_accel_callback, this, std::placeholders::_1));
+        TOPIC_ACCEL, 1, std::bind(&PiCarController::motor_accel_callback, this, std::placeholders::_1));
 
     // ROS publishers
     odom_pub_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", 50);
@@ -173,20 +175,20 @@ public:
 
     // Timers
     message_timeout_timer_ = this->create_wall_timer(
-      std::chrono::duration<double>(MESSAGE_TIMEOUT),
-      std::bind(&PiCarController::message_timeout_callback, this));
+        std::chrono::duration<double>(MESSAGE_TIMEOUT),
+        std::bind(&PiCarController::message_timeout_callback, this));
     odom_timer_ = this->create_wall_timer(
-      std::chrono::duration<double>(ODOM_TIMEOUT),
-      std::bind(&PiCarController::odom_timer_callback, this));
+        std::chrono::duration<double>(ODOM_TIMEOUT),
+        std::bind(&PiCarController::odom_timer_callback, this));
     control_timer_ = this->create_wall_timer(
-      10ms, // 100Hz control loop
-      std::bind(&PiCarController::control_loop, this));
+        10ms, // 100Hz control loop
+        std::bind(&PiCarController::control_loop, this));
     led_timer_ = this->create_wall_timer(
-      std::chrono::duration<double>(LED_FLASH_TIMER),
-      std::bind(&PiCarController::led_timer_callback, this));
+        std::chrono::duration<double>(LED_FLASH_TIMER),
+        std::bind(&PiCarController::led_timer_callback, this));
 
     // Pigpio callbacks for speed encoders
-    callback_ex(pi_, LEFT_FRONT_STEP_PIN, RISING_EDGE, left_speed_callback_static,this);
+    callback_ex(pi_, LEFT_FRONT_STEP_PIN, RISING_EDGE, left_speed_callback_static, this);
     callback_ex(pi_, RIGHT_FRONT_STEP_PIN, RISING_EDGE, right_speed_callback_static, this);
 
     gpio_write(pi_, ENABLE_PIN, PI_HIGH); // Disable drive initially
@@ -271,67 +273,79 @@ private:
 
   void apply_acceleration(float target_velocity, float &current_velocity, double time_diff)
   {
-    if (std::fabs(current_velocity - target_velocity) > 1e-3) {
-      if (target_velocity > current_velocity) {
+    if (std::fabs(current_velocity - target_velocity) > 1e-3)
+    {
+      if (target_velocity > current_velocity)
+      {
         current_velocity += acceleration_rate_ * time_diff;
-        if (current_velocity > target_velocity) {
+        if (current_velocity > target_velocity)
+        {
           current_velocity = target_velocity;
         }
-      } else {
+      }
+      else
+      {
         current_velocity -= acceleration_rate_ * time_diff;
-        if (current_velocity < target_velocity) {
+        if (current_velocity < target_velocity)
+        {
           current_velocity = target_velocity;
         }
       }
     }
   }
 
-  void set_motor_pwm(float left_vel, float right_vel)
-  {
-    if (left_vel == 0.0) {
-      hardware_PWM(pi_, LEFT_FRONT_STEP_PIN, 0, 0);
-      hardware_PWM(pi_, LEFT_BACK_STEP_PIN, 0, 0);
-    } else {
-      gpio_write(pi_, LEFT_FRONT_DIR_PIN, (left_vel < 0) ? PI_LOW : PI_HIGH);
-      gpio_write(pi_, LEFT_BACK_DIR_PIN, (left_vel < 0) ? PI_LOW : PI_HIGH);
-      hardware_PWM(
-        pi_, LEFT_FRONT_STEP_PIN,
-        static_cast<unsigned int>(STEPS_PER_REVOLUTION * sub_steps_ * std::abs(left_vel) / M_PER_REVOLUTION),
-        500000); // 0.5 duty cycle
-      hardware_PWM(
-        pi_, LEFT_BACK_STEP_PIN,
-        static_cast<unsigned int>(STEPS_PER_REVOLUTION * sub_steps_ * std::abs(left_vel) / M_PER_REVOLUTION),
-        500000);  // 0.5 duty cycle
-    }
+  // Set the left motor PWM based on the target velocities
+void set_motor_pwm_left(float left_vel)
+{
+        if (left_vel == 0.0)
+        {
+                hardware_PWM(pi_, LEFT_FRONT_STEP_PIN, 0, 0);
+                hardware_PWM(pi_, LEFT_BACK_STEP_PIN, 0, 0);
+        }
+        else
+        {
+                gpio_write(pi_, LEFT_FRONT_DIR_PIN, (left_vel < 0) ? PI_LOW : PI_HIGH);
+                gpio_write(pi_, LEFT_BACK_DIR_PIN, (left_vel < 0) ? PI_LOW : PI_HIGH);
+                hardware_PWM(pi_, LEFT_FRONT_STEP_PIN, static_cast<unsigned int>(STEPS_PER_REVOLUTION * sub_steps_ * std::abs(left_vel) / M_PER_REVOLUTION), 500000); // 0.5 duty cycle
+                hardware_PWM(pi_, LEFT_BACK_STEP_PIN, static_cast<unsigned int>(STEPS_PER_REVOLUTION * sub_steps_ * std::abs(left_vel) / M_PER_REVOLUTION), 500000);  // 0.5 duty cycle
+        }
+}
 
-    if (right_vel == 0.0) {
-      hardware_PWM(pi_, RIGHT_FRONT_STEP_PIN, 0, 0);
-      hardware_PWM(pi_, RIGHT_BACK_STEP_PIN, 0, 0);
-    } else {
-      gpio_write(pi_, RIGHT_FRONT_DIR_PIN, (right_vel > 0) ? PI_LOW : PI_HIGH);
-      gpio_write(pi_, RIGHT_BACK_DIR_PIN, (right_vel > 0) ? PI_LOW : PI_HIGH);
-      hardware_PWM(
-        pi_, RIGHT_FRONT_STEP_PIN,
-        static_cast<unsigned int>(STEPS_PER_REVOLUTION * sub_steps_ * std::abs(right_vel) / M_PER_REVOLUTION),
-        500000); // 0.5 duty cycle
-      hardware_PWM(
-        pi_, RIGHT_BACK_STEP_PIN,
-        static_cast<unsigned int>(STEPS_PER_REVOLUTION * sub_steps_ * std::abs(right_vel) / M_PER_REVOLUTION),
-        500000);  // 0.5 duty cycle
-    }
-  }
+
+// Set the right motor PWM based on the target velocities
+void set_motor_pwm_right(float right_vel)
+{
+
+        if (right_vel == 0.0)
+        {
+                hardware_PWM(pi_, RIGHT_FRONT_STEP_PIN, 0, 0);
+                hardware_PWM(pi_, RIGHT_BACK_STEP_PIN, 0, 0);
+        }
+        else
+        {
+                gpio_write(pi_, RIGHT_FRONT_DIR_PIN, (right_vel > 0) ? PI_LOW : PI_HIGH);
+                gpio_write(pi_, RIGHT_BACK_DIR_PIN, (right_vel > 0) ? PI_LOW : PI_HIGH);
+                hardware_PWM(pi_, RIGHT_FRONT_STEP_PIN, static_cast<unsigned int>(STEPS_PER_REVOLUTION * sub_steps_ * std::abs(right_vel) / M_PER_REVOLUTION), 500000); // 0.5 duty cycle
+                hardware_PWM(pi_, RIGHT_BACK_STEP_PIN, static_cast<unsigned int>(STEPS_PER_REVOLUTION * sub_steps_ * std::abs(right_vel) / M_PER_REVOLUTION), 500000);  // 0.5 duty cycle
+        }
+}
 
   void motor_set_target(float speed, float turn)
   {
-    if (turn < -1.0 || turn > 1.0) {
+    if (turn < -1.0 || turn > 1.0)
+    {
       return; // Ignore invalid turn values
     }
 
-    if (speed == 0.0) { // For turn on spot
+    if (speed == 0.0)
+    { // For turn on spot
       last_left_target_velocity_ = turn;
       last_right_target_velocity_ = -turn;
-    } else {
-      if (motor_mode_ == MotorMode::TURN_360) {
+    }
+    else
+    {
+      if (motor_mode_ == MotorMode::TURN_360)
+      {
         target_angle_ = current_angle_;
         turn_started_ = false;
       }
@@ -348,7 +362,18 @@ private:
     apply_acceleration(last_left_target_velocity_, current_left_velocity_, time_diff);
     apply_acceleration(last_right_target_velocity_, current_right_velocity_, time_diff);
 
-    set_motor_pwm(current_left_velocity_, current_right_velocity_);
+    // Only set PWM if the target velocity has changed
+    if (std::fabs(last_left_target_velocity_ - current_left_velocity_) > 1e-3)
+    {
+            set_motor_pwm_left(current_left_velocity_);
+    }
+
+    if (std::fabs(last_right_target_velocity_ - current_right_velocity_) > 1e-3)
+    {
+            set_motor_pwm_right(current_left_velocity_);
+    }
+   
+    //set_motor_pwm(current_left_velocity, current_right_velocity);
 
     left_forwards_ = (current_left_velocity_ >= 0.0);
     right_forwards_ = (current_right_velocity_ >= 0.0);
@@ -360,7 +385,8 @@ private:
   {
     // ROS callback if no message received to stop motors
     if ((last_left_target_velocity_ != 0.0 || last_right_target_velocity_ != 0.0) &&
-        motor_mode_ == MotorMode::AUTO) {
+        motor_mode_ == MotorMode::AUTO)
+    {
       motor_set_target(0.0, 0.0); // Set target velocities to zero
       // The timer will automatically reset if it's periodic
       RCLCPP_INFO(this->get_logger(), "Timeout - stopping motors");
@@ -370,22 +396,25 @@ private:
   void led_timer_callback()
   {
     // ROS callback for LED messages
-    if (!motor_on_) {
+    if (!motor_on_)
+    {
       // Switch to disable
       gpio_write(pi_, BLUE_LED_PIN, PI_HIGH);
-    } else {
+    }
+    else
+    {
       // Switch to enable (toggle)
       gpio_write(pi_, BLUE_LED_PIN, !gpio_read(pi_, BLUE_LED_PIN));
     }
   }
 
-  static void left_speed_callback_static( int pi, uint32_t gpio, uint32_t level, uint32_t tick, void *userdata)
+  static void left_speed_callback_static(int pi, uint32_t gpio, uint32_t level, uint32_t tick, void *userdata)
   {
     auto controller = static_cast<PiCarController *>(userdata);
     controller->left_speed_callback(pi, gpio, level, tick);
   }
 
-  void left_speed_callback([[maybe_unused]]int pi, [[maybe_unused]]uint32_t gpio, [[maybe_unused]]uint32_t level, [[maybe_unused]]uint32_t tick)
+  void left_speed_callback([[maybe_unused]] int pi, [[maybe_unused]] uint32_t gpio, [[maybe_unused]] uint32_t level, [[maybe_unused]] uint32_t tick)
   {
     // Pigpio callback on speed encoded pin rising edge
     (left_forwards_) ? left_step_count_++ : left_step_count_--;
@@ -397,7 +426,7 @@ private:
     controller->right_speed_callback(pi, gpio, level, tick);
   }
 
-  void right_speed_callback([[maybe_unused]]int pi, [[maybe_unused]]uint32_t gpio, [[maybe_unused]]uint32_t level, [[maybe_unused]]uint32_t tick)
+  void right_speed_callback([[maybe_unused]] int pi, [[maybe_unused]] uint32_t gpio, [[maybe_unused]] uint32_t level, [[maybe_unused]] uint32_t tick)
   {
     // Pigpio callback on speed encoded pin rising edge
     (right_forwards_) ? right_step_count_++ : right_step_count_--;
@@ -440,22 +469,26 @@ private:
     theta_delta = (right_delta - left_delta) / WHEEL_SEPARATION;
 
     theta_ += theta_delta;
-    if (theta_ > M_PI) {
+    if (theta_ > M_PI)
+    {
       theta_ -= 2.0 * M_PI;
     }
-    if (theta_ < -M_PI) {
+    if (theta_ < -M_PI)
+    {
       theta_ += 2.0 * M_PI;
     }
     angle_msg.data = static_cast<float>(180.0 * theta_ / M_PI); // Send angle in degrees
     current_angle_ = angle_msg.data;
-    if ((std::abs(current_angle_ - target_angle_) > angle_delta_) && (!turn_started_)) {
+    if ((std::abs(current_angle_ - target_angle_) > angle_delta_) && (!turn_started_))
+    {
       turn_started_ = true;
       RCLCPP_INFO(this->get_logger(), "Turn started set to true");
     }
 
     if (turn_started_ && std::abs(current_angle_ - target_angle_) < angle_delta_ &&
         motor_mode_ == MotorMode::TURN_360 &&
-        (last_left_target_velocity_ != 0.0 || last_right_target_velocity_ != 0.0)) {
+        (last_left_target_velocity_ != 0.0 || last_right_target_velocity_ != 0.0))
+    {
       RCLCPP_INFO(this->get_logger(), "Target angle reached");
       motor_set_target(0.0, 0.0); // Set target velocities to zero to stop
     }
@@ -526,22 +559,23 @@ private:
   void motor_mode_callback(const std_msgs::msg::Int32 &msg)
   {
     // ROS callback on message received
-    switch (msg.data) {
-      case static_cast<int>(MotorMode::AUTO):
-        motor_mode_ = MotorMode::AUTO;
-        RCLCPP_INFO(this->get_logger(), "Set to auto mode");
-        break;
-      case static_cast<int>(MotorMode::CONTINUOUS):
-        motor_mode_ = MotorMode::CONTINUOUS;
-        RCLCPP_INFO(this->get_logger(), "Set to continuous mode");
-        break;
-      case static_cast<int>(MotorMode::TURN_360):
-        motor_mode_ = MotorMode::TURN_360;
-        RCLCPP_INFO(this->get_logger(), "Set to 360 mode");
-        break;
-      default:
-        RCLCPP_INFO(this->get_logger(), "Invalid mode received %i", msg.data);
-        break;
+    switch (msg.data)
+    {
+    case static_cast<int>(MotorMode::AUTO):
+      motor_mode_ = MotorMode::AUTO;
+      RCLCPP_INFO(this->get_logger(), "Set to auto mode");
+      break;
+    case static_cast<int>(MotorMode::CONTINUOUS):
+      motor_mode_ = MotorMode::CONTINUOUS;
+      RCLCPP_INFO(this->get_logger(), "Set to continuous mode");
+      break;
+    case static_cast<int>(MotorMode::TURN_360):
+      motor_mode_ = MotorMode::TURN_360;
+      RCLCPP_INFO(this->get_logger(), "Set to 360 mode");
+      break;
+    default:
+      RCLCPP_INFO(this->get_logger(), "Invalid mode received %i", msg.data);
+      break;
     }
   }
 
@@ -549,10 +583,13 @@ private:
   {
     // ROS callback on message received
     motor_on_ = msg.data;
-    if (msg.data) {
+    if (msg.data)
+    {
       RCLCPP_INFO(this->get_logger(), "Set motor on");
       gpio_write(pi_, ENABLE_PIN, PI_LOW); // Enable drive
-    } else {
+    }
+    else
+    {
       RCLCPP_INFO(this->get_logger(), "Set motor off");
       gpio_write(pi_, ENABLE_PIN, PI_HIGH); // Disable drive
     }
