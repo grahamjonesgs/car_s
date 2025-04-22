@@ -154,6 +154,7 @@ void TeleopCmd::keyLoop()
         case KEYCODE_F:
             RCLCPP_DEBUG(nh->get_logger(), "FASTER");
             velocity += 0.1;
+            dirty = true;
             /*
             Removed the following line to allow velocity to go above 1.0 for testing
             if (velocity > 1.0)
@@ -165,6 +166,7 @@ void TeleopCmd::keyLoop()
             velocity -= 0.1;
             if (velocity < 0.0)
                 velocity = 0.0;
+            dirty = true;
             RCLCPP_INFO(nh->get_logger(), "Velocity is %0.1f", velocity);
             break;
         case KEYCODE_0:
@@ -231,7 +233,7 @@ void TeleopCmd::keyLoop()
             motor_accel_pub_->publish(motor_accel);
             RCLCPP_INFO(nh->get_logger(), "Acceleration is %0.1f", acceleration);
             break;
-        case KEYCODE_C:     
+        case KEYCODE_C:
             RCLCPP_DEBUG(nh->get_logger(), "ACCELERATION 0.5");
             acceleration = 0.5;
             motor_accel.data = acceleration;
