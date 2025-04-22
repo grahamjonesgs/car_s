@@ -273,7 +273,8 @@ private:
 
   void apply_acceleration(float target_velocity, float &current_velocity, double time_diff)
   {
-    if (std::fabs(current_velocity - target_velocity) > 1e-3)
+    //if (std::fabs(current_velocity - target_velocity) > 1e-3)
+    if (current_velocity != target_velocity)
     {
       if (target_velocity > current_velocity)
       {
@@ -297,6 +298,7 @@ private:
   // Set the left motor PWM based on the target velocities
   void set_motor_pwm_left(float left_vel)
   {
+    RCLCPP_INFO(this->get_logger(), "Left motor PWM: %f", left_vel);
     if (left_vel == 0.0)
     {
       hardware_PWM(pi_, LEFT_FRONT_STEP_PIN, 0, 0);
@@ -314,7 +316,7 @@ private:
   // Set the right motor PWM based on the target velocities
   void set_motor_pwm_right(float right_vel)
   {
-
+    RCLCPP_INFO(this->get_logger(), "Right motor PWM: %f", right_vel);
     if (right_vel == 0.0)
     {
       hardware_PWM(pi_, RIGHT_FRONT_STEP_PIN, 0, 0);
