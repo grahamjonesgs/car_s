@@ -201,7 +201,6 @@ void set_motor_pwm_left(float left_vel)
         }
 }
 
-
 // Set the right motor PWM based on the target velocities
 void set_motor_pwm_right(float right_vel)
 {
@@ -257,17 +256,17 @@ void control_loop()
         apply_acceleration(last_right_target_velocity, current_right_velocity, time_diff);
 
         // Only set PWM if the target velocity has changed
-        if (std::fabs(last_left_target_velocity - current_left_velocity) > 1e-3)
+        if (last_left_target_velocity != current_left_velocity)
         {
                 set_motor_pwm_left(current_left_velocity);
         }
 
-        if (std::fabs(last_right_target_velocity - current_right_velocity) > 1e-3)
+        if (last_right_target_velocity - current_right_velocity)
         {
                 set_motor_pwm_right(current_left_velocity);
         }
-       
-        //set_motor_pwm(current_left_velocity, current_right_velocity);
+
+        // set_motor_pwm(current_left_velocity, current_right_velocity);
 
         left_forwards = (current_left_velocity >= 0) ? 1 : 0;
         right_forwards = (current_right_velocity >= 0) ? 1 : 0;
