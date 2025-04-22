@@ -361,6 +361,7 @@ private:
     double time_diff = (current_time - last_control_time_).seconds();
 
     apply_acceleration(last_left_target_velocity_, current_left_velocity_, time_diff);
+    RCLCPP_INFO(this->get_logger(), "last_left_target_velocity_: %f, current_left_velocity: %f", last_left_target_velocity_, current_left_velocity_);
     apply_acceleration(last_right_target_velocity_, current_right_velocity_, time_diff);
 
     // Only set PWM if the target velocity has changed
