@@ -8,10 +8,10 @@
 #include <stdio.h>
 #include <termios.h>
 
-#define KEYCODE_R 0x43  // Right
-#define KEYCODE_L 0x44  // Left
-#define KEYCODE_U 0x41  // Forwards
-#define KEYCODE_D 0x42  // Backwards
+#define KEYCODE_R_ARROW 0x43  // Right
+#define KEYCODE_L_ARROW 0x44  // Left
+#define KEYCODE_U_ARROW 0x41  // Forwards
+#define KEYCODE_D_ARROW 0x42  // Backwards
 #define KEYCODE_Q 0x71  // Quit
 #define KEYCODE_F 0x66  // Faster
 #define KEYCODE_S 0x73  // Slower
@@ -123,43 +123,42 @@ void TeleopCmd::keyLoop() {
       angular = 0.5;
       dirty = true;
       break;
-    case KEYCODE_L:
+    case KEYCODE_L_ARROW:
       RCLCPP_DEBUG(nh->get_logger(), "LEFT");
       angular = 1.0;
       dirty = true;
       break;
-    case KEYCODE_R:
+    case KEYCODE_R_ARROW:
       RCLCPP_DEBUG(nh->get_logger(), "RIGHT");
       angular = -1.0;
       dirty = true;
       break;
-    case KEYCODE_U:
+    case KEYCODE_U_ARROW:
       RCLCPP_DEBUG(nh->get_logger(), "UP");
       linear = 1.0;
       dirty = true;
       break;
-    case KEYCODE_D:
+    case KEYCODE_D_ARROW:
       RCLCPP_DEBUG(nh->get_logger(), "DOWN");
       linear = -1.0;
       dirty = true;
       break;
     case KEYCODE_F:
-      RCLCPP_DEBUG(nh->get_logger(), "FASTER");
       velocity += 0.1;
+      linear = 1.0;
       dirty = true;
       /*
       Removed the following line to allow velocity to go above 1.0 for testing
       if (velocity > 1.0)
           velocity = 1.0;*/
-      RCLCPP_INFO(nh->get_logger(), "Velocity is %0.1f", velocity);
+      RCLCPP_INFO(nh->get_logger(), "Velocity is %0.2f", velocity);
       break;
     case KEYCODE_S:
-      RCLCPP_DEBUG(nh->get_logger(), "SLOWER");
       velocity -= 0.1;
       if (velocity < 0.0)
         velocity = 0.0;
       dirty = true;
-      RCLCPP_INFO(nh->get_logger(), "Velocity is %0.1f", velocity);
+      RCLCPP_INFO(nh->get_logger(), "Velocity is %0.2f", velocity);
       break;
     case KEYCODE_0:
       motor_steps.data = 0;
@@ -223,11 +222,11 @@ void TeleopCmd::keyLoop() {
       RCLCPP_INFO(nh->get_logger(), "Acceleration is %0.1f", acceleration);
       break;
     case KEYCODE_C:
-      RCLCPP_DEBUG(nh->get_logger(), "ACCELERATION 0.5");
-      acceleration = 0.5;
+      RCLCPP_DEBUG(nh->get_logger(), "ACCELERATION 0");
+      acceleration = 0.0;
       motor_accel.data = acceleration;
       motor_accel_pub_->publish(motor_accel);
-      RCLCPP_INFO(nh->get_logger(), "Acceleration is %0.1f", acceleration);
+      RCLCPP_INFO(nh->get_logger(), "Acceleration is off");
       break;
     case KEYCODE_V:
       RCLCPP_DEBUG(nh->get_logger(), "ACCELERATION 1.0");

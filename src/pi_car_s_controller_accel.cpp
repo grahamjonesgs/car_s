@@ -294,44 +294,40 @@ private:
 
   // Set the left motor PWM based on the target velocities
   void set_motor_pwm_left(float left_vel) {
-    RCLCPP_INFO(this->get_logger(), "Left motor PWM: %f", left_vel);
+    uint frequency =
+        static_cast<unsigned int>(STEPS_PER_REVOLUTION * sub_steps_ *
+                                  std::abs(left_vel) / M_PER_REVOLUTION);
+    RCLCPP_INFO(this->get_logger(), "Left motor vel: %f, freq: %i", left_vel,
+                frequency);
     if (left_vel == 0.0) {
       hardware_PWM(pi_, LEFT_FRONT_STEP_PIN, 0, 0);
       hardware_PWM(pi_, LEFT_BACK_STEP_PIN, 0, 0);
     } else {
       gpio_write(pi_, LEFT_FRONT_DIR_PIN, (left_vel < 0) ? PI_LOW : PI_HIGH);
       gpio_write(pi_, LEFT_BACK_DIR_PIN, (left_vel < 0) ? PI_LOW : PI_HIGH);
-      hardware_PWM(pi_, LEFT_FRONT_STEP_PIN,
-                   static_cast<unsigned int>(STEPS_PER_REVOLUTION * sub_steps_ *
-                                             std::abs(left_vel) /
-                                             M_PER_REVOLUTION),
+      hardware_PWM(pi_, LEFT_FRONT_STEP_PIN, frequency,
                    500000); // 0.5 duty cycle
-      hardware_PWM(pi_, LEFT_BACK_STEP_PIN,
-                   static_cast<unsigned int>(STEPS_PER_REVOLUTION * sub_steps_ *
-                                             std::abs(left_vel) /
-                                             M_PER_REVOLUTION),
+      hardware_PWM(pi_, LEFT_BACK_STEP_PIN, frequency,
                    500000); // 0.5 duty cycle
     }
   }
 
   // Set the right motor PWM based on the target velocities
   void set_motor_pwm_right(float right_vel) {
-    RCLCPP_INFO(this->get_logger(), "Right motor PWM: %f", right_vel);
+    uint frequency =
+        static_cast<unsigned int>(STEPS_PER_REVOLUTION * sub_steps_ *
+                                  std::abs(right_vel) / M_PER_REVOLUTION);
+    RCLCPP_INFO(this->get_logger(), "Right motor vel: %f, freq: %i", right_vel,
+                frequency);
     if (right_vel == 0.0) {
       hardware_PWM(pi_, RIGHT_FRONT_STEP_PIN, 0, 0);
       hardware_PWM(pi_, RIGHT_BACK_STEP_PIN, 0, 0);
     } else {
       gpio_write(pi_, RIGHT_FRONT_DIR_PIN, (right_vel > 0) ? PI_LOW : PI_HIGH);
       gpio_write(pi_, RIGHT_BACK_DIR_PIN, (right_vel > 0) ? PI_LOW : PI_HIGH);
-      hardware_PWM(pi_, RIGHT_FRONT_STEP_PIN,
-                   static_cast<unsigned int>(STEPS_PER_REVOLUTION * sub_steps_ *
-                                             std::abs(right_vel) /
-                                             M_PER_REVOLUTION),
+      hardware_PWM(pi_, RIGHT_FRONT_STEP_PIN, frequency,
                    500000); // 0.5 duty cycle
-      hardware_PWM(pi_, RIGHT_BACK_STEP_PIN,
-                   static_cast<unsigned int>(STEPS_PER_REVOLUTION * sub_steps_ *
-                                             std::abs(right_vel) /
-                                             M_PER_REVOLUTION),
+      hardware_PWM(pi_, RIGHT_BACK_STEP_PIN, frequency,
                    500000); // 0.5 duty cycle
     }
   }
@@ -566,7 +562,6 @@ private:
   // It sets the number of steps for the motor driver
   void steps_callback(const std_msgs::msg::Int32 &msg) {
     // ROS callback on message received
-    RCLCPP_INFO(this->get_logger(), "Setting to %i steps", msg.data);
     set_substep(msg.data);
   }
 
