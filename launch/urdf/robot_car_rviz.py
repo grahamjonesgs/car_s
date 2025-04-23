@@ -9,7 +9,7 @@ def generate_launch_description():
     declare_rviz_config_file_arg = DeclareLaunchArgument(
         name='rviz_config',
         default_value=os.path.join(
-            FindPackageShare(package='my_robot_description').find('my_robot_description'), # Replace
+            FindPackageShare(package='car_s').find('car_s'), # Replace
             'rviz',
             'robot_car.rviz'
         ),
