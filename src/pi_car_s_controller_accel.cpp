@@ -116,6 +116,7 @@ public:
     }
 
     // Set GPIO modes
+    gpio_write(pi_, ENABLE_PIN, PI_HIGH); // Disable drive initially
     set_mode(pi_, LEFT_FRONT_STEP_PIN, PI_OUTPUT);
     set_mode(pi_, LEFT_BACK_STEP_PIN, PI_OUTPUT);
     set_mode(pi_, RIGHT_FRONT_STEP_PIN, PI_OUTPUT);

@@ -24,6 +24,10 @@ add_executable(car_s_controller_accel src/pi_car_s_controller_accel.cpp)
 target_link_libraries(car_s_controller_accel pigpiod_if2)
 ament_target_dependencies(car_s_controller_accel nav_msgs rclcpp std_msgs geometry_msgs tf2 tf2_ros tf2_geometry_msgs)
 
+add_executable(car_s_controller src/pi_car_s_controller.cpp)
+target_link_libraries(car_s_controller pigpiod_if2)
+ament_target_dependencies(car_s_controller nav_msgs rclcpp std_msgs geometry_msgs tf2 tf2_ros tf2_geometry_msgs)
+
 add_executable(imu_normalize src/imu_normalize.cpp)
 target_link_libraries(imu_normalize)
 ament_target_dependencies(imu_normalize rclcpp std_msgs sensor_msgs)
@@ -50,6 +54,7 @@ ament_target_dependencies(pi_power_control rclcpp)
 
 install(TARGETS
   car_s_controller_accel
+  car_s_controller
   imu_normalize
   pi_power_control
   car_imu
