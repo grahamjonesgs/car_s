@@ -66,7 +66,7 @@ const int RED_LED_PIN = 23;
 const int BLUE_LED_PIN = 24;
 
 // Hardware PWM frequency and constants
-const double MESSAGE_TIMEOUT = 1; // Time to stop if no message received
+const double MESSAGE_TIMEOUT = 0.1; // Time to stop if no message received
 const double ODOM_TIMEOUT = 0.05; // Sets frequency of speed check and report
 const double LED_FLASH_TIMER = 1.0;
 const int SUB_STEPS = 32;
