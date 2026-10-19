@@ -225,7 +225,11 @@ WiFi.
    physical 0.2337 m. Yaw from the wheels drifts badly, which breaks
    `slam_toolbox` scan matching. **Fix:** take yaw rate from the gyro, not
    the wheels (see the EKF configuration below), and calibrate the effective
-   wheel separation.
+   wheel separation. On top of that, the odometry is **open loop**: there are
+   no encoders, and `/odom` counts the step pulses sent to the motors (a
+   pigpio callback on the STEP pins). It can't see slip, stalls, missed steps
+   or the car being pushed, so the gyro and SLAM scan matching are the only
+   real measures of motion.
 2. **Duplicate TF.** The controller always publishes the TF `odom` →
    `base_link`. If you also run a `robot_localization` EKF with
    `publish_tf: true`, `base_link` gets two parents and everything breaks.
@@ -309,6 +313,9 @@ cd ~/ros_ws && MAKEFLAGS=-j2 colcon build --symlink-install --parallel-workers 2
 - **Recalibrate the IMU offsets** if needed. The procedure is in the README.
 
 ### 4. Calibrate the odometry
+
+Do this on the floor, not with the wheels off the ground: `/odom` only counts
+commanded steps, so it has to be compared with real motion.
 
 - **Straight line:** drive 2 m by tape measure and compare `/odom`. Adjust
   `M_PER_REVOLUTION` (currently 0.21) if it's off.

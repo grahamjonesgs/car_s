@@ -80,6 +80,13 @@ The controller ramps each wheel's speed towards its target at `motor_accel`
 m/s² (default 1.0) rather than jumping straight to it, so the steppers don't
 slip or stall when a high speed is commanded.
 
+**The odometry is open loop.** There are no wheel encoders: `/odom` counts
+the step pulses the controller sends to the motors, so it reports what was
+commanded, not what the car did. Pushing the car by hand doesn't move
+`/odom`, spinning the wheels off the ground does, and skids, stalls or missed
+steps go unnoticed. Calibrate and check odometry on the floor, against a tape
+measure, the gyro or the lidar.
+
 ### Controller topics
 
 Subscribed:
