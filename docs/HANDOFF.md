@@ -35,8 +35,14 @@ WiFi.
   services on the Pi, so the car's nodes come up at boot. After pulling and
   building new Pi code, run `sudo systemctl restart car_s`. Stop it
   (`sudo systemctl stop car_s`) before running car nodes by hand.
-- `pigpiod` runs as a systemd service on the Pi. The lidar is on
-  `/dev/ttyUSB0`, and the user is in `dialout`.
+- The lidar is on `/dev/ttyUSB0`, and the user is in `dialout`.
+- **The lidar motor is stopped by default** after launch, so `/scan` is
+  silent until it's started with `ros2 service call /start_motor
+  std_srvs/srv/Empty` (or `l` in `key_cmd`). Start it before running SLAM or
+  Nav2, or have the PC launch files call `/start_motor`. The alternative is to
+  launch with `lidar_on:=true`. The driver also has an `auto_standby`
+  parameter (spin only while `/scan` has subscribers), but in that mode it
+  ignores the start and stop services.
 - Tested working:
   - `/scan`: RPLIDAR A1 at about 7 Hz, 360 points, frame `laser_link`, ranges seen 0.18–4.45 m, Express mode, 12 m maximum.
   - `/imu/data_raw`: MPU6050 at 200 Hz, frame `imu_link`, at rest about (−0.47, 0.32, 9.70) m/s². It has no orientation, so `orientation_covariance[0] = -1`.

@@ -19,6 +19,7 @@ find_package(tf2_ros REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 
 # Nodes that run on any machine (e.g. the remote control PC)
 add_executable(imu_normalize src/imu_normalize.cpp)
@@ -27,7 +28,7 @@ ament_target_dependencies(imu_normalize rclcpp std_msgs sensor_msgs)
 
 add_executable(key_cmd src/key_cmd.cpp)
 target_link_libraries(key_cmd)
-ament_target_dependencies(key_cmd rclcpp std_msgs tf2_geometry_msgs)
+ament_target_dependencies(key_cmd rclcpp std_msgs std_srvs tf2_geometry_msgs)
 
 install(TARGETS
   imu_normalize

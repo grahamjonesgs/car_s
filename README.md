@@ -286,6 +286,21 @@ Without the lidar:
 ros2 launch car_s car_s_launch.yaml
 ```
 
+### Lidar motor
+
+With `robot_car.launch.py` the lidar motor is **stopped by default**: it spins
+up briefly while the node starts, then stops. Start and stop it with `l` in
+`key_cmd`, or with:
+
+```bash
+ros2 service call /start_motor std_srvs/srv/Empty
+ros2 service call /stop_motor std_srvs/srv/Empty
+```
+
+To leave it spinning from start-up, launch with
+`ros2 launch car_s robot_car.launch.py lidar_on:=true`. No `/scan` messages
+are published while the motor is stopped.
+
 Optional, to fuse the IMU (and magnetometer) into an orientation estimate on
 `imu/data`:
 
@@ -318,6 +333,7 @@ time after any change.
 | `z` / `x` | Acceleration ramp up / down by 0.1 m/s² |
 | `v` / `c` | Acceleration ramp to 1.0 / off |
 | `0`–`5` | Microsteps 1, 2, 4, 8, 16, 32 |
+| `l` | Lidar motor on / off (starts off) |
 | Ctrl-C | Quit |
 
 In the default auto mode the car stops 0.1 s after the last command and

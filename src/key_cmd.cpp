@@ -3,6 +3,7 @@
 #include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/float32.hpp"
 #include "std_msgs/msg/int32.hpp"
+#include "std_srvs/srv/empty.hpp"
 #include <rclcpp/rclcpp.hpp>
 #include <signal.h>
 #include <stdio.h>
@@ -29,6 +30,7 @@
 #define KEYCODE_X 0x78  // Decrease acceleration
 #define KEYCODE_C 0x63  // Set acceleration to 0.5
 #define KEYCODE_V 0x76  // Set acceleration to 1.0
+#define KEYCODE_L 0x6C  // Lidar motor on off
 
 // Wheel separation in m, used to convert wheel speed to turn rate in rad/s
 #define WHEEL_SEPARATION 0.2337
@@ -48,10 +50,14 @@ private:
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr motor_pub_;
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr motor_steps_pub_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr motor_accel_pub_;
+  rclcpp::Client<std_srvs::srv::Empty>::SharedPtr lidar_start_client_;
+  rclcpp::Client<std_srvs::srv::Empty>::SharedPtr lidar_stop_client_;
+  bool lidar_on; // Lidar motor is stopped by default at launch
 };
 
 TeleopCmd::TeleopCmd()
-    : linear(0), angular(0), velocity(0.2), acceleration(0.5) {
+    : linear(0), angular(0), velocity(0.2), acceleration(0.5),
+      lidar_on(false) {
   nh = rclcpp::Node::make_shared("teleop_cmd");
   nh->declare_parameter("velocity", velocity);
   nh->get_parameter("velocity", velocity);
@@ -62,6 +68,9 @@ TeleopCmd::TeleopCmd()
       nh->create_publisher<std_msgs::msg::Int32>("/motor_steps", 1);
   motor_accel_pub_ =
       nh->create_publisher<std_msgs::msg::Float32>("/motor_accel", 1);
+  lidar_start_client_ =
+      nh->create_client<std_srvs::srv::Empty>("/start_motor");
+  lidar_stop_client_ = nh->create_client<std_srvs::srv::Empty>("/stop_motor");
 }
 
 int kfd = 0;
@@ -238,6 +247,21 @@ void TeleopCmd::keyLoop() {
       motor_accel_pub_->publish(motor_accel);
       RCLCPP_INFO(nh->get_logger(), "Acceleration is %0.1f", acceleration);
       break;
+    case KEYCODE_L: {
+      RCLCPP_DEBUG(nh->get_logger(), "LIDAR");
+      auto client = lidar_on ? lidar_stop_client_ : lidar_start_client_;
+      if (!client->service_is_ready()) {
+        RCLCPP_WARN(nh->get_logger(), "Lidar service not available");
+        break;
+      }
+      // The node isn't spun, so send without waiting for the empty response
+      client->async_send_request(
+          std::make_shared<std_srvs::srv::Empty::Request>());
+      client->prune_pending_requests();
+      lidar_on = !lidar_on;
+      RCLCPP_INFO(nh->get_logger(), lidar_on ? "Lidar on" : "Lidar off");
+      break;
+    }
     }
 
     geometry_msgs::msg::Twist twist;

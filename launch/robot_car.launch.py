@@ -1,5 +1,6 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription
+from launch.conditions import UnlessCondition
 from launch.substitutions import Command, LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -17,6 +18,13 @@ def generate_launch_description():
         name='use_sim_time',
         default_value='false',
         description='Use simulation time if true.'
+    )
+
+    declare_lidar_on_arg = DeclareLaunchArgument(
+        name='lidar_on',
+        default_value='false',
+        description='Leave the lidar motor spinning at start-up. When false it is '
+                    'stopped, and can be started with the /start_motor service.'
     )
 
     # Get URDF file path
@@ -52,6 +60,14 @@ def generate_launch_description():
         }],
     )
 
+    # The lidar node always spins up its motor, so stop it once the service is
+    # available (ros2 service call waits for it) unless lidar_on is true
+    stop_lidar_motor = ExecuteProcess(
+        cmd=['ros2', 'service', 'call', '/stop_motor', 'std_srvs/srv/Empty'],
+        output='log',
+        condition=UnlessCondition(LaunchConfiguration('lidar_on')),
+    )
+
     #  Include your controller node, assuming it's in your package.
     picar_controller_node = Node(
         package='car_s',  # Replace with your package name
@@ -78,8 +94,10 @@ def generate_launch_description():
     ld = LaunchDescription()
     ld.add_action(declare_robot_name_arg)
     ld.add_action(declare_use_sim_time_arg)
+    ld.add_action(declare_lidar_on_arg)
     ld.add_action(robot_state_publisher_node)
     ld.add_action(laser_scanner_node) # Add the laser scanner node.
+    ld.add_action(stop_lidar_motor)
     ld.add_action(picar_controller_node)
     ld.add_action(picar_imu_node)
     ld.add_action(picar_mag_node)
