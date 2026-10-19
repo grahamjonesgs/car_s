@@ -245,7 +245,10 @@ void mag_timer_callback() {
   sensor_msgs::msg::MagneticField mag_msg;
 
   status = i2c_read_byte_data(pi, i2ch, QMC5883L_STATUS);
-  if (status < 0 || !(status & QMC5883L_STATUS_DRDY)) {
+  // This chip reports new data with DOR (overrun) rather than DRDY when the
+  // previous reading was missed, so accept either
+  if (status < 0 ||
+      !(status & (QMC5883L_STATUS_DRDY | QMC5883L_STATUS_DOR))) {
     return;
   }
 

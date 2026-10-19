@@ -558,6 +558,12 @@ private:
   // It sets the number of steps for the motor driver
   void steps_callback(const std_msgs::msg::Int32 &msg) {
     // ROS callback on message received
+    // Driver supports 1, 2, 4, 8, 16 or 32 microsteps
+    if (msg.data < 1 || msg.data > 32 || (msg.data & (msg.data - 1)) != 0) {
+      RCLCPP_WARN(this->get_logger(), "Invalid substeps received %i",
+                  msg.data);
+      return;
+    }
     set_substep(msg.data);
   }
 

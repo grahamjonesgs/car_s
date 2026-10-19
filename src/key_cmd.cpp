@@ -164,7 +164,7 @@ void TeleopCmd::keyLoop() {
       RCLCPP_INFO(nh->get_logger(), "Velocity is %0.2f", velocity);
       break;
     case KEYCODE_0:
-      motor_steps.data = 0;
+      motor_steps.data = 1;
       motor_steps_pub_->publish(motor_steps);
       RCLCPP_INFO(nh->get_logger(), "Set to single steps");
       break;
