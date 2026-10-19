@@ -16,6 +16,9 @@ machine running ROS 2 on the same network, using `key_cmd`.
 - [IMU calibration](#imu-calibration)
 - [Troubleshooting](#troubleshooting)
 
+For the plan to get sensor fusion, SLAM and Nav2 working, see
+[docs/HANDOFF.md](docs/HANDOFF.md).
+
 ## Hardware
 
 | Part | Details |

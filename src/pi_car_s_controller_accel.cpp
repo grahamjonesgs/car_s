@@ -549,6 +549,14 @@ private:
     // ROS callback on message received
     // The timer will automatically reset if it's periodic
 
+    // Ignore commands while the drivers are disabled, so the car does not
+    // jump to a stored speed when they are enabled
+    if (!motor_on_) {
+      RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
+                           "Ignoring cmd_vel, motors are off");
+      return;
+    }
+
     // reset the message timeout timer
     message_timeout_timer_->reset();
     motor_set_target(msg.linear.x, msg.angular.z);
@@ -597,6 +605,13 @@ private:
     } else {
       RCLCPP_INFO(this->get_logger(), "Set motor off");
       gpio_write(pi_, ENABLE_PIN, PI_HIGH); // Disable drive
+      // Stop immediately, with no ramp down, so nothing is left to resume
+      // and odometry does not count steps the wheels never made
+      motor_set_target(0.0, 0.0);
+      current_left_velocity_ = 0.0;
+      current_right_velocity_ = 0.0;
+      set_motor_pwm_left(0.0);
+      set_motor_pwm_right(0.0);
     }
   }
 };
