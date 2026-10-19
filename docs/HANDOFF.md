@@ -1,64 +1,163 @@
 # Handoff: localisation, SLAM and obstacle avoidance
 
-Written 2026-10-19 on the Pi (`pi-car`) for the Claude Code session on the
-remote control PC. Read [README.md](../README.md) first for the hardware,
-topics and how to run things. This file covers where things stand and what
-needs doing to get sensor fusion, SLAM and Nav2 working.
+First written 2026-10-19 on the Pi (`pi-car`) for a Claude Code session on
+the PC; updated the same day by that session for the next one, which runs on
+the **Beelink** (see "The PC is now the Beelink"). Read
+[README.md](../README.md) first for the hardware, topics and how to run
+things. Sections from "Goal" onwards are the original plan, annotated with
+what was done.
 
-## Progress since the handoff (2026-10-19, PC session)
+## Start here (state at the end of 2026-10-19)
 
-Done on the PC (`Ubuntu-ROS`, 192.168.68.82, a 4-core VM):
+**Working and checked on the real car** (battery disconnected, so the car
+can't move; checked from the old PC VM):
+
+- The car runs all of today's code (repo at `78ff675` or later on the Pi).
+- `car_imu` calibrates the gyro at start-up. At boot it logged offsets of
+  0.0349, 0.0188, 0.0504 rad/s, and afterwards the bias at rest was
+  0.0000–0.0001 rad/s on every axis (it had been −0.030 on Z).
+- IMU at 87 Hz (target 100, was about 70), gyro noise about 4e-7 (rad/s)²
+  thanks to the new 44 Hz low pass filter. `/odom` at 20 Hz. Both now carry
+  covariances.
+- The new controller parameters are live, and the wheel TFs are published.
+- An EKF-only run of `pc_bringup.launch.py` against the car: the controller
+  TF switched off and back on correctly over WiFi, no warnings, and the
+  fused heading drifted 0.13° in 40 s while stationary.
+- The lidar scans normally. Close returns behind the car earlier turned out
+  to be the room: the car had been moved since this morning and the pattern
+  changed. Recheck with `tools/scan_check.py` once it's on the floor in open
+  space.
+
+**Not yet done** (all need the battery connected and someone at the car):
+
+1. Check that up-arrow in `key_cmd` drives forward and left-arrow turns
+   anticlockwise, wheels off the ground first. If mirrored, fix the `DIR`
+   pin logic in the controller.
+2. Check the sensor mounting (section 3) and calibrate the odometry
+   (section 4). `wheel_separation` and `m_per_revolution` can be changed live
+   with `ros2 param set /car_controller ...`.
+3. Map a room: `ros2 launch car_s pc_bringup.launch.py` plus `key_cmd`, then
+   save it with `ros2 run nav2_map_server map_saver_cli -f ~/maps/room`.
+4. Nav2 with clicked goals (`nav2:=true motors_on:=true`). Nav2 hasn't driven
+   the real car yet.
+5. Optional: autonomous exploration with `explore_lite` (m-explore-ros2,
+   built from source; not set up).
+
+## The PC is now the Beelink
+
+| | |
+|---|---|
+| Host | `Ubuntu-Beelink`, 192.168.68.31, wired Ethernet |
+| Hardware | AMD Ryzen AI 9 HX 470 (24 threads), Radeon 890M, 27 GB RAM. Disk was 83% full (40 GB free) before ROS went on |
+| OS | Ubuntu 26.04 (the owner doesn't want to downgrade) |
+| ROS | **Jazzy inside a distrobox container called `jazzy`** (Ubuntu 24.04), to match the car. Don't mix ROS releases between the machines |
+| Workspace | `~/ros2_ws`, repo at `~/ros2_ws/src/car_s`. The container shares the host's home folder, so the same files are seen from both |
+
+**ROS only exists inside the container.** A shell on the host (including a
+VS Code terminal and Claude Code's own shell) has no `ros2`. Use the wrapper
+[tools/jazzy](../tools/jazzy), which runs a command in the container with
+ROS and `~/ros2_ws` sourced, in the current directory:
+
+```bash
+cd ~/ros2_ws/src/car_s
+tools/jazzy ros2 topic list
+tools/jazzy ros2 param get /car_controller publish_odom_tf
+cd ~/ros2_ws && src/car_s/tools/jazzy colcon build --symlink-install --packages-select car_s
+tools/jazzy          # no command: an interactive shell in the container
+```
+
+Don't use `distrobox enter jazzy -- bash -lc '...'`: Ubuntu's `.bashrc`
+returns early in non-interactive shells, so ROS isn't sourced. `~/.bashrc` is
+shared by the host and the container, and only sources ROS when
+`/opt/ros/jazzy/setup.bash` exists, i.e. inside the container (the original
+is saved as `~/.bashrc.before-ros`). The container uses the host's network,
+so the car sees it like any other machine, and the host's display and GPU, so
+RViz opens as a normal window.
+
+Checked from the Beelink on 2026-10-19: all five car nodes visible, IMU
+received at a full 100 Hz (the VM over its virtual network got 87 Hz),
+`/odom` at 20 Hz with 2.4 ms jitter (28 ms on the VM), and an EKF-only
+`pc_bringup` ran at the full 30 Hz and switched the car's TF off. Interactive
+Ctrl-C through the container hasn't been tried yet: after the first real run,
+check `ros2 param get /car_controller publish_odom_tf` is back to `true`.
+
+**Firewall:** the Beelink runs `ufw`, which denies incoming traffic by
+default and would block ROS. There's a rule allowing all UDP from the car
+(192.168.68.78) only. A 7400–7600 range wasn't enough: Fast DDS also uses
+unicast ports in the 7000s, and with those blocked, topics worked but
+`ros2 node list` and parameter calls didn't. Any other machine that needs to
+talk ROS to the Beelink needs its own rule, e.g.
+`sudo ufw allow proto udp from <ip>`.
+
+**SSH to the car:** `ssh graham@192.168.68.78` works from the Beelink with
+its key (`~/.ssh/id_ed25519`), and from the old VM with its own. On the Pi the workspace is `~/ros_ws` (not `ros2_ws`), the car runs as
+the systemd service `car_s` (logs with `journalctl -u car_s`), and builds
+need `MAKEFLAGS=-j2 ... --parallel-workers 2`. Never start car nodes by hand
+while the service is running.
+
+**The old PC** (`Ubuntu-ROS`, 192.168.68.82, a 4-core Parallels VM) has the
+same setup. Don't run the PC stack on both machines at once: two EKFs or two
+SLAM nodes fight over the car's TF.
+
+**Possible tuning on the Beelink:** `config/nav2.yaml` was cut down for the
+4-core VM (MPPI `batch_size` 1000 and `time_steps` 40, instead of the
+defaults 2000 and 56). With 24 threads the defaults can come back. Keep
+`default_server_timeout: 100`.
+
+## Testing without the car
+
+`tools/sim_test.sh` runs the PC stack against a simulated car
+(`tools/sim_car.py`) on ROS domain 42, limited to localhost, so the real car
+is never touched. It prints the simulated car's true pose once a second, for
+comparison with the EKF, SLAM and AMCL. `tools/imu_stats.py` and
+`tools/scan_check.py` check the real IMU and lidar.
+
+Pitfalls from testing:
+
+- **Duplicate stacks:** a leftover EKF, SLAM or Nav2 from an earlier run
+  causes TF fights and SLAM drift that looks like a config problem. Check
+  `ros2 node list` for duplicates before believing a bad result.
+- **Stopping launches from scripts:** background jobs in non-interactive
+  shells start with SIGINT ignored, so `kill -INT` or `timeout -s INT` don't
+  stop `ros2 launch`, and SIGTERM kills it without cleanup (leaving its nodes
+  running, and the controller TF switched off). Use Ctrl-C in a terminal,
+  or reset SIGINT before exec'ing the launch.
+- **`pkill -f` matches its own shell** when the pattern appears anywhere in
+  the command line, killing the script that ran it.
+- slam_toolbox's `online_async_launch.py` defaults to `use_sim_time:=true`;
+  `pc_bringup.launch.py` overrides it.
+- If `pc_bringup` is killed without cleanup, turn the car's TF back on with
+  `ros2 param set /car_controller publish_odom_tf true` (or restart the
+  `car_s` service on the Pi).
+
+## History: the first PC session (2026-10-19)
+
+Done on the old PC VM:
 
 - **NTP was off on the PC** and its clock was 0.68 s behind the Pi. Turned
-  on with `timedatectl set-ntp true`; it now shows synchronized.
+  on; it now shows synchronized.
 - Stopped tracking `build/`, `install/` and `log/` in git.
-- Pi-side code changes from section 2 are all done (commit "Prepare Pi
-  nodes for EKF fusion"), but **not yet pulled or built on the Pi**: the PC
-  has no SSH access to it. See "Next steps" below.
-- PC configs and launch file added: `config/ekf.yaml`, `config/slam.yaml`,
-  `config/nav2.yaml` and `launch/pc_bringup.launch.py` (see the README's
-  "SLAM and navigation" section).
-- All of it was tested on the PC against a simulated car (a stand-in for
-  the Pi nodes in a 4 × 3 m room, on an isolated ROS domain). The EKF
-  matched ground truth, SLAM drift stayed under 5 cm, and Nav2 reached goals
-  around an obstacle. With AMCL on a saved map, the first goal succeeded
-  (AMCL within about 10 cm of ground truth), but the return goal didn't
-  finish within the test's 90 s limit (it got within 0.4 m). The controller
-  TF was turned off while running and back on after Ctrl-C. This tests the
-  configuration and wiring only, not the real car's sensors or slip.
+- Pi-side code changes from section 2 (commit "Prepare Pi nodes for EKF
+  fusion"), now running on the car.
+- PC configs and launch files: `config/ekf.yaml`, `config/slam.yaml`,
+  `config/nav2.yaml`, `launch/pc_bringup.launch.py`, `launch/rviz.launch.py`
+  and `rviz/car_s.rviz` (see the README's "SLAM and navigation" section).
+- Tested against the simulated car: the EKF matched ground truth, SLAM drift
+  stayed under 5 cm, and Nav2 reached goals around an obstacle. With AMCL on
+  a saved map, the first goal succeeded (AMCL within about 10 cm of ground
+  truth), but the return goal didn't finish within the test's 90 s limit (it
+  got within 0.4 m). This tests the configuration and wiring only, not the
+  real car's sensors or slip.
 
-Found while checking the live car from the PC:
+Found while checking the live car:
 
-- **The IMU only produced about 70 Hz, not 200 Hz**: message timestamps
-  spanned 20 s for 1,398 messages, so the shortfall was on the Pi. The 12
-  single-byte I2C reads per sample through `pigpiod` were too slow. It now
-  uses one block read at 100 Hz.
+- **The IMU only produced about 70 Hz, not 200 Hz**: the 12 single-byte I2C
+  reads per sample through `pigpiod` were too slow. It now uses one block
+  read at 100 Hz.
 - **The gyro Z bias had drifted to −0.030 rad/s (−1.7°/s)**, which would
-  make yaw drift about 100° a minute. `car_imu` now calibrates the gyro bias
-  for 2 s at start-up, so keep the car still while it starts.
-- Gyro noise at rest is about 3e-6 (rad/s)² per axis; accel noise is about
-  1e-3 to 7e-3 (m/s²)².
-- **The rear half of the lidar scan (about 90° to 270°) shows returns
-  0.17–0.33 m away**, with the front half clear out to 0.7–2.4 m. That's
-  either the car parked next to something, or the lidar seeing the car's own
-  body or mounts. Check this on the real car. If it's the car, those points
-  will mark an obstacle on top of the robot in the costmaps and Nav2 won't
-  move; fix it with `obstacle_min_range` in `config/nav2.yaml` or a
-  `laser_filters` box filter.
+  make yaw drift about 100° a minute. Now calibrated at start-up.
 - The URDF wheel joints were `continuous` with nothing publishing
   `joint_states`, so the wheel TFs were missing. They're now `fixed`.
-
-### Next steps
-
-1. **On the Pi**: pull and build (commands in section 2), then
-   `sudo systemctl restart car_s`. Check the log
-   (`journalctl -u car_s -f`) for "Gyro calibrated from 200 readings", and
-   `ros2 topic hz /imu/data_raw` on the PC shows about 100 Hz.
-2. Check the sensor mounting (section 3) and calibrate the odometry
-   (section 4) on the real car with the owner.
-3. Check the lidar's close returns at the back (above).
-4. Map with `ros2 launch car_s pc_bringup.launch.py` and `key_cmd`, then
-   try Nav2.
 
 ## Goal
 
@@ -79,7 +178,7 @@ well enough for good tracking, obstacle avoidance or SLAM. The aim is:
 Keep the heavy processing on the PC. The Pi is a Pi 4 with 8 GB of RAM, on
 WiFi.
 
-## Current state (verified on the Pi today)
+## State as found on the Pi (morning of 2026-10-19)
 
 - ROS 2 Jazzy on Ubuntu 24.04 on both machines. The Pi uses the default RMW
   (`rmw_fastrtps_cpp`), and `ROS_DOMAIN_ID` is unset (0).

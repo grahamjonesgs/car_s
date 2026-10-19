@@ -422,6 +422,15 @@ The PC's clock must be NTP-synced (`timedatectl` should show
 `System clock synchronized: yes`). If it isn't, TF lookups between the
 machines fail.
 
+### Testing without the car
+
+[tools/sim_test.sh](tools/sim_test.sh) runs the same PC stack against a
+simulated car in a small room, on an isolated ROS domain, so the real car is
+never involved. Arguments pass through to `pc_bringup.launch.py`, e.g.
+`tools/sim_test.sh nav2:=true`. [tools/imu_stats.py](tools/imu_stats.py) and
+[tools/scan_check.py](tools/scan_check.py) check the real IMU (rate, bias,
+noise) and lidar (closest returns around the car).
+
 ## IMU calibration
 
 The gyro offsets are measured automatically at start-up (see [IMU](#imu)).
