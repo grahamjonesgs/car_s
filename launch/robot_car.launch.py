@@ -3,6 +3,7 @@ from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchD
 from launch.conditions import UnlessCondition
 from launch.substitutions import Command, LaunchConfiguration
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 import os
@@ -25,6 +26,13 @@ def generate_launch_description():
         default_value='false',
         description='Leave the lidar motor spinning at start-up. When false it is '
                     'stopped, and can be started with the /start_motor service.'
+    )
+
+    declare_publish_odom_tf_arg = DeclareLaunchArgument(
+        name='publish_odom_tf',
+        default_value='true',
+        description='Publish the odom -> base_link TF from wheel odometry. The '
+                    'PC launch turns it off at run time while its EKF runs.'
     )
 
     # Get URDF file path
@@ -74,6 +82,10 @@ def generate_launch_description():
         executable='car_s_controller_accel', # Replace with your executable name
         name='car_controller',
         output='screen',
+        parameters=[{
+            'publish_odom_tf': ParameterValue(
+                LaunchConfiguration('publish_odom_tf'), value_type=bool),
+        }],
     )
 
     picar_imu_node = Node(
@@ -95,6 +107,7 @@ def generate_launch_description():
     ld.add_action(declare_robot_name_arg)
     ld.add_action(declare_use_sim_time_arg)
     ld.add_action(declare_lidar_on_arg)
+    ld.add_action(declare_publish_odom_tf_arg)
     ld.add_action(robot_state_publisher_node)
     ld.add_action(laser_scanner_node) # Add the laser scanner node.
     ld.add_action(stop_lidar_motor)

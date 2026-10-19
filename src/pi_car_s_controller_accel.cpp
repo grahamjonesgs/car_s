@@ -65,14 +65,25 @@ const int RED_LED_PIN = 23;
 const int BLUE_LED_PIN = 24;
 
 // Hardware PWM frequency and constants
-const double MESSAGE_TIMEOUT = 0.1; // Time to stop if no message received
 const double ODOM_TIMEOUT = 0.05;   // Sets frequency of speed check and report
 const double LED_FLASH_TIMER = 1.0;
 const int SUB_STEPS = 32;
 const int STEPS_PER_REVOLUTION = 200;
-const double M_PER_REVOLUTION = 0.21;
-const double WHEEL_SEPARATION = 0.2337;
 const double ANGLE_DELTA = 3.0;
+
+// Defaults for the ROS parameters
+const double DEFAULT_CMD_VEL_TIMEOUT = 0.3; // Time to stop if no message received
+const double DEFAULT_M_PER_REVOLUTION = 0.21;
+const double DEFAULT_WHEEL_SEPARATION = 0.2337;
+
+// Odometry covariances (diagonals). Wheel yaw is unreliable on a skid steer,
+// so its rate variance is large and the EKF takes yaw rate from the gyro
+const double ODOM_POSE_XY_VAR = 0.01;
+const double ODOM_POSE_YAW_VAR = 0.1;
+const double ODOM_TWIST_VX_VAR = 0.01;
+const double ODOM_TWIST_VY_VAR = 0.01;
+const double ODOM_TWIST_VYAW_VAR = 0.5;
+const double ODOM_UNUSED_VAR = 1e6; // z, roll and pitch, which are not measured
 
 // Motor Modes
 enum class MotorMode { CONTINUOUS = 1, AUTO = 2, TURN_360 = 3 };
@@ -106,6 +117,34 @@ public:
     RCLCPP_INFO(
         this->get_logger(),
         "Started Pi Car Stepper Controller with Acceleration (C++ Class)");
+
+    // Parameters. All can be changed at run time with ros2 param set, so
+    // the odometry can be calibrated without rebuilding, and the TF can be
+    // turned off when an EKF publishes odom -> base_link instead
+    publish_odom_tf_ = this->declare_parameter("publish_odom_tf", true);
+    wheel_separation_ =
+        this->declare_parameter("wheel_separation", DEFAULT_WHEEL_SEPARATION);
+    m_per_revolution_ =
+        this->declare_parameter("m_per_revolution", DEFAULT_M_PER_REVOLUTION);
+    cmd_vel_timeout_ =
+        this->declare_parameter("cmd_vel_timeout", DEFAULT_CMD_VEL_TIMEOUT);
+    if (wheel_separation_ <= 0.0 || m_per_revolution_ <= 0.0 ||
+        cmd_vel_timeout_ <= 0.0) {
+      RCLCPP_ERROR(this->get_logger(),
+                   "wheel_separation, m_per_revolution and cmd_vel_timeout "
+                   "must be positive, using defaults");
+      wheel_separation_ = DEFAULT_WHEEL_SEPARATION;
+      m_per_revolution_ = DEFAULT_M_PER_REVOLUTION;
+      cmd_vel_timeout_ = DEFAULT_CMD_VEL_TIMEOUT;
+    }
+    param_callback_handle_ = this->add_on_set_parameters_callback(
+        std::bind(&PiCarController::parameters_callback, this,
+                  std::placeholders::_1));
+    RCLCPP_INFO(this->get_logger(),
+                "wheel_separation %.4f m, m_per_revolution %.4f m, "
+                "cmd_vel_timeout %.2f s, publish_odom_tf %s",
+                wheel_separation_, m_per_revolution_, cmd_vel_timeout_,
+                publish_odom_tf_ ? "true" : "false");
 
     // Initialize pigpio
     if ((pi_ = pigpio_start(nullptr, nullptr)) < 0) {
@@ -167,9 +206,7 @@ public:
     odom_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 
     // Timers
-    message_timeout_timer_ = this->create_wall_timer(
-        std::chrono::duration<double>(MESSAGE_TIMEOUT),
-        std::bind(&PiCarController::message_timeout_callback, this));
+    create_message_timeout_timer();
     odom_timer_ = this->create_wall_timer(
         std::chrono::duration<double>(ODOM_TIMEOUT),
         std::bind(&PiCarController::odom_timer_callback, this));
@@ -223,6 +260,14 @@ private:
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr sub_set_steps_;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr sub_set_freq_;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr sub_motor_accel_;
+  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr
+      param_callback_handle_;
+
+  // ROS parameters
+  bool publish_odom_tf_;
+  double wheel_separation_;
+  double m_per_revolution_;
+  double cmd_vel_timeout_;
 
   // Step counts and directions are shared with the pigpio callback thread
   std::atomic<int> left_step_count_;
@@ -245,6 +290,54 @@ private:
   float angle_delta_;
   bool turn_started_;
   rclcpp::Time last_control_time_;
+
+  // (Re)create the timer that stops the motors when cmd_vel stops arriving
+  void create_message_timeout_timer() {
+    if (message_timeout_timer_) {
+      message_timeout_timer_->cancel();
+    }
+    message_timeout_timer_ = this->create_wall_timer(
+        std::chrono::duration<double>(cmd_vel_timeout_),
+        std::bind(&PiCarController::message_timeout_callback, this));
+  }
+
+  // Validate and apply parameter changes made at run time
+  rcl_interfaces::msg::SetParametersResult
+  parameters_callback(const std::vector<rclcpp::Parameter> &params) {
+    rcl_interfaces::msg::SetParametersResult result;
+    result.successful = true;
+
+    // Check everything first, so a rejected set changes nothing
+    for (const auto &param : params) {
+      const std::string &name = param.get_name();
+      if ((name == "wheel_separation" || name == "m_per_revolution" ||
+           name == "cmd_vel_timeout") &&
+          param.as_double() <= 0.0) {
+        result.successful = false;
+        result.reason = name + " must be positive";
+        return result;
+      }
+    }
+
+    for (const auto &param : params) {
+      const std::string &name = param.get_name();
+      if (name == "publish_odom_tf") {
+        publish_odom_tf_ = param.as_bool();
+      } else if (name == "wheel_separation") {
+        wheel_separation_ = param.as_double();
+      } else if (name == "m_per_revolution") {
+        m_per_revolution_ = param.as_double();
+      } else if (name == "cmd_vel_timeout") {
+        cmd_vel_timeout_ = param.as_double();
+        create_message_timeout_timer();
+      } else {
+        continue;
+      }
+      RCLCPP_INFO(this->get_logger(), "Parameter %s set to %s", name.c_str(),
+                  param.value_to_string().c_str());
+    }
+    return result;
+  }
 
   // Set the number of substeps for the motor
   void set_substep(int steps) {
@@ -297,10 +390,11 @@ private:
   void set_motor_pwm_left(float left_vel) {
     uint frequency =
         static_cast<unsigned int>(STEPS_PER_REVOLUTION * sub_steps_ *
-                                  std::abs(left_vel) / M_PER_REVOLUTION);
-    RCLCPP_INFO(this->get_logger(), "Left motor vel: %f, freq: %i", left_vel,
-                frequency);
-    if (left_vel == 0.0) {
+                                  std::abs(left_vel) / m_per_revolution_);
+    RCLCPP_DEBUG(this->get_logger(), "Left motor vel: %f, freq: %i", left_vel,
+                 frequency);
+    // Speeds too small for a 1 Hz step rate (e.g. at the end of a ramp) stop
+    if (frequency == 0) {
       hardware_PWM(pi_, LEFT_FRONT_STEP_PIN, 0, 0);
       hardware_PWM(pi_, LEFT_BACK_STEP_PIN, 0, 0);
     } else {
@@ -317,10 +411,11 @@ private:
   void set_motor_pwm_right(float right_vel) {
     uint frequency =
         static_cast<unsigned int>(STEPS_PER_REVOLUTION * sub_steps_ *
-                                  std::abs(right_vel) / M_PER_REVOLUTION);
-    RCLCPP_INFO(this->get_logger(), "Right motor vel: %f, freq: %i", right_vel,
-                frequency);
-    if (right_vel == 0.0) {
+                                  std::abs(right_vel) / m_per_revolution_);
+    RCLCPP_DEBUG(this->get_logger(), "Right motor vel: %f, freq: %i", right_vel,
+                 frequency);
+    // Speeds too small for a 1 Hz step rate (e.g. at the end of a ramp) stop
+    if (frequency == 0) {
       hardware_PWM(pi_, RIGHT_FRONT_STEP_PIN, 0, 0);
       hardware_PWM(pi_, RIGHT_BACK_STEP_PIN, 0, 0);
     } else {
@@ -342,7 +437,7 @@ private:
       turn_started_ = false;
     }
 
-    float wheel_offset = turn_rate * WHEEL_SEPARATION / 2.0;
+    float wheel_offset = turn_rate * wheel_separation_ / 2.0;
     last_left_target_velocity_ = speed - wheel_offset;
     last_right_target_velocity_ = speed + wheel_offset;
   }
@@ -464,13 +559,13 @@ private:
 
     // Read and reset atomically so no steps are lost to the callback thread
     left_delta = static_cast<double>(left_step_count_.exchange(0)) *
-                 M_PER_REVOLUTION / (sub_steps_ * STEPS_PER_REVOLUTION);
+                 m_per_revolution_ / (sub_steps_ * STEPS_PER_REVOLUTION);
     right_delta = static_cast<double>(right_step_count_.exchange(0)) *
-                  M_PER_REVOLUTION / (sub_steps_ * STEPS_PER_REVOLUTION);
+                  m_per_revolution_ / (sub_steps_ * STEPS_PER_REVOLUTION);
 
     left_speed_msg.data = static_cast<float>(left_delta / ODOM_TIMEOUT);
     right_speed_msg.data = static_cast<float>(right_delta / ODOM_TIMEOUT);
-    theta_delta = (right_delta - left_delta) / WHEEL_SEPARATION;
+    theta_delta = (right_delta - left_delta) / wheel_separation_;
 
     theta_ += theta_delta;
     if (theta_ > M_PI) {
@@ -507,9 +602,11 @@ private:
     geometry_msgs::msg::Quaternion odom_quat =
         createQuaternionMsgFromYaw(theta_);
 
-    // First, publish the transform over tf
+    rclcpp::Time stamp = this->now();
+
+    // First, publish the transform over tf, unless an EKF publishes it
     geometry_msgs::msg::TransformStamped odom_trans;
-    odom_trans.header.stamp = this->now();
+    odom_trans.header.stamp = stamp;
     odom_trans.header.frame_id = "odom";
     odom_trans.child_frame_id = "base_link";
 
@@ -518,11 +615,13 @@ private:
     odom_trans.transform.translation.z = 0.0;
     odom_trans.transform.rotation = odom_quat;
 
-    odom_broadcaster_->sendTransform(odom_trans);
+    if (publish_odom_tf_) {
+      odom_broadcaster_->sendTransform(odom_trans);
+    }
 
     // Next, publish the odometry message over ROS
     nav_msgs::msg::Odometry odom;
-    odom.header.stamp = this->now();
+    odom.header.stamp = stamp;
     odom.header.frame_id = "odom";
 
     odom.pose.pose.position.x = x_pos_;
@@ -536,6 +635,20 @@ private:
         (left_speed_msg.data + right_speed_msg.data) / 2.0;
     odom.twist.twist.linear.y = 0.0;
     odom.twist.twist.angular.z = theta_delta / ODOM_TIMEOUT;
+
+    // Covariances, row-major 6x6 over (x, y, z, roll, pitch, yaw)
+    odom.pose.covariance[0] = ODOM_POSE_XY_VAR;
+    odom.pose.covariance[7] = ODOM_POSE_XY_VAR;
+    odom.pose.covariance[14] = ODOM_UNUSED_VAR;
+    odom.pose.covariance[21] = ODOM_UNUSED_VAR;
+    odom.pose.covariance[28] = ODOM_UNUSED_VAR;
+    odom.pose.covariance[35] = ODOM_POSE_YAW_VAR;
+    odom.twist.covariance[0] = ODOM_TWIST_VX_VAR;
+    odom.twist.covariance[7] = ODOM_TWIST_VY_VAR;
+    odom.twist.covariance[14] = ODOM_UNUSED_VAR;
+    odom.twist.covariance[21] = ODOM_UNUSED_VAR;
+    odom.twist.covariance[28] = ODOM_UNUSED_VAR;
+    odom.twist.covariance[35] = ODOM_TWIST_VYAW_VAR;
 
     left_speed_pub_->publish(left_speed_msg);
     right_speed_pub_->publish(right_speed_msg);

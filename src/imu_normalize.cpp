@@ -38,8 +38,9 @@ int main(int argc, char **argv) {
   RCLCPP_INFO(rclcpp::get_logger("imu_normalize"),
               "Started Pi Car IMU normalize");
   rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("imu_normalize");
-  auto sub_imu = nh->create_subscription<sensor_msgs::msg::Imu>(TOPIC_IMU, 100,
-                                                                imu_callback);
+  // Best effort to match the car_imu publisher
+  auto sub_imu = nh->create_subscription<sensor_msgs::msg::Imu>(
+      TOPIC_IMU, rclcpp::SensorDataQoS(), imu_callback);
 
   rclcpp::spin(nh);
 }

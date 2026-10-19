@@ -4,6 +4,10 @@
 
 <robot name="robot_car">
 
+  <!-- The wheel joints are fixed because nothing publishes joint_states, so
+       robot_state_publisher can publish their TF. Wheel spacing (0.2337 m)
+       and radius (0.21 m per revolution) match the controller defaults. -->
+
 
   <link name="base_link">
     <visual>
@@ -29,13 +33,13 @@
   <link name="left_wheel_link">
     <visual>
       <geometry>
-        <cylinder radius="0.03" length="0.05"/>
+        <cylinder radius="0.0334" length="0.05"/>
       </geometry>
       <material name="black"/>
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.03" length="0.05"/>
+        <cylinder radius="0.0334" length="0.05"/>
       </geometry>
     </collision>
     <inertial>
@@ -50,13 +54,13 @@
   <link name="right_wheel_link">
     <visual>
       <geometry>
-        <cylinder radius="0.03" length="0.05"/>
+        <cylinder radius="0.0334" length="0.05"/>
       </geometry>
       <material name="black"/>
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.03" length="0.05"/>
+        <cylinder radius="0.0334" length="0.05"/>
       </geometry>
     </collision>
     <inertial>
@@ -111,18 +115,16 @@
   </link>
 
 
-  <joint name="left_wheel_joint" type="continuous">
+  <joint name="left_wheel_joint" type="fixed">
     <parent link="base_link"/>
     <child link="left_wheel_link"/>
-    <origin xyz="0 0.1 0" rpy="0 1.5707 1.5707"/>
-    <axis xyz="0 1 0"/>
+    <origin xyz="0 0.11685 0" rpy="1.5707 0 0"/>
   </joint>
 
-  <joint name="right_wheel_joint" type="continuous">
+  <joint name="right_wheel_joint" type="fixed">
     <parent link="base_link"/>
     <child link="right_wheel_link"/>
-    <origin xyz="0 -0.1 0" rpy="0 1.5707 1.5707"/>
-    <axis xyz="0 1 0"/>
+    <origin xyz="0 -0.11685 0" rpy="1.5707 0 0"/>
   </joint>
 
   <joint name="imu_joint" type="fixed">
