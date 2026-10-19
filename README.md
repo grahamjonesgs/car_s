@@ -380,8 +380,18 @@ ros2 topic echo /imu/data_raw
 ros2 topic hz /scan
 ```
 
-To view the car in RViz on the remote machine, set the fixed frame to `odom`
-and add TF, LaserScan (`/scan`) and RobotModel (topic `/robot_description`).
+To view the car in RViz on the remote machine:
+
+```bash
+ros2 launch car_s rviz.launch.py fixed_frame:=odom
+```
+
+This loads [rviz/car_s.rviz](rviz/car_s.rviz): the robot model, TF, lidar
+scan, EKF odometry, the map and Nav2's costmaps and paths, and the
+**2D Pose Estimate** and **Nav2 Goal** tools. Use `fixed_frame:=odom` when
+nothing publishes a map (just driving with `key_cmd`), and leave the default
+(`map`) when SLAM or AMCL is running. `pc_bringup.launch.py` opens it
+automatically and picks the frame itself.
 
 ## SLAM and navigation (on the PC)
 

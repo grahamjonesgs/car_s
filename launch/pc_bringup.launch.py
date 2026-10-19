@@ -175,13 +175,15 @@ def generate_launch_description():
             ["'", slam, "'.lower() == 'true' and '", map_yaml, "' != ''"])),
     )
 
-    rviz_node = Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        output='log',
-        arguments=['-d', os.path.join(nav2_dir, 'rviz', 'nav2_default_view.rviz')],
-        parameters=[{'use_sim_time': False}],
+    # The map frame only exists with SLAM or AMCL running
+    rviz_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(car_s_dir, 'launch', 'rviz.launch.py')),
+        launch_arguments={
+            'fixed_frame': PythonExpression(
+                ["'map' if '", slam, "'.lower() == 'true' or '", map_yaml,
+                 "' != '' else 'odom'"]),
+        }.items(),
         condition=IfCondition(rviz),
     )
 
@@ -198,6 +200,6 @@ def generate_launch_description():
         nav2_container,
         localization_launch,
         navigation_launch,
-        rviz_node,
+        rviz_launch,
         on_shutdown,
     ])
