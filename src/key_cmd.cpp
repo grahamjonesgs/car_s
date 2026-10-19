@@ -29,6 +29,9 @@
 #define KEYCODE_X 0x78  // Decrease acceleration
 #define KEYCODE_C 0x63  // Set acceleration to 0.5
 #define KEYCODE_V 0x76  // Set acceleration to 1.0
+
+// Wheel separation in m, used to convert wheel speed to turn rate in rad/s
+#define WHEEL_SEPARATION 0.2337
 std_msgs::msg::Bool motor;
 std_msgs::msg::Int32 motor_steps;
 std_msgs::msg::Float32 motor_accel;
@@ -114,13 +117,13 @@ void TeleopCmd::keyLoop() {
     case KEYCODE_8:
       RCLCPP_DEBUG(nh->get_logger(), "TURN LEFT");
       linear = 1.0;
-      angular = -0.5;
+      angular = 0.25;
       dirty = true;
       break;
     case KEYCODE_9:
       RCLCPP_DEBUG(nh->get_logger(), "TURN RIGHT");
       linear = 1.0;
-      angular = 0.5;
+      angular = -0.25;
       dirty = true;
       break;
     case KEYCODE_L_ARROW:
@@ -238,7 +241,9 @@ void TeleopCmd::keyLoop() {
     }
 
     geometry_msgs::msg::Twist twist;
-    twist.angular.z = velocity * angular;
+    // angular is the wheel speed difference as a fraction of velocity, sent
+    // as a turn rate in rad/s (positive is anticlockwise)
+    twist.angular.z = velocity * angular / (WHEEL_SEPARATION / 2.0);
     twist.linear.x = velocity * linear;
     if (dirty == true) {
       twist_pub_->publish(twist);

@@ -34,6 +34,7 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "tf2_ros/transform_broadcaster.h"
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <functional>
@@ -60,14 +61,12 @@ const int M0_SUBSTEP = 10;
 const int M1_SUBSTEP = 9;
 const int M2_SUBSTEP = 11;
 
-const int SWITCH_RED = 5;
-const int SWITCH_YELLOW = 11;
 const int RED_LED_PIN = 23;
 const int BLUE_LED_PIN = 24;
 
 // Hardware PWM frequency and constants
 const double MESSAGE_TIMEOUT = 0.1; // Time to stop if no message received
-const double ODOM_TIMEOUT = 0.05; // Sets frequency of speed check and report
+const double ODOM_TIMEOUT = 0.05;   // Sets frequency of speed check and report
 const double LED_FLASH_TIMER = 1.0;
 const int SUB_STEPS = 32;
 const int STEPS_PER_REVOLUTION = 200;
@@ -225,15 +224,16 @@ private:
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr sub_set_freq_;
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr sub_motor_accel_;
 
-  int left_step_count_;
-  int right_step_count_;
+  // Step counts and directions are shared with the pigpio callback thread
+  std::atomic<int> left_step_count_;
+  std::atomic<int> right_step_count_;
   bool motor_on_;
   MotorMode motor_mode_;
   double x_pos_;
   double y_pos_;
   double theta_;
-  bool left_forwards_;
-  bool right_forwards_;
+  std::atomic<bool> left_forwards_;
+  std::atomic<bool> right_forwards_;
   float last_left_target_velocity_;
   float last_right_target_velocity_;
   float current_left_velocity_;
@@ -334,22 +334,17 @@ private:
   }
 
   // Set the target velocity for the motors
-  void motor_set_target(float speed, float turn) {
-    if (turn < -1.0 || turn > 1.0) {
-      return; // Ignore invalid turn values
+  // speed is in m/s and turn_rate in rad/s, positive turns anticlockwise
+  // (REP-103), using differential drive kinematics
+  void motor_set_target(float speed, float turn_rate) {
+    if (speed != 0.0 && motor_mode_ == MotorMode::TURN_360) {
+      target_angle_ = current_angle_;
+      turn_started_ = false;
     }
 
-    if (speed == 0.0) { // For turn on spot
-      last_left_target_velocity_ = turn;
-      last_right_target_velocity_ = -turn;
-    } else {
-      if (motor_mode_ == MotorMode::TURN_360) {
-        target_angle_ = current_angle_;
-        turn_started_ = false;
-      }
-      last_left_target_velocity_ = speed * (1.0 - turn);
-      last_right_target_velocity_ = speed * (1.0 + turn);
-    }
+    float wheel_offset = turn_rate * WHEEL_SEPARATION / 2.0;
+    last_left_target_velocity_ = speed - wheel_offset;
+    last_right_target_velocity_ = speed + wheel_offset;
   }
 
   // Control loop to set the motor PWM based on the target velocities
@@ -372,7 +367,7 @@ private:
       set_motor_pwm_left(current_left_velocity_);
     }
 
-    if (old_current_right_velocity - current_right_velocity_) {
+    if (old_current_right_velocity != current_right_velocity_) {
       set_motor_pwm_right(current_right_velocity_);
     }
 
@@ -387,7 +382,7 @@ private:
   // If no message is received within the timeout period, stop the motors
   void message_timeout_callback() {
     // ROS callback if no message received to stop motors
-    if ((last_left_target_velocity_ != 0.0 &&
+    if ((last_left_target_velocity_ != 0.0 ||
          last_right_target_velocity_ != 0.0) &&
         motor_mode_ == MotorMode::AUTO) {
 
@@ -465,14 +460,13 @@ private:
     double x_delta;
     double y_delta;
     double theta_delta;
+    double angle_error;
 
-    left_delta = static_cast<double>(left_step_count_) * M_PER_REVOLUTION /
-                 (sub_steps_ * STEPS_PER_REVOLUTION);
-    right_delta = static_cast<double>(right_step_count_) * M_PER_REVOLUTION /
-                  (sub_steps_ * STEPS_PER_REVOLUTION);
-
-    left_step_count_ = 0;
-    right_step_count_ = 0;
+    // Read and reset atomically so no steps are lost to the callback thread
+    left_delta = static_cast<double>(left_step_count_.exchange(0)) *
+                 M_PER_REVOLUTION / (sub_steps_ * STEPS_PER_REVOLUTION);
+    right_delta = static_cast<double>(right_step_count_.exchange(0)) *
+                  M_PER_REVOLUTION / (sub_steps_ * STEPS_PER_REVOLUTION);
 
     left_speed_msg.data = static_cast<float>(left_delta / ODOM_TIMEOUT);
     right_speed_msg.data = static_cast<float>(right_delta / ODOM_TIMEOUT);
@@ -488,14 +482,14 @@ private:
     angle_msg.data =
         static_cast<float>(180.0 * theta_ / M_PI); // Send angle in degrees
     current_angle_ = angle_msg.data;
-    if ((std::abs(current_angle_ - target_angle_) > angle_delta_) &&
-        (!turn_started_)) {
+    // Wrap the error to +/-180 so it is correct across the +/-180 boundary
+    angle_error = std::abs(std::remainder(current_angle_ - target_angle_, 360.0));
+    if ((angle_error > angle_delta_) && (!turn_started_)) {
       turn_started_ = true;
       RCLCPP_INFO(this->get_logger(), "Turn started set to true");
     }
 
-    if (turn_started_ &&
-        std::abs(current_angle_ - target_angle_) < angle_delta_ &&
+    if (turn_started_ && angle_error < angle_delta_ &&
         motor_mode_ == MotorMode::TURN_360 &&
         (last_left_target_velocity_ != 0.0 ||
          last_right_target_velocity_ != 0.0)) {
@@ -536,10 +530,11 @@ private:
     odom.pose.pose.position.z = 0.0;
     odom.pose.pose.orientation = odom_quat;
 
-    // Set the velocity
+    // Set the velocity, which is in the child (base_link) frame
     odom.child_frame_id = "base_link";
-    odom.twist.twist.linear.x = x_delta / ODOM_TIMEOUT;
-    odom.twist.twist.linear.y = y_delta / ODOM_TIMEOUT;
+    odom.twist.twist.linear.x =
+        (left_speed_msg.data + right_speed_msg.data) / 2.0;
+    odom.twist.twist.linear.y = 0.0;
     odom.twist.twist.angular.z = theta_delta / ODOM_TIMEOUT;
 
     left_speed_pub_->publish(left_speed_msg);

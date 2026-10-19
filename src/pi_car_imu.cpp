@@ -32,7 +32,6 @@ Ave G -0.0617,0.0115,0.0011  A -0.6567,-1.78,10.47
 #include <iostream>
 #include <pigpiod_if2.h>
 #include <rclcpp/rclcpp.hpp>
-#include <signal.h>
 #include <stdlib.h>
 
 // Pin definition
@@ -61,6 +60,7 @@ Ave G -0.0617,0.0115,0.0011  A -0.6567,-1.78,10.47
 // Global variables
 rclcpp::TimerBase::SharedPtr imu_timer; // Timer for stop motors if no message
 rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub;
+rclcpp::Node::SharedPtr nh;
 int pi;   // Pi ID from Pigpio
 int i2ch; // I2C handle
 
@@ -101,12 +101,6 @@ short read_raw_data(int addr) {
   return value;
 }
 
-void sigintHandler([[maybe_unused]] int sig) {
-  // Shuting down
-
-  rclcpp::shutdown();
-}
-
 void imu_timer_callback() {
   // ROS timer callback to publish IMU data
   float Acc_x, Acc_y, Acc_z;
@@ -134,9 +128,9 @@ void imu_timer_callback() {
 
   // ROS_INFO("\n Gx=%.3f °/s\tGy=%.3f °/s\tGz=%.3f °/s\tAx=%.3f g\tAy=%.3f
   // g\tAz=%.3f g\n",Gx,Gy,Gz,Ax,Ay,Az);
-  imu_msg.header.stamp =
-      rclcpp::Node::make_shared("node_name")->get_clock()->now();
+  imu_msg.header.stamp = nh->now();
   imu_msg.header.frame_id = "imu_link";
+  imu_msg.orientation_covariance[0] = -1.0; // No orientation estimate
   imu_msg.angular_velocity.x = Gx + NGx;
   imu_msg.angular_velocity.y = Gy + NGy;
   imu_msg.angular_velocity.z = Gz + NGz;
@@ -150,17 +144,19 @@ void imu_timer_callback() {
 int main(int argc, char **argv) {
   rclcpp::InitOptions init_options;
   rclcpp::init(argc, argv, init_options);
-  auto nh = rclcpp::Node::make_shared("pi_car_imu");
+  nh = rclcpp::Node::make_shared("pi_car_imu");
   RCLCPP_INFO(nh->get_logger(), "Started Pi Car IMU");
-  signal(SIGINT, sigintHandler);
-  signal(SIGTERM, sigintHandler);
-  signal(SIGKILL, sigintHandler);
   if ((pi = pigpio_start(NULL, NULL)) < 0) {
     RCLCPP_ERROR(nh->get_logger(), "gpio init failed");
     return 1;
   }
   // Set up MPU6050
   i2ch = i2c_open(pi, 1, 0x68, 0);
+  if (i2ch < 0) {
+    RCLCPP_ERROR(nh->get_logger(), "Failed to open I2C device");
+    pigpio_stop(pi);
+    return 1;
+  }
   MPU6050_Init();
 
   // Set up ROS

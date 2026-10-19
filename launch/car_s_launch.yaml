@@ -13,12 +13,3 @@ launch:
 - node:
     pkg: "car_s"
     exec: "car_mag"
- 
-
-- node:
-    pkg: "car_s"
-    exec: "pwm_led"
-
-- node:
-    pkg: "car_s"
-    exec: "pi_power_control"

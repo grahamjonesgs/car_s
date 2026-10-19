@@ -33,7 +33,6 @@
 
 #include <iostream>
 #include <pigpiod_if2.h>
-#include <signal.h>
 #include <stdlib.h>
 
 // Topics
@@ -239,8 +238,6 @@ int readHeading() {
   return heading;
 }
 
-void sigintHandler([[maybe_unused]] int sig) { rclcpp::shutdown(); }
-
 void mag_timer_callback() {
   // ROS timer callback to publish mag data
   int16_t x, y, z, t;
@@ -248,7 +245,7 @@ void mag_timer_callback() {
   sensor_msgs::msg::MagneticField mag_msg;
 
   status = i2c_read_byte_data(pi, i2ch, QMC5883L_STATUS);
-  if (!status & QMC5883L_STATUS_DRDY) {
+  if (status < 0 || !(status & QMC5883L_STATUS_DRDY)) {
     return;
   }
 
@@ -256,9 +253,10 @@ void mag_timer_callback() {
   // ROS_INFO("Raw data %i, %i,%i",x,y,z);
   mag_msg.header.stamp = nh->get_clock()->now();
   mag_msg.header.frame_id = "mag_link";
-  mag_msg.magnetic_field.x = (int)(x / DigitPermg);
-  mag_msg.magnetic_field.y = (int)(y / DigitPermg);
-  mag_msg.magnetic_field.z = (int)(z / DigitPermg);
+  // Convert from milligauss to Tesla (1 mG = 1e-7 T)
+  mag_msg.magnetic_field.x = x / DigitPermg * 1e-7;
+  mag_msg.magnetic_field.y = y / DigitPermg * 1e-7;
+  mag_msg.magnetic_field.z = z / DigitPermg * 1e-7;
   mag_pub->publish(mag_msg);
 }
 
@@ -266,10 +264,6 @@ int main(int argc, char **argv) {
   rclcpp::init(argc, argv);
   nh = rclcpp::Node::make_shared("pi_car_mag");
   RCLCPP_INFO(nh->get_logger(), "Started Pi Car mag");
-
-  signal(SIGINT, sigintHandler);
-  signal(SIGTERM, sigintHandler);
-  signal(SIGKILL, sigintHandler);
   if ((pi = pigpio_start(NULL, NULL)) < 0) {
     RCLCPP_ERROR(nh->get_logger(), "gpio init failed");
     return 1;
