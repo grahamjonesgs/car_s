@@ -59,6 +59,6 @@ else()
   message(WARNING "pigpio not found: building key_cmd and imu_normalize only")
 endif()
 
-install(DIRECTORY launch urdf DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY launch urdf config DESTINATION share/${PROJECT_NAME})
 
 ament_package()

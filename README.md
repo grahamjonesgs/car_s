@@ -13,6 +13,7 @@ machine running ROS 2 on the same network, using `key_cmd`.
 - [Setting up the Pi from scratch](#setting-up-the-pi-from-scratch)
 - [Setting up the remote control machine](#setting-up-the-remote-control-machine)
 - [Running the car](#running-the-car)
+- [SLAM and navigation (on the PC)](#slam-and-navigation-on-the-pc)
 - [IMU calibration](#imu-calibration)
 - [Troubleshooting](#troubleshooting)
 
@@ -70,7 +71,7 @@ The magnetometer shares the IMU's I2C bus (SDA/SCL).
 | Executable | Runs on | What it does |
 |---|---|---|
 | `car_s_controller_accel` | Pi | Drives the steppers from `cmd_vel` with an acceleration ramp, publishes odometry |
-| `car_imu` | Pi | Reads the MPU6050 at 200 Hz, publishes `imu/data_raw` |
+| `car_imu` | Pi | Reads the MPU6050 at 100 Hz, publishes `imu/data_raw` |
 | `car_mag` | Pi | Reads the QMC5883L at 10 Hz, publishes `imu/mag` |
 | `key_cmd` | Remote PC | Keyboard teleop |
 | `imu_normalize` | Either | Prints running averages of `imu/data_raw`, for calibration |
@@ -87,21 +88,46 @@ Subscribed:
 |---|---|---|
 | `cmd_vel` | `geometry_msgs/Twist` | `linear.x` in m/s, `angular.z` in rad/s (positive = anticlockwise) |
 | `motor_on` | `std_msgs/Bool` | Enables or disables the stepper drivers. **The motors stay disabled until this is set true.** |
-| `motor_mode` | `std_msgs/Int32` | 1 = continuous (keep going until told otherwise), 2 = auto (stop 0.1 s after the last `cmd_vel`, the default), 3 = turn 360 (stop after one full spin) |
+| `motor_mode` | `std_msgs/Int32` | 1 = continuous (keep going until told otherwise), 2 = auto (stop `cmd_vel_timeout`, 0.3 s, after the last `cmd_vel`, the default), 3 = turn 360 (stop after one full spin) |
 | `motor_steps` | `std_msgs/Int32` | Microsteps: 1, 2, 4, 8, 16 or 32 (default 32) |
 | `motor_accel` | `std_msgs/Float32` | Acceleration ramp in m/s², 0 = no ramp |
 
 Published: `odom` (`nav_msgs/Odometry`), TF `odom` → `base_link`,
 `left_speed` and `right_speed` (m/s), `angle` (heading in degrees).
 
+Parameters (all can be changed while it runs, with
+`ros2 param set /car_controller <name> <value>`):
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| `publish_odom_tf` | `true` | Publish the TF `odom` → `base_link`. The PC launch turns it off while its EKF publishes that TF instead |
+| `wheel_separation` | `0.2337` | Effective distance between left and right wheels (m). Skid steer usually needs more than the physical value, see [docs/HANDOFF.md](docs/HANDOFF.md) |
+| `m_per_revolution` | `0.21` | Distance travelled per wheel revolution (m) |
+| `cmd_vel_timeout` | `0.3` | In auto mode, stop this long (s) after the last `cmd_vel` |
+
+Values set with `ros2 param set` are lost when the node restarts. To keep
+calibrated values, change the defaults in
+[src/pi_car_s_controller_accel.cpp](src/pi_car_s_controller_accel.cpp).
+
 Odometry is worked out from the step pulses sent to the motors, so it is wrong
 if the wheels slip.
 
 ### Frames
 
-`odom` → `base_link` comes from the controller. `robot_state_publisher` adds
+`odom` → `base_link` comes from the controller, or from the EKF on the PC
+while `pc_bringup.launch.py` runs. `robot_state_publisher` adds
 `base_link` → `imu_link`, `laser_link` and the wheel links from
-[urdf/robot_car.urdf.xml](urdf/robot_car.urdf.xml).
+[urdf/robot_car.urdf.xml](urdf/robot_car.urdf.xml). With SLAM or AMCL
+running, they add `map` → `odom`.
+
+### IMU
+
+`car_imu` calibrates the gyro bias for its first 2 seconds, so **keep the
+car still while it starts** (including at boot). If it moves during that
+time the node logs a warning and uses the built-in offsets instead. The
+`rate_hz` (default 100) and `calibration_time` (default 2.0 s, 0 to skip)
+parameters change this. The magnetometer is uncalibrated and distorted by
+the steppers, so it isn't used for navigation.
 
 ## Setting up the Pi from scratch
 
@@ -336,7 +362,7 @@ time after any change.
 | `l` | Lidar motor on / off (starts off) |
 | Ctrl-C | Quit |
 
-In the default auto mode the car stops 0.1 s after the last command and
+In the default auto mode the car stops 0.3 s after the last command and
 `key_cmd` sends one command per key press, so **hold the key down** to keep
 moving. To keep moving after a single press, switch to continuous mode:
 
@@ -357,13 +383,45 @@ ros2 topic hz /scan
 To view the car in RViz on the remote machine, set the fixed frame to `odom`
 and add TF, LaserScan (`/scan`) and RobotModel (topic `/robot_description`).
 
+## SLAM and navigation (on the PC)
+
+[launch/pc_bringup.launch.py](launch/pc_bringup.launch.py) runs the heavy
+processing on the PC: a `robot_localization` EKF (wheel speed + gyro yaw
+rate), `slam_toolbox`, Nav2 and RViz, using the parameters in
+[config/](config/). It starts the lidar motor, and turns off the
+controller's TF while the EKF runs (turning it back on when you stop it with
+Ctrl-C). Install the PC packages first:
+
+```bash
+sudo apt install ros-jazzy-robot-localization ros-jazzy-slam-toolbox ros-jazzy-nav2-bringup
+```
+
+| Task | Command |
+|---|---|
+| Build a map, driving with `key_cmd` | `ros2 launch car_s pc_bringup.launch.py` |
+| Save the map | `ros2 run nav2_map_server map_saver_cli -f ~/maps/room` |
+| Map and navigate at the same time | `ros2 launch car_s pc_bringup.launch.py nav2:=true motors_on:=true` |
+| Navigate on a saved map | `ros2 launch car_s pc_bringup.launch.py slam:=false nav2:=true motors_on:=true map:=$HOME/maps/room.yaml` |
+| EKF only, no SLAM or RViz | `ros2 launch car_s pc_bringup.launch.py slam:=false rviz:=false` |
+
+When navigating on a saved map, set the car's starting pose in RViz with
+**2D Pose Estimate** before sending goals with **Nav2 Goal**. `motors_on:=true`
+enables the drivers so Nav2 can drive. Without it, press `m` in `key_cmd`.
+
+The PC's clock must be NTP-synced (`timedatectl` should show
+`System clock synchronized: yes`). If it isn't, TF lookups between the
+machines fail.
+
 ## IMU calibration
 
-The gyro and accelerometer offsets are hard-coded as `NGx`…`NAz` near the top
-of [src/pi_car_imu.cpp](src/pi_car_imu.cpp) and added to every reading.
+The gyro offsets are measured automatically at start-up (see [IMU](#imu)).
+The accelerometer offsets, and the gyro fallback offsets, are hard-coded as
+`NGx`…`NAz` near the top of [src/pi_car_imu.cpp](src/pi_car_imu.cpp) and
+added to every reading. To recalibrate them:
 
 1. Put the car on a level surface and keep it still.
-2. Run `car_imu` and `ros2 run car_s imu_normalize`, and wait for the averages
+2. Run `car_imu` with `-p calibration_time:=0.0` (so the built-in gyro
+   offsets are used) and `ros2 run car_s imu_normalize`, and wait for the averages
    to settle (a few thousand readings).
 3. The averages should be 0 for all gyro axes and accel X/Y, and 9.81 for
    accel Z. For each value, adjust the offset by the error: for example if

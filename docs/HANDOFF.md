@@ -5,6 +5,61 @@ remote control PC. Read [README.md](../README.md) first for the hardware,
 topics and how to run things. This file covers where things stand and what
 needs doing to get sensor fusion, SLAM and Nav2 working.
 
+## Progress since the handoff (2026-10-19, PC session)
+
+Done on the PC (`Ubuntu-ROS`, 192.168.68.82, a 4-core VM):
+
+- **NTP was off on the PC** and its clock was 0.68 s behind the Pi. Turned
+  on with `timedatectl set-ntp true`; it now shows synchronized.
+- Stopped tracking `build/`, `install/` and `log/` in git.
+- Pi-side code changes from section 2 are all done (commit "Prepare Pi
+  nodes for EKF fusion"), but **not yet pulled or built on the Pi**: the PC
+  has no SSH access to it. See "Next steps" below.
+- PC configs and launch file added: `config/ekf.yaml`, `config/slam.yaml`,
+  `config/nav2.yaml` and `launch/pc_bringup.launch.py` (see the README's
+  "SLAM and navigation" section).
+- All of it was tested on the PC against a simulated car (a stand-in for
+  the Pi nodes in a 4 × 3 m room, on an isolated ROS domain). The EKF
+  matched ground truth, SLAM drift stayed under 5 cm, and Nav2 reached goals
+  around an obstacle. With AMCL on a saved map, the first goal succeeded
+  (AMCL within about 10 cm of ground truth), but the return goal didn't
+  finish within the test's 90 s limit (it got within 0.4 m). The controller
+  TF was turned off while running and back on after Ctrl-C. This tests the
+  configuration and wiring only, not the real car's sensors or slip.
+
+Found while checking the live car from the PC:
+
+- **The IMU only produced about 70 Hz, not 200 Hz**: message timestamps
+  spanned 20 s for 1,398 messages, so the shortfall was on the Pi. The 12
+  single-byte I2C reads per sample through `pigpiod` were too slow. It now
+  uses one block read at 100 Hz.
+- **The gyro Z bias had drifted to −0.030 rad/s (−1.7°/s)**, which would
+  make yaw drift about 100° a minute. `car_imu` now calibrates the gyro bias
+  for 2 s at start-up, so keep the car still while it starts.
+- Gyro noise at rest is about 3e-6 (rad/s)² per axis; accel noise is about
+  1e-3 to 7e-3 (m/s²)².
+- **The rear half of the lidar scan (about 90° to 270°) shows returns
+  0.17–0.33 m away**, with the front half clear out to 0.7–2.4 m. That's
+  either the car parked next to something, or the lidar seeing the car's own
+  body or mounts. Check this on the real car. If it's the car, those points
+  will mark an obstacle on top of the robot in the costmaps and Nav2 won't
+  move; fix it with `obstacle_min_range` in `config/nav2.yaml` or a
+  `laser_filters` box filter.
+- The URDF wheel joints were `continuous` with nothing publishing
+  `joint_states`, so the wheel TFs were missing. They're now `fixed`.
+
+### Next steps
+
+1. **On the Pi**: pull and build (commands in section 2), then
+   `sudo systemctl restart car_s`. Check the log
+   (`journalctl -u car_s -f`) for "Gyro calibrated from 200 readings", and
+   `ros2 topic hz /imu/data_raw` on the PC shows about 100 Hz.
+2. Check the sensor mounting (section 3) and calibrate the odometry
+   (section 4) on the real car with the owner.
+3. Check the lidar's close returns at the back (above).
+4. Map with `ros2 launch car_s pc_bringup.launch.py` and `key_cmd`, then
+   try Nav2.
+
 ## Goal
 
 The owner has never got the IMU, lidar and wheel odometry working together
@@ -114,17 +169,24 @@ file, so they're version controlled. CMake already installs `launch/` and
 
 All in `src/pi_car_s_controller_accel.cpp` and `src/pi_car_imu.cpp`:
 
-- [ ] Add a parameter `publish_odom_tf` (default true) to the controller,
+- [x] Add a parameter `publish_odom_tf` (default true) to the controller,
   and skip `odom_broadcaster_->sendTransform` when it's false. Set it to
   false in `launch/robot_car.launch.py` when the EKF is in use.
-- [ ] Set covariances on `/odom`: twist `vx` about 0.01, `vyaw` large
+  *Done differently: it can be changed at run time, and
+  `pc_bringup.launch.py` sets it to false while the EKF runs and back to
+  true when it stops. `robot_car.launch.py` also has a `publish_odom_tf`
+  argument.*
+- [x] Set covariances on `/odom`: twist `vx` about 0.01, `vyaw` large
   (about 0.5, as wheel yaw is unreliable), and pose diagonals non-zero.
-- [ ] Set `angular_velocity_covariance` and `linear_acceleration_covariance`
+- [x] Set `angular_velocity_covariance` and `linear_acceleration_covariance`
   on `/imu/data_raw` (gyro about 0.0005 (rad/s)², accel about 0.05 (m/s²)²
   on the diagonals as a starting point).
-- [ ] Make `WHEEL_SEPARATION` (and ideally `M_PER_REVOLUTION`) ROS
-  parameters, so they can be calibrated without rebuilding.
-- [ ] Optional: reduce the IMU to 100 Hz to cut WiFi traffic (`IMU_TIMER`).
+- [x] Make `WHEEL_SEPARATION` (and ideally `M_PER_REVOLUTION`) ROS
+  parameters, so they can be calibrated without rebuilding. *Done:
+  `wheel_separation` and `m_per_revolution`, settable at run time with
+  `ros2 param set /car_controller ...`. Also added `cmd_vel_timeout`
+  (default raised from 0.1 to 0.3 s, for WiFi jitter).*
+- [x] Optional: reduce the IMU to 100 Hz to cut WiFi traffic (`IMU_TIMER`).
 
 The owner builds on the Pi with:
 ```bash
@@ -150,12 +212,16 @@ cd ~/ros_ws && MAKEFLAGS=-j2 colcon build --symlink-install --parallel-workers 2
 - **Straight line:** drive 2 m by tape measure and compare `/odom`. Adjust
   `M_PER_REVOLUTION` (currently 0.21) if it's off.
 - **Rotation:** spin on the spot exactly 5 turns and compare `/angle` (or
-  integrate gyro Z). Scale the effective `WHEEL_SEPARATION` up until the wheel
-  yaw matches. Skid steer usually needs 1.3–2× the physical track.
+  integrate gyro Z). Scale the effective `wheel_separation` up until the wheel
+  yaw matches. Skid steer usually needs 1.3–2× the physical track. Both can
+  be tried live with `ros2 param set /car_controller wheel_separation 0.35`
+  (and `m_per_revolution`), then made permanent by changing the defaults in
+  the controller source.
 
 ### 5. EKF (`robot_localization`) on the PC
 
-A starting point (`config/ekf.yaml`):
+*Done: [config/ekf.yaml](../config/ekf.yaml), started by
+`launch/pc_bringup.launch.py`. The starting point was:*
 
 ```yaml
 ekf_filter_node:
@@ -191,13 +257,22 @@ ros2 launch slam_toolbox online_async_launch.py \
   slam_params_file:=<repo>/config/slam.yaml
 ```
 
-Copy the default `mapper_params_online_async.yaml` into the repo, and set
+*Done: [config/slam.yaml](../config/slam.yaml). Note that slam_toolbox's
+`online_async_launch.py` defaults to `use_sim_time:=true`, which
+`pc_bringup.launch.py` overrides.* Copy the default
+`mapper_params_online_async.yaml` into the repo, and set
 `base_frame: base_link`, `odom_frame: odom`, `scan_topic: /scan`, and
 `max_laser_range: 8.0` (the A1 is reliable to about 8 m indoors). Drive slowly
 (0.1–0.15 m/s, gentle turns). Save the map with `ros2 run nav2_map_server
 map_saver_cli -f <name>`.
 
 ### 7. Nav2 on the PC
+
+*Done: [config/nav2.yaml](../config/nav2.yaml), run composed in one process
+(separate processes overloaded the 4-core PC). The MPPI controller is lighter
+than the default (1,000 samples, a 2 s horizon), and the BT navigator's
+`default_server_timeout` is raised from 20 to 100 ms, which stopped goals
+aborting under load.*
 
 - **Twist type:** the controller subscribes to `geometry_msgs/Twist` (not
   stamped) on `/cmd_vel`. Make sure Nav2 publishes unstamped Twist

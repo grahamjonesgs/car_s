@@ -1,0 +1,203 @@
+# PC side of the car: EKF, SLAM, Nav2 and RViz. The Pi runs
+# robot_car.launch.py (the controller, sensors and robot_state_publisher).
+#
+#   Mapping:             ros2 launch car_s pc_bringup.launch.py
+#   Mapping + Nav2:      ros2 launch car_s pc_bringup.launch.py nav2:=true
+#   Nav2 on a saved map: ros2 launch car_s pc_bringup.launch.py slam:=false \
+#                          nav2:=true map:=$HOME/maps/room.yaml
+#
+# While the EKF runs it publishes odom -> base_link, so this turns off the
+# controller's own TF (publish_odom_tf) and turns it back on at shutdown.
+
+import os
+import subprocess
+
+from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription
+from launch.actions import (DeclareLaunchArgument, ExecuteProcess,
+                            IncludeLaunchDescription, LogInfo, OpaqueFunction,
+                            RegisterEventHandler)
+from launch.conditions import IfCondition
+from launch.event_handlers import OnShutdown
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration, PythonExpression
+from launch_ros.actions import Node
+
+CONTROLLER_NODE = '/car_controller'
+
+# Discovery of the Pi's nodes over WiFi can take a few seconds, so retry
+RETRY = 'for i in $(seq 30); do {cmd} && exit 0; sleep 1; done; exit 1'
+
+
+def restore_on_shutdown(context):
+    """Give the controller back its TF, and stop the lidar, when this exits."""
+    commands = []
+    if LaunchConfiguration('ekf').perform(context).lower() == 'true':
+        commands.append(['ros2', 'param', 'set', CONTROLLER_NODE,
+                         'publish_odom_tf', 'true'])
+    if LaunchConfiguration('start_lidar').perform(context).lower() == 'true':
+        commands.append(['ros2', 'service', 'call', '/stop_motor',
+                         'std_srvs/srv/Empty'])
+    for cmd in commands:
+        print(f'[pc_bringup] Running: {" ".join(cmd)}', flush=True)
+        try:
+            r = subprocess.run(cmd, timeout=10, check=False,
+                               capture_output=True, text=True)
+            print(f'[pc_bringup] Exit code {r.returncode}', flush=True)
+        except subprocess.TimeoutExpired:
+            print(f'[pc_bringup] Timed out running: {" ".join(cmd)}', flush=True)
+    return []
+
+
+def generate_launch_description():
+    car_s_dir = get_package_share_directory('car_s')
+    slam_dir = get_package_share_directory('slam_toolbox')
+    nav2_dir = get_package_share_directory('nav2_bringup')
+
+    ekf = LaunchConfiguration('ekf')
+    slam = LaunchConfiguration('slam')
+    nav2 = LaunchConfiguration('nav2')
+    map_yaml = LaunchConfiguration('map')
+    rviz = LaunchConfiguration('rviz')
+    start_lidar = LaunchConfiguration('start_lidar')
+    motors_on = LaunchConfiguration('motors_on')
+
+    args = [
+        DeclareLaunchArgument(
+            'ekf', default_value='true',
+            description='Fuse wheel odometry and gyro with robot_localization'),
+        DeclareLaunchArgument(
+            'slam', default_value='true',
+            description='Build a map with slam_toolbox'),
+        DeclareLaunchArgument(
+            'nav2', default_value='false',
+            description='Run Nav2 navigation'),
+        DeclareLaunchArgument(
+            'map', default_value='',
+            description='Map yaml to localise on with AMCL. Use with slam:=false'),
+        DeclareLaunchArgument(
+            'rviz', default_value='true',
+            description='Start RViz'),
+        DeclareLaunchArgument(
+            'start_lidar', default_value='true',
+            description='Start the lidar motor (it is stopped after the Pi boots)'),
+        DeclareLaunchArgument(
+            'motors_on', default_value='false',
+            description='Enable the stepper drivers, needed for Nav2 to drive. '
+                        'Otherwise press m in key_cmd'),
+    ]
+
+    ekf_node = Node(
+        package='robot_localization',
+        executable='ekf_node',
+        name='ekf_filter_node',
+        output='screen',
+        parameters=[os.path.join(car_s_dir, 'config', 'ekf.yaml'),
+                    {'use_sim_time': False}],
+        condition=IfCondition(ekf),
+    )
+
+    controller_tf_off = ExecuteProcess(
+        cmd=['bash', '-c', RETRY.format(
+            cmd=f'ros2 param set {CONTROLLER_NODE} publish_odom_tf false')],
+        output='screen',
+        condition=IfCondition(ekf),
+    )
+
+    lidar_on = ExecuteProcess(
+        cmd=['ros2', 'service', 'call', '/start_motor', 'std_srvs/srv/Empty'],
+        output='log',
+        condition=IfCondition(start_lidar),
+    )
+
+    enable_motors = ExecuteProcess(
+        cmd=['ros2', 'topic', 'pub', '--once', '-w', '1', '/motor_on',
+             'std_msgs/msg/Bool', '{data: true}'],
+        output='log',
+        condition=IfCondition(motors_on),
+    )
+
+    slam_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(slam_dir, 'launch', 'online_async_launch.py')),
+        launch_arguments={
+            'slam_params_file': os.path.join(car_s_dir, 'config', 'slam.yaml'),
+            # Its default is true, which would wait for a simulator clock
+            'use_sim_time': 'false',
+        }.items(),
+        condition=IfCondition(slam),
+    )
+
+    nav2_params = os.path.join(car_s_dir, 'config', 'nav2.yaml')
+    run_nav2 = PythonExpression(
+        ["'", nav2, "'.lower() == 'true' or '", map_yaml, "' != ''"])
+
+    # Nav2 runs composed in one process, which uses far less CPU than a
+    # process per server
+    nav2_container = Node(
+        name='nav2_container',
+        package='rclcpp_components',
+        executable='component_container_isolated',
+        parameters=[nav2_params, {'autostart': True, 'use_sim_time': False}],
+        output='screen',
+        condition=IfCondition(run_nav2),
+    )
+
+    localization_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(nav2_dir, 'launch', 'localization_launch.py')),
+        launch_arguments={
+            'map': map_yaml,
+            'params_file': nav2_params,
+            'use_sim_time': 'false',
+            'use_composition': 'True',
+            'container_name': 'nav2_container',
+        }.items(),
+        condition=IfCondition(PythonExpression(["'", map_yaml, "' != ''"])),
+    )
+
+    navigation_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(nav2_dir, 'launch', 'navigation_launch.py')),
+        launch_arguments={
+            'params_file': nav2_params,
+            'use_sim_time': 'false',
+            'use_composition': 'True',
+            'container_name': 'nav2_container',
+        }.items(),
+        condition=IfCondition(nav2),
+    )
+
+    both_maps_warning = LogInfo(
+        msg='WARNING: slam is on and a map is given, so both slam_toolbox and '
+            'AMCL publish map -> odom. Use slam:=false with map:=...',
+        condition=IfCondition(PythonExpression(
+            ["'", slam, "'.lower() == 'true' and '", map_yaml, "' != ''"])),
+    )
+
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='log',
+        arguments=['-d', os.path.join(nav2_dir, 'rviz', 'nav2_default_view.rviz')],
+        parameters=[{'use_sim_time': False}],
+        condition=IfCondition(rviz),
+    )
+
+    on_shutdown = RegisterEventHandler(
+        OnShutdown(on_shutdown=[OpaqueFunction(function=restore_on_shutdown)]))
+
+    return LaunchDescription(args + [
+        both_maps_warning,
+        controller_tf_off,
+        ekf_node,
+        lidar_on,
+        enable_motors,
+        slam_launch,
+        nav2_container,
+        localization_launch,
+        navigation_launch,
+        rviz_node,
+        on_shutdown,
+    ])
