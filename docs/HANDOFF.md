@@ -99,10 +99,12 @@ while the service is running.
 same setup. Don't run the PC stack on both machines at once: two EKFs or two
 SLAM nodes fight over the car's TF.
 
-**Possible tuning on the Beelink:** `config/nav2.yaml` was cut down for the
-4-core VM (MPPI `batch_size` 1000 and `time_steps` 40, instead of the
-defaults 2000 and 56). With 24 threads the defaults can come back. Keep
-`default_server_timeout: 100`.
+**Nav2 on the Beelink:** `config/nav2.yaml` had been cut down for the
+4-core VM (MPPI `batch_size` 1000 and `time_steps` 40). It's now back to the
+defaults, 2000 and 56. Checked with `tools/sim_test.sh nav2:=true`: goals
+around the box and back succeeded with no missed control loops. Keep
+`default_server_timeout: 100`. **Note:** `config/nav2.yaml` is now too heavy
+for the old VM. If Nav2 ever runs there again, cut these back.
 
 ## Testing without the car
 
