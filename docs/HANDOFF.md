@@ -31,6 +31,10 @@ WiFi.
 - The Pi is `pi-car`, 192.168.68.78/22 on WiFi. Its clock is NTP-synced
   (`systemd-timesyncd`). Make sure the PC is NTP-synced too, or TF lookups
   across machines will fail or extrapolate.
+- `pigpiod` and `car_s` (which runs `robot_car.launch.py`) are systemd
+  services on the Pi, so the car's nodes come up at boot. After pulling and
+  building new Pi code, run `sudo systemctl restart car_s`. Stop it
+  (`sudo systemctl stop car_s`) before running car nodes by hand.
 - `pigpiod` runs as a systemd service on the Pi. The lidar is on
   `/dev/ttyUSB0`, and the user is in `dialout`.
 - Tested working:

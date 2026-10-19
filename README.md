@@ -218,6 +218,33 @@ cd ~/ros_ws && MAKEFLAGS=-j2 colcon build --symlink-install --parallel-workers 2
 
 After an `apt upgrade` that updates ROS packages, rebuild the workspace.
 
+### 5. Start the car at boot (optional)
+
+[systemd/car_s.service](systemd/car_s.service) runs
+`ros2 launch car_s robot_car.launch.py` at boot, after `pigpiod` and once
+WiFi has an address. It restarts the launch if it crashes. Edit `User`,
+`HOME` and the paths if your user isn't `graham`.
+
+```bash
+sudo cp ~/ros_ws/src/car_s/systemd/car_s.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now car_s
+```
+
+The motors stay disabled until `motor_on` is sent, so it's safe to leave
+running.
+
+| Task | Command |
+|---|---|
+| Watch the output | `journalctl -u car_s -f` |
+| Stop it, to run things by hand | `sudo systemctl stop car_s` |
+| Start it again | `sudo systemctl start car_s` |
+| Restart it after a rebuild | `sudo systemctl restart car_s` |
+| Stop it starting at boot | `sudo systemctl disable car_s` |
+
+Stop the service before running the launch file or any car node by hand.
+Two controllers on the Pi fight over the GPIO pins.
+
 ## Setting up the remote control machine
 
 Install ROS 2 Jazzy (`ros-jazzy-desktop` if you want RViz), then build
@@ -242,6 +269,10 @@ remote machine with `ros2 topic list` while the car is running.
 ## Running the car
 
 ### On the Pi
+
+If the `car_s` service is enabled, the full robot is already running after
+boot and you can go straight to the remote machine. Otherwise, start it by
+hand.
 
 Full robot: motors, IMU, magnetometer, lidar and `robot_state_publisher`:
 

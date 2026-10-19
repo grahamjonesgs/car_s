@@ -1,0 +1,22 @@
+[Unit]
+Description=car_s robot (ros2 launch car_s robot_car.launch.py)
+Requires=pigpiod.service
+After=pigpiod.service network-online.target
+Wants=network-online.target
+
+[Service]
+User=graham
+Group=graham
+Environment=HOME=/home/graham
+# DDS only uses network interfaces that exist at start-up, so wait for WiFi
+ExecStartPre=/bin/sh -c 'until ip -4 addr show wlan0 | grep -q inet; do sleep 1; done'
+ExecStart=/bin/bash -c 'source /opt/ros/jazzy/setup.bash && source /home/graham/ros_ws/install/setup.bash && exec ros2 launch car_s robot_car.launch.py'
+# SIGINT lets ros2 launch shut the nodes down cleanly (the controller disables the motors)
+KillSignal=SIGINT
+TimeoutStartSec=120
+TimeoutStopSec=20
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
