@@ -122,9 +122,11 @@ def generate_launch_description():
         condition=IfCondition(start_lidar),
     )
 
+    # Publish a few times: a single message from a process that exits
+    # straight away can be lost over WiFi
     enable_motors = ExecuteProcess(
-        cmd=['ros2', 'topic', 'pub', '--once', '-w', '1', '/motor_on',
-             'std_msgs/msg/Bool', '{data: true}'],
+        cmd=['ros2', 'topic', 'pub', '-w', '1', '--times', '3', '--rate', '2',
+             '/motor_on', 'std_msgs/msg/Bool', '{data: true}'],
         output='log',
         condition=IfCondition(motors_on),
     )
