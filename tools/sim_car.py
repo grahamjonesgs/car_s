@@ -114,10 +114,11 @@ class FakeCar(Node):
         s.angle_increment = 2 * math.pi / 360
         s.range_min, s.range_max = 0.15, 12.0
         s.scan_time = 1 / 7.0
-        # laser_link is 0.1 m ahead of base_link
+        # laser_link is 0.1 m ahead of base_link, facing backwards like the
+        # real lidar (laser_joint yaw is pi in the URDF)
         lx = self.x + 0.1 * math.cos(self.th)
         ly = self.y + 0.1 * math.sin(self.th)
-        s.ranges = [ray(lx, ly, self.th + s.angle_min + i * s.angle_increment) for i in range(360)]
+        s.ranges = [ray(lx, ly, self.th + math.pi + s.angle_min + i * s.angle_increment) for i in range(360)]
         self.scan_pub.publish(s)
 
 

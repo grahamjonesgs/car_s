@@ -28,13 +28,32 @@ can't move; checked from the old PC VM):
   changed. Recheck with `tools/scan_check.py` once it's on the floor in open
   space.
 
+**Checked on the floor on 2026-10-20:**
+
+- The motor directions are right: a positive `linear.x` drives forward and a
+  positive `angular.z` turns anticlockwise (seen by the owner). The gyro
+  agrees: positive Z for an anticlockwise turn.
+- **The lidar is mounted facing backwards**: an object in front of the car
+  appeared at 180° in the scan, and a wall on the car's left appeared on the
+  right. Fixed by giving `laser_joint` a yaw of π in the URDF (and in
+  `tools/sim_car.py`).
+- First odometry numbers from a 34° turn: the gyro measured 29.1°, so the car
+  under-rotates by about 16% (effective `wheel_separation` about 0.28 m).
+  Only a first estimate.
+- The lidar USB cable had failed and was replaced.
+- **rplidar_ros 2.1.0 bug:** calling `/start_motor` while the lidar is
+  already running wedges the driver (no scans, and every later service call
+  hangs). Only call it when the motor is stopped; if it wedges, restart
+  `car_s`. Also, `timeout` around `tools/jazzy` only kills the distrobox
+  wrapper, not the ROS command inside, so timed-out `ros2 service call`s
+  stay waiting and can fire later.
+- After a cold boot the Pi's clock ran up to 45 ms fast until
+  `systemd-timesyncd` caught up (restarting it helped).
+
 **Not yet done** (all need the battery connected and someone at the car):
 
-1. Check that up-arrow in `key_cmd` drives forward and left-arrow turns
-   anticlockwise, wheels off the ground first. If mirrored, fix the `DIR`
-   pin logic in the controller.
-2. Check the sensor mounting (section 3) and calibrate the odometry
-   (section 4). `wheel_separation` and `m_per_revolution` can be changed live
+1. ~~Motor directions~~ (done, see above).
+2. Calibrate the odometry (section 4). `wheel_separation` and `m_per_revolution` can be changed live
    with `ros2 param set /car_controller ...`.
 3. Map a room: `ros2 launch car_s pc_bringup.launch.py` plus `key_cmd`, then
    save it with `ros2 run nav2_map_server map_saver_cli -f ~/maps/room`.

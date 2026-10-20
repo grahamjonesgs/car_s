@@ -136,6 +136,8 @@
   <joint name="laser_joint" type="fixed">
     <parent link="base_link"/>
     <child link="laser_link"/>
-    <origin xyz="0.1 0 0.1" rpy="0 0 0"/>
+    <!-- The lidar is mounted with its 0 degree direction facing backwards
+         (checked 2026-10-20 with an object in front of the car) -->
+    <origin xyz="0.1 0 0.1" rpy="0 0 3.14159"/>
   </joint>
 </robot>
