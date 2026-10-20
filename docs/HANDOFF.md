@@ -65,10 +65,22 @@ can't move; checked from the old PC VM):
    with `ros2 param set /car_controller ...`.
 3. Map a room: `ros2 launch car_s pc_bringup.launch.py` plus `key_cmd`, then
    save it with `ros2 run nav2_map_server map_saver_cli -f ~/maps/room`.
-4. Nav2 with clicked goals (`nav2:=true motors_on:=true`). Nav2 hasn't driven
-   the real car yet.
-5. Optional: autonomous exploration with `explore_lite` (m-explore-ros2,
-   built from source; not set up).
+4. ~~Nav2 with clicked goals~~: worked on the real car on 2026-10-20, on a
+   saved map with AMCL (`~/maps/room.yaml` on the Beelink). AMCL now starts
+   at the map origin (`set_initial_pose`), so 2D Pose Estimate is only needed
+   if the car starts elsewhere.
+5. Autonomous exploration: `pc_bringup.launch.py explore:=true
+   motors_on:=true`. `explore_lite` is built from source in
+   `~/ros2_ws/src/m-explore-ros2` on the Beelink and works in the simulator,
+   but **hasn't run on the real car yet**. Supervise the first runs.
+
+**Fixed: Nav2's global costmap never got the SLAM map.** slam_toolbox
+publishes `/map` as volatile, and the costmap's static layer subscribed as
+transient local, which DDS treats as incompatible, so it silently got
+nothing: the costmap stayed at its default 5 × 5 m from (0, 0) and plans
+outside it failed. `pc_bringup` now sets `map_subscribe_transient_local`
+to false when SLAM runs (true with map_server, which publishes only once).
+This affected every SLAM + Nav2 run, not AMCL on a saved map.
 
 ## The PC is now the Beelink
 
@@ -145,7 +157,11 @@ Pitfalls from testing:
 
 - **Duplicate stacks:** a leftover EKF, SLAM or Nav2 from an earlier run
   causes TF fights and SLAM drift that looks like a config problem. Check
-  `ros2 node list` for duplicates before believing a bad result.
+  `ros2 node list` for duplicates before believing a bad result. This
+  includes the sim's `robot_state_publisher` on domain 42: one left over from
+  an interrupted run kept publishing an old URDF's TF a day later. Find
+  leftovers with `pgrep -af robot_state_publisher` and check their
+  `ROS_DOMAIN_ID` in `/proc/<pid>/environ`.
 - **Stopping launches from scripts:** background jobs in non-interactive
   shells start with SIGINT ignored, so `kill -INT` or `timeout -s INT` don't
   stop `ros2 launch`, and SIGTERM kills it without cleanup (leaving its nodes

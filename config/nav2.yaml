@@ -43,6 +43,14 @@ amcl:
     z_rand: 0.5
     z_short: 0.05
     scan_topic: scan
+    # Assume the car starts where mapping started (the map origin, facing
+    # +x). Elsewhere, set the pose with RViz's 2D Pose Estimate
+    set_initial_pose: true
+    initial_pose:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      yaw: 0.0
 
 bt_navigator:
   ros__parameters:

@@ -1,0 +1,23 @@
+# explore_lite (m-explore-ros2, built from source on the PC) for frontier
+# exploration, started by pc_bringup.launch.py explore:=true. It reads
+# slam_toolbox's map and sends goals to Nav2. These are the package defaults,
+# which mapped the simulated room in tools/sim_test.sh.
+explore_node:
+  ros__parameters:
+    use_sim_time: false
+    robot_base_frame: base_link
+    costmap_topic: map
+    costmap_updates_topic: map_updates
+    visualize: true
+    # Drive back to the start once there are no frontiers left
+    return_to_init: true
+    # How often (Hz) to pick a new frontier
+    planner_frequency: 0.15
+    # Give up on a frontier if the car makes no progress for this long (s)
+    progress_timeout: 30.0
+    potential_scale: 3.0
+    orientation_scale: 0.0
+    gain_scale: 1.0
+    transform_tolerance: 0.3
+    # Ignore frontiers smaller than this (m)
+    min_frontier_size: 0.75

@@ -5,6 +5,8 @@
 #   Mapping + Nav2:      ros2 launch car_s pc_bringup.launch.py nav2:=true
 #   Nav2 on a saved map: ros2 launch car_s pc_bringup.launch.py slam:=false \
 #                          nav2:=true map:=$HOME/maps/room.yaml
+#   Explore and map by itself: ros2 launch car_s pc_bringup.launch.py \
+#                          explore:=true motors_on:=true
 #
 # While the EKF runs it publishes odom -> base_link, so this turns off the
 # controller's own TF (publish_odom_tf) and turns it back on at shutdown.
@@ -22,6 +24,7 @@ from launch.event_handlers import OnShutdown
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
+from nav2_common.launch import RewrittenYaml
 
 CONTROLLER_NODE = '/car_controller'
 
@@ -61,6 +64,7 @@ def generate_launch_description():
     rviz = LaunchConfiguration('rviz')
     start_lidar = LaunchConfiguration('start_lidar')
     motors_on = LaunchConfiguration('motors_on')
+    explore = LaunchConfiguration('explore')
 
     args = [
         DeclareLaunchArgument(
@@ -85,7 +89,15 @@ def generate_launch_description():
             'motors_on', default_value='false',
             description='Enable the stepper drivers, needed for Nav2 to drive. '
                         'Otherwise press m in key_cmd'),
+        DeclareLaunchArgument(
+            'explore', default_value='false',
+            description='Explore with explore_lite, which sends Nav2 goals to '
+                        'the edges of the SLAM map (turns Nav2 on)'),
     ]
+
+    # Exploration drives with Nav2
+    nav2_on = PythonExpression(
+        ["'", nav2, "'.lower() == 'true' or '", explore, "'.lower() == 'true'"])
 
     ekf_node = Node(
         package='robot_localization',
@@ -128,9 +140,16 @@ def generate_launch_description():
         condition=IfCondition(slam),
     )
 
-    nav2_params = os.path.join(car_s_dir, 'config', 'nav2.yaml')
+    # slam_toolbox publishes /map as volatile (republished every
+    # map_update_interval), and a transient local subscriber never receives
+    # it. map_server publishes once as transient local, so needs it
+    nav2_params = RewrittenYaml(
+        source_file=os.path.join(car_s_dir, 'config', 'nav2.yaml'),
+        param_rewrites={'map_subscribe_transient_local': PythonExpression(
+            ["'False' if '", slam, "'.lower() == 'true' else 'True'"])},
+        convert_types=True)
     run_nav2 = PythonExpression(
-        ["'", nav2, "'.lower() == 'true' or '", map_yaml, "' != ''"])
+        ["'", nav2_on, "' == 'True' or '", map_yaml, "' != ''"])
 
     # Nav2 runs composed in one process, which uses far less CPU than a
     # process per server
@@ -165,7 +184,23 @@ def generate_launch_description():
             'use_composition': 'True',
             'container_name': 'nav2_container',
         }.items(),
-        condition=IfCondition(nav2),
+        condition=IfCondition(nav2_on),
+    )
+
+    # explore_lite is only built on the PC, so it is looked up only when used
+    explore_node = Node(
+        package='explore_lite',
+        executable='explore',
+        name='explore_node',
+        output='screen',
+        parameters=[os.path.join(car_s_dir, 'config', 'explore.yaml')],
+        condition=IfCondition(explore),
+    )
+
+    explore_needs_slam = LogInfo(
+        msg='WARNING: explore:=true needs SLAM, but slam is false',
+        condition=IfCondition(PythonExpression(
+            ["'", explore, "'.lower() == 'true' and '", slam, "'.lower() != 'true'"])),
     )
 
     both_maps_warning = LogInfo(
@@ -200,6 +235,8 @@ def generate_launch_description():
         nav2_container,
         localization_launch,
         navigation_launch,
+        explore_needs_slam,
+        explore_node,
         rviz_launch,
         on_shutdown,
     ])

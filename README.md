@@ -419,11 +419,28 @@ sudo apt install ros-jazzy-robot-localization ros-jazzy-slam-toolbox ros-jazzy-n
 | Save the map | `ros2 run nav2_map_server map_saver_cli -f ~/maps/room` |
 | Map and navigate at the same time | `ros2 launch car_s pc_bringup.launch.py nav2:=true motors_on:=true` |
 | Navigate on a saved map | `ros2 launch car_s pc_bringup.launch.py slam:=false nav2:=true motors_on:=true map:=$HOME/maps/room.yaml` |
+| Explore and map by itself | `ros2 launch car_s pc_bringup.launch.py explore:=true motors_on:=true` |
 | EKF only, no SLAM or RViz | `ros2 launch car_s pc_bringup.launch.py slam:=false rviz:=false` |
 
-When navigating on a saved map, set the car's starting pose in RViz with
-**2D Pose Estimate** before sending goals with **Nav2 Goal**. `motors_on:=true`
+When navigating on a saved map, AMCL assumes the car starts at the map's
+origin (where mapping started), facing the same way. If it's anywhere else,
+set its pose in RViz with **2D Pose Estimate** before sending goals with
+**Nav2 Goal**. `motors_on:=true`
 enables the drivers so Nav2 can drive. Without it, press `m` in `key_cmd`.
+
+`explore:=true` runs `explore_lite`, which sends Nav2 goals to the edges of
+the SLAM map until nothing is left unexplored, then drives back to the start
+(parameters in [config/explore.yaml](config/explore.yaml)). It isn't in apt
+for Jazzy, so build it on the PC from source:
+
+```bash
+cd ~/ros2_ws/src && git clone https://github.com/robo-friends/m-explore-ros2.git
+cd ~/ros2_ws && colcon build --symlink-install --packages-select explore_lite_msgs explore_lite
+```
+
+The lidar only sees obstacles at its own height, so clear low things (cables,
+shoes) off the floor, keep the car away from stairs, and watch it. Ctrl-C or
+`m` in `key_cmd` stops it.
 
 The PC's clock must be NTP-synced (`timedatectl` should show
 `System clock synchronized: yes`). If it isn't, TF lookups between the
