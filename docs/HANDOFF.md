@@ -47,9 +47,12 @@ can't move; checked from the old PC VM):
     surface, the slip may differ.
 - The lidar USB cable had failed and was replaced.
 - **rplidar_ros 2.1.0 bug:** calling `/start_motor` while the lidar is
-  already running wedges the driver (no scans, and every later service call
-  hangs). Only call it when the motor is stopped; if it wedges, restart
-  `car_s`. Also, `timeout` around `tools/jazzy` only kills the distrobox
+  already running wedges the driver (no scans, 100% CPU, and every later
+  service call hangs). It happened for real when `pc_bringup` was started a
+  second time. **Patched on the Pi** in `~/ros_ws/src/rplidar_ros` (not in
+  this repo): `rplidar_node::start()` returns early if already running and
+  logs "Already running, ignoring start". Redo the patch if that driver is
+  ever re-cloned. If it wedges anyway, restart `car_s`. Also, `timeout` around `tools/jazzy` only kills the distrobox
   wrapper, not the ROS command inside, so timed-out `ros2 service call`s
   stay waiting and can fire later.
 - After a cold boot the Pi's clock ran up to 45 ms fast until
