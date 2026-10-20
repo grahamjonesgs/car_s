@@ -1,0 +1,153 @@
+diff --git a/explore/include/explore/explore.h b/explore/include/explore/explore.h
+index 8799783..53b277c 100644
+--- a/explore/include/explore/explore.h
++++ b/explore/include/explore/explore.h
+@@ -145,6 +145,9 @@ private:
+   std::string robot_base_frame_;
+   bool resuming_ = false;
+   bool goal_active_{false};
++  // Local patch (car_s): the goal being pursued, and when it was sent
++  geometry_msgs::msg::Point active_goal_;
++  rclcpp::Time goal_sent_time_;
+   rclcpp_action::GoalUUID active_goal_id_;
+ };
+ }  // namespace explore
+diff --git a/explore/include/explore/frontier_search.h b/explore/include/explore/frontier_search.h
+index 0f8e610..7a6a076 100644
+--- a/explore/include/explore/frontier_search.h
++++ b/explore/include/explore/frontier_search.h
+@@ -16,6 +16,12 @@ struct Frontier {
+   geometry_msgs::msg::Point initial;
+   geometry_msgs::msg::Point centroid;
+   geometry_msgs::msg::Point middle;
++  // Local patch (car_s): where to send the robot. The centroid, unless that
++  // is within MIN_GOAL_DISTANCE of the robot: the centroid of a frontier that
++  // surrounds the robot (open space seen from one spot) is the robot itself,
++  // which never gets anywhere. Then the closest frontier cell at least that
++  // far away
++  geometry_msgs::msg::Point goal;
+   std::vector<geometry_msgs::msg::Point> points;
+ };
+ 
+diff --git a/explore/src/explore.cpp b/explore/src/explore.cpp
+index d72fb18..c9a6f58 100644
+--- a/explore/src/explore.cpp
++++ b/explore/src/explore.cpp
+@@ -193,7 +193,7 @@ void Explore::visualizeFrontiers(
+     m.scale.y = 0.1;
+     m.scale.z = 0.1;
+     m.points = frontier.points;
+-    if (goalOnBlacklist(frontier.centroid)) {
++    if (goalOnBlacklist(frontier.goal)) {
+       m.color = red;
+     } else {
+       m.color = blue;
+@@ -228,6 +228,21 @@ void Explore::visualizeFrontiers(
+ 
+ void Explore::makePlan()
+ {
++  // Local patch (car_s): keep pursuing the current goal until Nav2 finishes
++  // or aborts it (its progress checker aborts when the robot is stuck),
++  // instead of switching to whichever frontier scores best on each replan,
++  // which made the robot dither between distant goals. Give up on it after
++  // 3 x progress_timeout
++  if (goal_active_) {
++    if (this->now() - goal_sent_time_ <
++        tf2::durationFromSec(3 * progress_timeout_)) {
++      return;
++    }
++    RCLCPP_INFO(logger_, "Goal (%.2f, %.2f) is taking too long, blacklisting it",
++                active_goal_.x, active_goal_.y);
++    frontier_blacklist_.push_back(active_goal_);
++  }
++
+   // find frontiers
+   auto pose = costmap_client_.getRobotPose();
+   // get frontiers sorted according to cost
+@@ -255,7 +270,7 @@ void Explore::makePlan()
+   auto frontier =
+       std::find_if_not(frontiers.begin(), frontiers.end(),
+                        [this](const frontier_exploration::Frontier& f) {
+-                         return goalOnBlacklist(f.centroid);
++                         return goalOnBlacklist(f.goal);
+                        });
+   if (frontier == frontiers.end()) {
+     RCLCPP_WARN(logger_, "All frontiers traversed/tried out, stopping.");
+@@ -265,7 +280,7 @@ void Explore::makePlan()
+     stop(true);
+     return;
+   }
+-  geometry_msgs::msg::Point target_position = frontier->centroid;
++  geometry_msgs::msg::Point target_position = frontier->goal;
+ 
+   // time out if we are not making any progress
+   bool same_goal = same_point(prev_goal_, target_position);
+@@ -307,6 +322,10 @@ void Explore::makePlan()
+   goal.pose.header.stamp = this->now();
+ 
+   goal_active_ = true;
++  active_goal_ = target_position;
++  goal_sent_time_ = this->now();
++  RCLCPP_INFO(logger_, "Sending goal (%.2f, %.2f)", target_position.x,
++              target_position.y);
+   auto send_goal_options = rclcpp_action::Client<
+       nav2_msgs::action::NavigateToPose>::SendGoalOptions();
+ 
+@@ -386,6 +405,11 @@ void Explore::reachedGoal(const NavigationGoalHandle::WrappedResult& result,
+       RCLCPP_DEBUG(logger_, "Goal was successful");
+       last_progress_ = this->now();
+       prev_distance_ = 0;
++      // Local patch (car_s): reaching a frontier should have uncovered it.
++      // If it is still there (e.g. a blind spot next to the robot, within
++      // the goal tolerance), going back to it again would loop for ever, so
++      // blacklist it
++      frontier_blacklist_.push_back(frontier_goal);
+       break;
+     case rclcpp_action::ResultCode::ABORTED:
+ #ifdef NAV2_RESULT_HAS_ERROR_CODE
+diff --git a/explore/src/frontier_search.cpp b/explore/src/frontier_search.cpp
+index 6085fd8..8376466 100644
+--- a/explore/src/frontier_search.cpp
++++ b/explore/src/frontier_search.cpp
+@@ -95,6 +95,10 @@ FrontierSearch::searchFrom(geometry_msgs::msg::Point position)
+   return frontier_list;
+ }
+ 
++// Local patch (car_s): further than Nav2's goal tolerance, so that every goal
++// moves the robot
++static const double MIN_GOAL_DISTANCE = 0.6;
++
+ Frontier FrontierSearch::buildNewFrontier(unsigned int initial_cell,
+                                           unsigned int reference,
+                                           std::vector<bool>& frontier_flag)
+@@ -105,6 +109,7 @@ Frontier FrontierSearch::buildNewFrontier(unsigned int initial_cell,
+   output.centroid.y = 0;
+   output.size = 1;
+   output.min_distance = std::numeric_limits<double>::infinity();
++  double goal_distance = std::numeric_limits<double>::infinity();
+ 
+   // record initial contact point for frontier
+   unsigned int ix, iy;
+@@ -157,6 +162,10 @@ Frontier FrontierSearch::buildNewFrontier(unsigned int initial_cell,
+           output.middle.x = wx;
+           output.middle.y = wy;
+         }
++        if (distance >= MIN_GOAL_DISTANCE && distance < goal_distance) {
++          goal_distance = distance;
++          output.goal = point;
++        }
+ 
+         // add to queue for breadth first search
+         bfs.push(nbr);
+@@ -167,6 +176,11 @@ Frontier FrontierSearch::buildNewFrontier(unsigned int initial_cell,
+   // average out frontier centroid
+   output.centroid.x /= output.size;
+   output.centroid.y /= output.size;
++  double centroid_distance = std::hypot(output.centroid.x - reference_x,
++                                       output.centroid.y - reference_y);
++  if (centroid_distance >= MIN_GOAL_DISTANCE || !std::isfinite(goal_distance)) {
++    output.goal = output.centroid;
++  }
+   return output;
+ }
+ 

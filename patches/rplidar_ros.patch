@@ -1,0 +1,17 @@
+diff --git a/src/rplidar_node.cpp b/src/rplidar_node.cpp
+index c1284bc..b3f08fb 100644
+--- a/src/rplidar_node.cpp
++++ b/src/rplidar_node.cpp
+@@ -409,6 +409,12 @@ void rplidar_node::start()
+   if (nullptr == m_drv) {
+     return;
+   }
++  // Local patch (car_s): starting again while already running wedges the
++  // driver, so ignore it
++  if (m_running) {
++    RCLCPP_INFO(this->get_logger(), "Already running, ignoring start");
++    return;
++  }
+ 
+   RCLCPP_INFO(this->get_logger(), "Start");
+   m_drv->startMotor();

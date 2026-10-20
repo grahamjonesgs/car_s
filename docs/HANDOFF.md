@@ -49,10 +49,10 @@ can't move; checked from the old PC VM):
 - **rplidar_ros 2.1.0 bug:** calling `/start_motor` while the lidar is
   already running wedges the driver (no scans, 100% CPU, and every later
   service call hangs). It happened for real when `pc_bringup` was started a
-  second time. **Patched on the Pi** in `~/ros_ws/src/rplidar_ros` (not in
-  this repo): `rplidar_node::start()` returns early if already running and
-  logs "Already running, ignoring start". Redo the patch if that driver is
-  ever re-cloned. If it wedges anyway, restart `car_s`. Also, `timeout` around `tools/jazzy` only kills the distrobox
+  second time. **Patched on the Pi** in `~/ros_ws/src/rplidar_ros`:
+  `rplidar_node::start()` returns early if already running and logs
+  "Already running, ignoring start". The patch is in
+  [patches/](../patches/README.md); reapply it if the driver is re-cloned. If it wedges anyway, restart `car_s`. Also, `timeout` around `tools/jazzy` only kills the distrobox
   wrapper, not the ROS command inside, so timed-out `ros2 service call`s
   stay waiting and can fire later.
 - After a cold boot the Pi's clock ran up to 45 ms fast until
@@ -71,8 +71,14 @@ can't move; checked from the old PC VM):
    if the car starts elsewhere.
 5. Autonomous exploration: `pc_bringup.launch.py explore:=true
    motors_on:=true`. `explore_lite` is built from source in
-   `~/ros2_ws/src/m-explore-ros2` on the Beelink and works in the simulator,
-   but **hasn't run on the real car yet**. Supervise the first runs.
+   `~/ros2_ws/src/m-explore-ros2` on the Beelink, **with local patches**
+   ([patches/](../patches/README.md)). The first real runs found three
+   problems, all fixed but not yet rerun on the car:
+   - `explore_lite` re-sent a goal next to the car 10 times a second, and in
+     open space aimed at the car itself (fixed by the patches).
+   - It switched goals every replan, so the car dithered (patched).
+   - NavFn failed to plan into unknown space; Nav2 now uses Smac 2D.
+   - The start-up `motor_on` message was lost over WiFi; now sent 3 times.
 
 **Fixed: Nav2's global costmap never got the SLAM map.** slam_toolbox
 publishes `/map` as volatile, and the costmap's static layer subscribed as
