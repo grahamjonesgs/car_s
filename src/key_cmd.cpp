@@ -32,8 +32,9 @@
 #define KEYCODE_V 0x76  // Set acceleration to 1.0
 #define KEYCODE_L 0x6C  // Lidar motor on off
 
-// Wheel separation in m, used to convert wheel speed to turn rate in rad/s
-#define WHEEL_SEPARATION 0.2337
+// Effective wheel separation in m, used to convert wheel speed to turn rate in
+// rad/s. Matches the controller's calibrated default
+#define WHEEL_SEPARATION 0.265
 std_msgs::msg::Bool motor;
 std_msgs::msg::Int32 motor_steps;
 std_msgs::msg::Float32 motor_accel;

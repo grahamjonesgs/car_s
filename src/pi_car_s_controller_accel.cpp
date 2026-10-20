@@ -73,8 +73,11 @@ const double ANGLE_DELTA = 3.0;
 
 // Defaults for the ROS parameters
 const double DEFAULT_CMD_VEL_TIMEOUT = 0.3; // Time to stop if no message received
-const double DEFAULT_M_PER_REVOLUTION = 0.21;
-const double DEFAULT_WHEEL_SEPARATION = 0.2337;
+// Calibrated on the floor on 2026-10-20: 0.5 m by tape (nominal 0.21), and a
+// two-turn spin against the gyro. The physical track is 0.2337 m; skid steer
+// needs a larger effective value
+const double DEFAULT_M_PER_REVOLUTION = 0.2016;
+const double DEFAULT_WHEEL_SEPARATION = 0.265;
 
 // Odometry covariances (diagonals). Wheel yaw is unreliable on a skid steer,
 // so its rate variance is large and the EKF takes yaw rate from the gyro

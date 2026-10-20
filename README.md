@@ -108,8 +108,8 @@ Parameters (all can be changed while it runs, with
 | Parameter | Default | Meaning |
 |---|---|---|
 | `publish_odom_tf` | `true` | Publish the TF `odom` → `base_link`. The PC launch turns it off while its EKF publishes that TF instead |
-| `wheel_separation` | `0.2337` | Effective distance between left and right wheels (m). Skid steer usually needs more than the physical value, see [docs/HANDOFF.md](docs/HANDOFF.md) |
-| `m_per_revolution` | `0.21` | Distance travelled per wheel revolution (m) |
+| `wheel_separation` | `0.265` | Effective distance between left and right wheels (m), calibrated against the gyro. Skid steer needs more than the physical 0.2337 m, see [docs/HANDOFF.md](docs/HANDOFF.md) |
+| `m_per_revolution` | `0.2016` | Distance travelled per wheel revolution (m), calibrated by tape measure (nominal 0.21) |
 | `cmd_vel_timeout` | `0.3` | In auto mode, stop this long (s) after the last `cmd_vel` |
 
 Values set with `ros2 param set` are lost when the node restarts. To keep

@@ -6,7 +6,9 @@
 
   <!-- The wheel joints are fixed because nothing publishes joint_states, so
        robot_state_publisher can publish their TF. Wheel spacing (0.2337 m)
-       and radius (0.21 m per revolution) match the controller defaults. -->
+       and radius (0.21 m per revolution) are the physical sizes; the
+       controller uses calibrated values (0.265 m effective spacing, 0.2016 m
+       per revolution). -->
 
 
   <link name="base_link">

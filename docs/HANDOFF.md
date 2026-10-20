@@ -37,9 +37,14 @@ can't move; checked from the old PC VM):
   appeared at 180° in the scan, and a wall on the car's left appeared on the
   right. Fixed by giving `laser_joint` a yaw of π in the URDF (and in
   `tools/sim_car.py`).
-- First odometry numbers from a 34° turn: the gyro measured 29.1°, so the car
-  under-rotates by about 16% (effective `wheel_separation` about 0.28 m).
-  Only a first estimate.
+- **Odometry calibrated** (now the controller defaults):
+  - Straight: commanded 0.500 m, tape 0.48 m, lidar 0.47 m, so
+    `m_per_revolution` 0.21 → 0.2016.
+  - Rotation: commanded 720°, gyro 636°, so `wheel_separation`
+    0.2337 → 0.265 (1.13× the physical track). Rechecked: commanded 719.5°,
+    gyro 720.7°.
+  - Done at 0.1 m/s and 0.5 rad/s on this floor. Faster or on another
+    surface, the slip may differ.
 - The lidar USB cable had failed and was replaced.
 - **rplidar_ros 2.1.0 bug:** calling `/start_motor` while the lidar is
   already running wedges the driver (no scans, and every later service call
@@ -53,7 +58,7 @@ can't move; checked from the old PC VM):
 **Not yet done** (all need the battery connected and someone at the car):
 
 1. ~~Motor directions~~ (done, see above).
-2. Calibrate the odometry (section 4). `wheel_separation` and `m_per_revolution` can be changed live
+2. ~~Calibrate the odometry~~ (done, see above). `wheel_separation` and `m_per_revolution` can be changed live
    with `ros2 param set /car_controller ...`.
 3. Map a room: `ros2 launch car_s pc_bringup.launch.py` plus `key_cmd`, then
    save it with `ros2 run nav2_map_server map_saver_cli -f ~/maps/room`.
@@ -336,8 +341,10 @@ cd ~/ros_ws && MAKEFLAGS=-j2 colcon build --symlink-install --parallel-workers 2
 Do this on the floor, not with the wheels off the ground: `/odom` only counts
 commanded steps, so it has to be compared with real motion.
 
+*Done on 2026-10-20, see "Start here".*
+
 - **Straight line:** drive 2 m by tape measure and compare `/odom`. Adjust
-  `M_PER_REVOLUTION` (currently 0.21) if it's off.
+  `m_per_revolution` if it's off.
 - **Rotation:** spin on the spot exactly 5 turns and compare `/angle` (or
   integrate gyro Z). Scale the effective `wheel_separation` up until the wheel
   yaw matches. Skid steer usually needs 1.3–2× the physical track. Both can
