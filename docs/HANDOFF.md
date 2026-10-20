@@ -72,7 +72,7 @@ can't move; checked from the old PC VM):
 5. Autonomous exploration: `pc_bringup.launch.py explore:=true
    motors_on:=true`. `explore_lite` is built from source in
    `~/ros2_ws/src/m-explore-ros2` on the Beelink, **with local patches**
-   ([patches/](../patches/README.md)). The first real runs found three
+   ([patches/](../patches/README.md)). The first real runs found these
    problems, all fixed but not yet rerun on the car:
    - `explore_lite` re-sent a goal next to the car 10 times a second, and in
      open space aimed at the car itself (fixed by the patches).
