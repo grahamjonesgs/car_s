@@ -277,6 +277,10 @@ dtparam=i2c_arm=on
 ```
 
 Audio must be off because it uses the PWM hardware that drives the motors.
+Leave SPI off too (no `dtparam=spi=on`): SPI0's pins, GPIO 9, 10 and 11, are
+the stepper drivers' microstep lines M0–M2, and anything opening the SPI
+device would toggle them mid-drive. (Turned off on the car on 2026-10-21; an
+SPI sensor would need the microstep lines moving first.)
 
 Add your user to the `dialout` group so the lidar serial port can be opened
 without `sudo` (log out and back in afterwards):
