@@ -41,6 +41,18 @@ As of 2026-10-20, all of this has been checked on the real car:
 
 Still to look at:
 
+- **The right-hand step signal fails above about 6 kHz** (about 0.19 m/s
+  at 32 microsteps). Found on 2026-10-21 with the motor battery off: PWM
+  channel 0 (GPIO 12 and 18, the right wheels) read back at 100–420 pulses/s
+  when set to 6,000–9,500 Hz, even when set directly with `pigs`, while
+  channel 1 (GPIO 13 and 19, left) was right at 9,500 Hz. It was fine up to
+  5,500 Hz. Possibly the unpowered drivers loading the lines; recheck with
+  the battery on and the wheels off the ground, counting pulses on all four
+  pins (`pi.callback(gpio, pigpio.RISING_EDGE).tally()` in Python on the Pi).
+  If it's real, the car swerves left above 0.19 m/s.
+- New ROS command-line tools started on the Pi over SSH couldn't see any
+  nodes on 2026-10-21 (even `--no-daemon`), while the Beelink saw them all.
+  Run checks from the PC until that's understood.
 - Exploration in cluttered rooms. In the second room, the car ended up in a
   gap between furniture where the inflated obstacles merged, so Nav2 found
   no path out ("no valid path found" from every goal) and kept running its
