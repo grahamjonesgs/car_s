@@ -41,15 +41,17 @@ As of 2026-10-20, all of this has been checked on the real car:
 
 Still to look at:
 
-- **The right-hand step signal fails above about 6 kHz** (about 0.19 m/s
-  at 32 microsteps). Found on 2026-10-21 with the motor battery off: PWM
-  channel 0 (GPIO 12 and 18, the right wheels) read back at 100–420 pulses/s
-  when set to 6,000–9,500 Hz, even when set directly with `pigs`, while
-  channel 1 (GPIO 13 and 19, left) was right at 9,500 Hz. It was fine up to
-  5,500 Hz. Possibly the unpowered drivers loading the lines; recheck with
-  the battery on and the wheels off the ground, counting pulses on all four
-  pins (`pi.callback(gpio, pigpio.RISING_EDGE).tally()` in Python on the Pi).
-  If it's real, the car swerves left above 0.19 m/s.
+- **pigpio's hardware PWM fails on the right-hand wheels above about
+  6 kHz** (about 0.19 m/s at 32 microsteps), so above that speed the right
+  wheels nearly stop and the car swerves left. Found on 2026-10-21: PWM
+  channel 0 (GPIO 12 and 18) read back at 100–500 pulses/s when pigpio set
+  it to 6,000–9,500 Hz (even with `pigs`), and 3–6% short from 4 kHz, while
+  channel 1 (GPIO 13 and 19, left) was right. **The kernel's PWM driver on
+  the same pins was exact on all four up to 9,524 Hz**
+  ([tools/kernel_pwm_test.sh](tools/kernel_pwm_test.sh), with
+  [overlays/car-pwm.dts](overlays/car-pwm.dts)), so it's pigpio, not the
+  wiring or drivers. Fix: move the controller to kernel PWM. Until then, 16
+  microsteps (`4` in `key_cmd`) keeps both sides right up to about 0.2 m/s.
 - New ROS command-line tools started on the Pi over SSH couldn't see any
   nodes on 2026-10-21 (even `--no-daemon`), while the Beelink saw them all.
   Run checks from the PC until that's understood.

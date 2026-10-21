@@ -1,0 +1,33 @@
+/*
+ * Both hardware PWM channels on all four car_s step pins, for the kernel
+ * pwm-bcm2835 driver: channel 0 on GPIO 12 (Alt0) and 18 (Alt5), the right
+ * wheels; channel 1 on GPIO 13 (Alt0) and 19 (Alt5), the left wheels.
+ * Like pwm-2chan, but that one connects only one pin per channel.
+ */
+/dts-v1/;
+/plugin/;
+
+/ {
+	compatible = "brcm,bcm2835";
+
+	fragment@0 {
+		target = <&gpio>;
+		__overlay__ {
+			car_pwm_pins: car_pwm_pins {
+				brcm,pins = <12 13 18 19>;
+				brcm,function = <4 4 2 2>;
+			};
+		};
+	};
+
+	fragment@1 {
+		target = <&pwm>;
+		__overlay__ {
+			pinctrl-names = "default";
+			pinctrl-0 = <&car_pwm_pins>;
+			/* audio is off, so nothing else sets the PWM clock */
+			assigned-clock-rates = <100000000>;
+			status = "okay";
+		};
+	};
+};
