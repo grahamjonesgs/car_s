@@ -54,13 +54,16 @@ Still to look at:
   nodes on 2026-10-21 (even `--no-daemon`), while the Beelink saw them all.
   Run checks from the PC until that's understood.
 - Exploration in cluttered rooms. In the second room, the car ended up in a
-  gap between furniture where the inflated obstacles merged, so Nav2 found
-  no path out ("no valid path found" from every goal) and kept running its
-  recoveries. The global inflation is now 0.25 m (planning), and the local
-  0.40 m with a gentler fall-off (steering). In a later run from the saved
-  map, it drove its nose to within a few centimetres of a chair leg; the
-  wider local margin hasn't been tried on the real car yet. Chair legs are
-  the hardest case: thin, and seen by only a few lidar points.
+  gap between furniture where Nav2 found no path out ("no valid path found"
+  from every goal), and in a later run drove its nose to within a few
+  centimetres of a chair leg. Since then, none of it yet tried on the real
+  car:
+  - the measured rectangular footprint (narrower at the sides than the
+    0.17 m circle that boxed the car in)
+  - a wider, gentler local inflation for steering (0.40 m)
+  - the SLAM map in the local costmap, so chair legs aren't wiped between
+    lidar scans
+  Chair legs are the hardest case: thin, and seen by only a few lidar points.
 - The lidar's height above the floor hasn't been measured (the URDF guesses
   0.13 m). Nav2's planner logs "Inflation layer either not found or
   inflation is not set sufficiently for optimized non-circular collision
