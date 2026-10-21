@@ -40,7 +40,7 @@
 #include <functional>
 #include <iostream>
 #include <memory>
-#include <pigpiod_if2.h>
+#include "car_gpio.hpp"
 #include <rclcpp/rclcpp.hpp>
 #include <stdexcept>
 
@@ -121,10 +121,9 @@ const std::string TOPIC_ACCEL = "motor_accel";
 class PiCarController : public rclcpp::Node {
 public:
   PiCarController()
-      : Node("pi_car_s_controller_accel"), pi_(-1), left_step_count_(0),
-        right_step_count_(0), motor_on_(false), motor_mode_(MotorMode::AUTO),
-        x_pos_(0.0), y_pos_(0.0), theta_(0.0), left_forwards_(true),
-        right_forwards_(true), last_left_target_velocity_(0.0),
+      : Node("pi_car_s_controller_accel"), motor_on_(false),
+        motor_mode_(MotorMode::AUTO), x_pos_(0.0), y_pos_(0.0), theta_(0.0),
+        blue_led_on_(true), last_left_target_velocity_(0.0),
         last_right_target_velocity_(0.0), current_left_velocity_(0.0),
         current_right_velocity_(0.0), acceleration_rate_(1.0),
         sub_steps_(SUB_STEPS), target_angle_(0.0), current_angle_(0.0),
@@ -166,38 +165,23 @@ public:
                 wheel_separation_, m_per_revolution_, cmd_vel_timeout_,
                 max_wheel_speed_, publish_odom_tf_ ? "true" : "false");
 
-    // Initialize pigpio. pigpiod can still be starting at boot, so retry for
-    // a while, then fail loudly so the launch (and systemd) restarts
-    for (int attempt = 0; (pi_ = pigpio_start(nullptr, nullptr)) < 0; ++attempt) {
-      if (attempt >= 10) {
-        throw std::runtime_error("gpio init failed: is pigpiod running?");
-      }
-      RCLCPP_WARN(this->get_logger(), "gpio init failed, retrying");
-      rclcpp::sleep_for(1s);
-    }
-
-    // pigpiod keeps PWM running after a client dies, so clear anything a
-    // crashed earlier run left behind before doing anything else
+    // The GPIO backend: "pigpio" (through pigpiod) or "linux" (the kernel's
+    // PWM driver and libgpiod). It throws if it can't start, so the node
+    // exits and the launch (and systemd) restarts it
+    std::string backend =
+        this->declare_parameter("gpio_backend", std::string("pigpio"));
+    CarPins pins = {
+        {LEFT_FRONT_STEP_PIN, LEFT_BACK_STEP_PIN},
+        {RIGHT_FRONT_STEP_PIN, RIGHT_BACK_STEP_PIN},
+        {LEFT_FRONT_DIR_PIN, LEFT_BACK_DIR_PIN, RIGHT_FRONT_DIR_PIN,
+         RIGHT_BACK_DIR_PIN, ENABLE_PIN, RED_LED_PIN, BLUE_LED_PIN, M0_SUBSTEP,
+         M1_SUBSTEP, M2_SUBSTEP},
+        10,
+        ENABLE_PIN};
+    gpio_ = make_car_gpio(backend, pins, this->get_logger());
+    RCLCPP_INFO(this->get_logger(), "GPIO backend: %s", gpio_->name().c_str());
     stop_step_pulses();
-
-    // Set GPIO modes
-    gpio_write(pi_, ENABLE_PIN, PI_HIGH); // Disable drive initially
-    set_mode(pi_, LEFT_FRONT_STEP_PIN, PI_OUTPUT);
-    set_mode(pi_, LEFT_BACK_STEP_PIN, PI_OUTPUT);
-    set_mode(pi_, RIGHT_FRONT_STEP_PIN, PI_OUTPUT);
-    set_mode(pi_, RIGHT_BACK_STEP_PIN, PI_OUTPUT);
-    set_mode(pi_, LEFT_FRONT_DIR_PIN, PI_OUTPUT);
-    set_mode(pi_, LEFT_BACK_DIR_PIN, PI_OUTPUT);
-    set_mode(pi_, RIGHT_FRONT_DIR_PIN, PI_OUTPUT);
-    set_mode(pi_, RIGHT_BACK_DIR_PIN, PI_OUTPUT);
-    set_mode(pi_, ENABLE_PIN, PI_OUTPUT);
-    set_mode(pi_, RED_LED_PIN, PI_OUTPUT);
-    set_mode(pi_, BLUE_LED_PIN, PI_OUTPUT);
-    set_mode(pi_, M0_SUBSTEP, PI_OUTPUT);
-    set_mode(pi_, M1_SUBSTEP, PI_OUTPUT);
-    set_mode(pi_, M2_SUBSTEP, PI_OUTPUT);
-
-    gpio_write(pi_, BLUE_LED_PIN, PI_HIGH); // Initial blue LED state
+    gpio_->write(BLUE_LED_PIN, true); // Initial blue LED state
 
     // ROS subscriptions
     sub_velocity_ = this->create_subscription<geometry_msgs::msg::Twist>(
@@ -244,14 +228,8 @@ public:
         std::chrono::duration<double>(LED_FLASH_TIMER),
         std::bind(&PiCarController::led_timer_callback, this));
 
-    // Pigpio callbacks for speed encoders
-    callback_ex(pi_, LEFT_FRONT_STEP_PIN, RISING_EDGE,
-                left_speed_callback_static, this);
-    callback_ex(pi_, RIGHT_FRONT_STEP_PIN, RISING_EDGE,
-                right_speed_callback_static, this);
-
     // Set initial values
-    gpio_write(pi_, ENABLE_PIN, PI_HIGH); // Disable drive initially
+    gpio_->write(ENABLE_PIN, true); // Disable drive initially
     set_substep(sub_steps_);
     last_control_time_ = this->now();
     last_cmd_vel_time_ = this->now();
@@ -259,22 +237,20 @@ public:
   }
 
   // Destructor
-  // It stops the motors, disables the drive, and stops pigpio. It only runs
-  // on a clean shutdown: after a crash, the car_s service's ExecStopPost
-  // does the same through pigs
+  // It stops the motors and disables the drive. It only runs on a clean
+  // shutdown: after a crash, the car_s service's ExecStopPost does the same
   ~PiCarController() {
-    if (pi_ < 0) {
+    if (!gpio_) {
       return;
     }
     RCLCPP_INFO(this->get_logger(), "Shutting down Pi Car Controller");
     stop_step_pulses();
-    gpio_write(pi_, BLUE_LED_PIN, PI_HIGH); // Disable blue LED
-    gpio_write(pi_, RED_LED_PIN, PI_LOW);   // Disable red LED
-    pigpio_stop(pi_);                       // Stop pigpio
+    gpio_->write(BLUE_LED_PIN, true); // Disable blue LED
+    gpio_->write(RED_LED_PIN, false); // Disable red LED
   }
 
 private:
-  int pi_;
+  std::unique_ptr<CarGpio> gpio_;
   rclcpp::TimerBase::SharedPtr message_timeout_timer_;
   rclcpp::TimerBase::SharedPtr odom_timer_;
   rclcpp::TimerBase::SharedPtr control_timer_;
@@ -300,16 +276,12 @@ private:
   double cmd_vel_timeout_;
   double max_wheel_speed_;
 
-  // Step counts and directions are shared with the pigpio callback thread
-  std::atomic<int> left_step_count_;
-  std::atomic<int> right_step_count_;
   bool motor_on_;
   MotorMode motor_mode_;
   double x_pos_;
   double y_pos_;
   double theta_;
-  std::atomic<bool> left_forwards_;
-  std::atomic<bool> right_forwards_;
+  bool blue_led_on_;
   float last_left_target_velocity_;
   float last_right_target_velocity_;
   float current_left_velocity_;
@@ -335,11 +307,9 @@ private:
 
   // Disable the drivers and stop all step pulses
   void stop_step_pulses() {
-    gpio_write(pi_, ENABLE_PIN, PI_HIGH); // Disable drive
-    hardware_PWM(pi_, LEFT_FRONT_STEP_PIN, 0, 0);
-    hardware_PWM(pi_, LEFT_BACK_STEP_PIN, 0, 0);
-    hardware_PWM(pi_, RIGHT_FRONT_STEP_PIN, 0, 0);
-    hardware_PWM(pi_, RIGHT_BACK_STEP_PIN, 0, 0);
+    gpio_->write(ENABLE_PIN, true); // Disable drive
+    gpio_->set_step_rate(Side::LEFT, 0, true);
+    gpio_->set_step_rate(Side::RIGHT, 0, true);
   }
 
   // (Re)create the timer that stops the motors when cmd_vel stops arriving
@@ -405,18 +375,18 @@ private:
     RCLCPP_INFO(this->get_logger(), "Substeps set to %i", steps);
 
     // Steps counted so far were made at the old setting, so convert them now
-    pending_left_m_ += static_cast<double>(left_step_count_.exchange(0)) *
+    pending_left_m_ += gpio_->take_steps(Side::LEFT) *
                        m_per_revolution_ / (sub_steps_ * STEPS_PER_REVOLUTION);
-    pending_right_m_ += static_cast<double>(right_step_count_.exchange(0)) *
+    pending_right_m_ += gpio_->take_steps(Side::RIGHT) *
                         m_per_revolution_ / (sub_steps_ * STEPS_PER_REVOLUTION);
 
     m0 = bin_steps & 1;
     m1 = bin_steps & 2;
     m2 = bin_steps & 4;
 
-    gpio_write(pi_, M0_SUBSTEP, (m0 == 1) ? PI_HIGH : PI_LOW);
-    gpio_write(pi_, M1_SUBSTEP, (m1 == 1) ? PI_HIGH : PI_LOW);
-    gpio_write(pi_, M2_SUBSTEP, (m2 == 1) ? PI_HIGH : PI_LOW);
+    gpio_->write(M0_SUBSTEP, m0);
+    gpio_->write(M1_SUBSTEP, m1);
+    gpio_->write(M2_SUBSTEP, m2);
 
     sub_steps_ = steps;
 
@@ -465,15 +435,11 @@ private:
                  frequency);
     // Speeds too small for a 1 Hz step rate (e.g. at the end of a ramp) stop
     if (frequency == 0) {
-      hardware_PWM(pi_, LEFT_FRONT_STEP_PIN, 0, 0);
-      hardware_PWM(pi_, LEFT_BACK_STEP_PIN, 0, 0);
+      gpio_->set_step_rate(Side::LEFT, 0, left_vel >= 0);
     } else {
-      gpio_write(pi_, LEFT_FRONT_DIR_PIN, (left_vel < 0) ? PI_LOW : PI_HIGH);
-      gpio_write(pi_, LEFT_BACK_DIR_PIN, (left_vel < 0) ? PI_LOW : PI_HIGH);
-      hardware_PWM(pi_, LEFT_FRONT_STEP_PIN, frequency,
-                   500000); // 0.5 duty cycle
-      hardware_PWM(pi_, LEFT_BACK_STEP_PIN, frequency,
-                   500000); // 0.5 duty cycle
+      gpio_->write(LEFT_FRONT_DIR_PIN, left_vel >= 0);
+      gpio_->write(LEFT_BACK_DIR_PIN, left_vel >= 0);
+      gpio_->set_step_rate(Side::LEFT, frequency, left_vel >= 0);
     }
   }
 
@@ -486,15 +452,12 @@ private:
                  frequency);
     // Speeds too small for a 1 Hz step rate (e.g. at the end of a ramp) stop
     if (frequency == 0) {
-      hardware_PWM(pi_, RIGHT_FRONT_STEP_PIN, 0, 0);
-      hardware_PWM(pi_, RIGHT_BACK_STEP_PIN, 0, 0);
+      gpio_->set_step_rate(Side::RIGHT, 0, right_vel >= 0);
     } else {
-      gpio_write(pi_, RIGHT_FRONT_DIR_PIN, (right_vel > 0) ? PI_LOW : PI_HIGH);
-      gpio_write(pi_, RIGHT_BACK_DIR_PIN, (right_vel > 0) ? PI_LOW : PI_HIGH);
-      hardware_PWM(pi_, RIGHT_FRONT_STEP_PIN, frequency,
-                   500000); // 0.5 duty cycle
-      hardware_PWM(pi_, RIGHT_BACK_STEP_PIN, frequency,
-                   500000); // 0.5 duty cycle
+      // The right motors are mounted the other way round
+      gpio_->write(RIGHT_FRONT_DIR_PIN, !(right_vel > 0));
+      gpio_->write(RIGHT_BACK_DIR_PIN, !(right_vel > 0));
+      gpio_->set_step_rate(Side::RIGHT, frequency, right_vel >= 0);
     }
   }
 
@@ -560,9 +523,6 @@ private:
       set_motor_pwm_right(current_right_velocity_);
     }
 
-    // Update the direction based on the current velocity
-    left_forwards_ = (current_left_velocity_ >= 0.0);
-    right_forwards_ = (current_right_velocity_ >= 0.0);
 
     last_control_time_ = current_time;
   }
@@ -585,39 +545,13 @@ private:
     // ROS callback for LED messages
     if (!motor_on_) {
       // Switch to disable
-      gpio_write(pi_, BLUE_LED_PIN, PI_HIGH);
+      blue_led_on_ = true;
+      gpio_->write(BLUE_LED_PIN, true);
     } else {
       // Switch to enable (toggle)
-      gpio_write(pi_, BLUE_LED_PIN, !gpio_read(pi_, BLUE_LED_PIN));
+      blue_led_on_ = !blue_led_on_;
+      gpio_->write(BLUE_LED_PIN, blue_led_on_);
     }
-  }
-
-  static void left_speed_callback_static(int pi, uint32_t gpio, uint32_t level,
-                                         uint32_t tick, void *userdata) {
-    auto controller = static_cast<PiCarController *>(userdata);
-    controller->left_speed_callback(pi, gpio, level, tick);
-  }
-
-  void left_speed_callback([[maybe_unused]] int pi,
-                           [[maybe_unused]] uint32_t gpio,
-                           [[maybe_unused]] uint32_t level,
-                           [[maybe_unused]] uint32_t tick) {
-    // Pigpio callback on speed encoded pin rising edge
-    (left_forwards_) ? left_step_count_++ : left_step_count_--;
-  }
-
-  static void right_speed_callback_static(int pi, uint32_t gpio, uint32_t level,
-                                          uint32_t tick, void *userdata) {
-    auto controller = static_cast<PiCarController *>(userdata);
-    controller->right_speed_callback(pi, gpio, level, tick);
-  }
-
-  void right_speed_callback([[maybe_unused]] int pi,
-                            [[maybe_unused]] uint32_t gpio,
-                            [[maybe_unused]] uint32_t level,
-                            [[maybe_unused]] uint32_t tick) {
-    // Pigpio callback on speed encoded pin rising edge
-    (right_forwards_) ? right_step_count_++ : right_step_count_--;
   }
 
   // Callback for motor acceleration
@@ -659,10 +593,10 @@ private:
     double angle_error;
 
     // Read and reset atomically so no steps are lost to the callback thread
-    left_delta = static_cast<double>(left_step_count_.exchange(0)) *
+    left_delta = gpio_->take_steps(Side::LEFT) *
                      m_per_revolution_ / (sub_steps_ * STEPS_PER_REVOLUTION) +
                  pending_left_m_;
-    right_delta = static_cast<double>(right_step_count_.exchange(0)) *
+    right_delta = gpio_->take_steps(Side::RIGHT) *
                       m_per_revolution_ / (sub_steps_ * STEPS_PER_REVOLUTION) +
                   pending_right_m_;
     pending_left_m_ = 0.0;
@@ -840,10 +774,10 @@ private:
     motor_on_ = msg.data;
     if (msg.data) {
       RCLCPP_INFO(this->get_logger(), "Set motor on");
-      gpio_write(pi_, ENABLE_PIN, PI_LOW); // Enable drive
+      gpio_->write(ENABLE_PIN, false); // Enable drive
     } else {
       RCLCPP_INFO(this->get_logger(), "Set motor off");
-      gpio_write(pi_, ENABLE_PIN, PI_HIGH); // Disable drive
+      gpio_->write(ENABLE_PIN, true); // Disable drive
       // Stop immediately, with no ramp down, so nothing is left to resume
       // and odometry does not count steps the wheels never made
       motor_set_target(0.0, 0.0);
