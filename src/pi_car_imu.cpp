@@ -29,6 +29,7 @@ Ave G -0.0617,0.0115,0.0011  A -0.6567,-1.78,10.47
  */
 
 #include "sensor_msgs/msg/imu.hpp"
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <iostream>
@@ -50,6 +51,13 @@ Ave G -0.0617,0.0115,0.0011  A -0.6567,-1.78,10.47
 // Gyro bias calibration is rejected if the car moves, i.e. if the gyro
 // standard deviation on any axis is above this (rad/s)
 #define CALIBRATION_MAX_STDDEV 0.01
+// If the car moves, calibrate again, up to this many times in all, before
+// falling back to the built-in offsets
+#define CALIBRATION_ATTEMPTS 5
+
+// Identical readings for this many samples in a row mean the chip has
+// stopped converting (e.g. it browned out and woke up asleep): re-initialise
+#define FROZEN_SAMPLES 50
 
 // Covariances (diagonals) for the IMU message. Measured at rest the gyro
 // variance is about 3e-6 (rad/s)^2; these allow for bias drift and vibration
@@ -63,6 +71,8 @@ Ave G -0.0617,0.0115,0.0011  A -0.6567,-1.78,10.47
 #define GYRO_CONFIG 0x1B
 #define INT_ENABLE 0x38
 #define ACCEL_XOUT_H 0x3B
+#define WHO_AM_I 0x75
+#define MPU6050_ID 0x68
 #define DATA_BYTES 14 // Accel X, Y, Z, temperature, gyro X, Y, Z (big-endian)
 
 // Global variables
@@ -91,23 +101,29 @@ float NAz = 9.81 - 10.45;
 
 // Gyro bias calibration state
 int calibration_samples_needed = 0;
+int calibration_samples = 0; // per attempt
+int calibration_attempt = 1;
 int calibration_count = 0;
 double gyro_sum[3] = {0, 0, 0};
 double gyro_sum_sq[3] = {0, 0, 0};
 
-void MPU6050_Init() {
-
+// Set up the MPU6050. Returns false if any write fails
+bool MPU6050_Init() {
   // Sample rate = 1 kHz / (1 + 4) = 200 Hz, faster than it is read
-  i2c_write_byte_data(pi, i2ch, SMPLRT_DIV,
-                      0x04); /* Write to sample rate register */
-  i2c_write_byte_data(pi, i2ch, PWR_MGMT_1,
-                      0x01); /* Write to power management register */
-  // Digital low pass filter at 44 Hz, to cut motor vibration and aliasing
-  i2c_write_byte_data(pi, i2ch, CONFIG,
-                      0x03); /* Write to Configuration register */
-  i2c_write_byte_data(pi, i2ch, GYRO_CONFIG, 0); /*  sensitivity */
-  i2c_write_byte_data(pi, i2ch, INT_ENABLE,
-                      0x01); /*Write to interrupt enable register */
+  // PWR_MGMT_1 0x01: awake, clocked from the gyro
+  // CONFIG 0x03: digital low pass filter at 44 Hz, to cut motor vibration
+  // and aliasing
+  // GYRO_CONFIG 0: +/-250 deg/s
+  // INT_ENABLE 0x01: data ready interrupt
+  const int writes[][2] = {{SMPLRT_DIV, 0x04}, {PWR_MGMT_1, 0x01},
+                           {CONFIG, 0x03},     {GYRO_CONFIG, 0},
+                           {INT_ENABLE, 0x01}};
+  for (const auto &w : writes) {
+    if (i2c_write_byte_data(pi, i2ch, w[0], w[1]) < 0) {
+      return false;
+    }
+  }
+  return true;
 }
 
 // Read all the accel and gyro registers in one transfer, so the values all
@@ -147,6 +163,19 @@ void calibrate_gyro(float Gx, float Gy, float Gz) {
   calibration_samples_needed = 0;
 
   if (max_stddev > CALIBRATION_MAX_STDDEV) {
+    if (calibration_attempt < CALIBRATION_ATTEMPTS) {
+      RCLCPP_WARN(nh->get_logger(),
+                  "Car moved during gyro calibration (std dev %.4f rad/s), "
+                  "trying again (%i of %i), keep it still",
+                  max_stddev, calibration_attempt + 1, CALIBRATION_ATTEMPTS);
+      calibration_attempt++;
+      calibration_count = 0;
+      for (int i = 0; i < 3; i++) {
+        gyro_sum[i] = gyro_sum_sq[i] = 0.0;
+      }
+      calibration_samples_needed = calibration_samples;
+      return;
+    }
     RCLCPP_WARN(nh->get_logger(),
                 "Car moved during gyro calibration (std dev %.4f rad/s), "
                 "using the built-in offsets %.4f %.4f %.4f",
@@ -172,6 +201,25 @@ void imu_timer_callback() {
     RCLCPP_WARN_THROTTLE(nh->get_logger(), *nh->get_clock(), 2000,
                          "Failed to read IMU");
     return;
+  }
+
+  // Real readings always have some noise; exactly the same values for a
+  // while mean the chip stopped converting, so don't publish them as data
+  static short last_raw[7];
+  static int same_count = 0;
+  if (std::equal(raw, raw + 7, last_raw)) {
+    if (++same_count >= FROZEN_SAMPLES) {
+      RCLCPP_ERROR_THROTTLE(nh->get_logger(), *nh->get_clock(), 5000,
+                            "IMU readings frozen, re-initialising the MPU6050");
+      MPU6050_Init();
+      same_count = 0;
+    }
+    if (same_count >= 3) {
+      return;
+    }
+  } else {
+    std::copy(raw, raw + 7, last_raw);
+    same_count = 0;
   }
 
   /* Divide raw value by sensitivity scale factor */
@@ -226,6 +274,7 @@ int main(int argc, char **argv) {
   }
   calibration_samples_needed =
       static_cast<int>(std::max(calibration_time, 0.0) * rate_hz);
+  calibration_samples = calibration_samples_needed;
 
   if ((pi = pigpio_start(NULL, NULL)) < 0) {
     RCLCPP_ERROR(nh->get_logger(), "gpio init failed");
@@ -238,7 +287,26 @@ int main(int argc, char **argv) {
     pigpio_stop(pi);
     return 1;
   }
-  MPU6050_Init();
+  // A missing chip doesn't answer; exit, and the launch restarts the node.
+  // Some clone boards report a different ID but work, so only warn then
+  int id = i2c_read_byte_data(pi, i2ch, WHO_AM_I);
+  if (id < 0) {
+    RCLCPP_ERROR(nh->get_logger(), "No MPU6050 answering on I2C bus 1 at 0x68");
+    i2c_close(pi, i2ch);
+    pigpio_stop(pi);
+    return 1;
+  }
+  if (id != MPU6050_ID) {
+    RCLCPP_WARN(nh->get_logger(),
+                "Unexpected IMU WHO_AM_I 0x%02X (an MPU6050 reports 0x%02X)",
+                id, MPU6050_ID);
+  }
+  if (!MPU6050_Init()) {
+    RCLCPP_ERROR(nh->get_logger(), "Failed to set up the MPU6050");
+    i2c_close(pi, i2ch);
+    pigpio_stop(pi);
+    return 1;
+  }
   if (calibration_samples_needed > 0) {
     RCLCPP_INFO(nh->get_logger(),
                 "Calibrating gyro for %.1f s, keep the car still",

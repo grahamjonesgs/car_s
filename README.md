@@ -223,10 +223,15 @@ they add `map` → `odom`.
 `car_imu` calibrates the gyro bias for its first 2 seconds, so **keep the
 car still while it starts** (including at boot, and whenever the `car_s`
 service restarts). If it moves during that time, the node logs a warning
-and uses the built-in offsets instead. The `rate_hz` (default 100) and
-`calibration_time` (default 2.0 s, 0 to skip) parameters change this. A
-44 Hz low-pass filter is set in the MPU6050, which keeps the gyro noise
-around 4e-7 (rad/s)².
+and tries again, up to 5 times, then uses the built-in offsets. The
+`rate_hz` (default 100) and `calibration_time` (default 2.0 s, 0 to skip)
+parameters change this. A 44 Hz low-pass filter is set in the MPU6050,
+which keeps the gyro noise around 4e-7 (rad/s)².
+
+At start-up it checks the chip answers (WHO_AM_I), and exits if not, so
+the launch restarts it. If the readings freeze (all seven values identical
+for 0.5 s, e.g. after a brown-out puts the chip to sleep), it stops
+publishing them and sets the chip up again.
 
 ## How localisation works
 
@@ -340,7 +345,6 @@ Without `-n 127.0.0.1`, anyone on the network could control the GPIO pins.
 mkdir -p ~/ros_ws/src && cd ~/ros_ws/src
 git clone https://github.com/grahamjonesgs/car_s.git
 git clone -b ros2  https://github.com/allenh1/rplidar_ros.git
-git clone -b jazzy https://github.com/CCNYRoboticsLab/imu_tools.git
 
 # Fix for the lidar driver (see patches/README.md)
 git -C rplidar_ros apply ~/ros_ws/src/car_s/patches/rplidar_ros.patch
@@ -352,8 +356,9 @@ MAKEFLAGS=-j2 colcon build --symlink-install --parallel-workers 2
 ```
 
 The limited parallelism stops the Pi running out of memory; the first build
-takes a while. `rplidar_ros` and `imu_tools` are built from source rather than
-installed from apt. The patch was made against `rplidar_ros` commit
+takes a while. `rplidar_ros` is built from source rather than installed
+from apt. (The car used to build `imu_tools` for a Madgwick filter too;
+nothing uses it now.) The patch was made against `rplidar_ros` commit
 `6fc037d` (2.1.0).
 
 Add these to the end of `~/.bashrc`:
@@ -368,7 +373,6 @@ source ~/ros_ws/install/setup.bash
 ```bash
 cd ~/ros_ws/src
 git -C car_s pull
-git -C imu_tools pull --ff-only
 cd ~/ros_ws && MAKEFLAGS=-j2 colcon build --symlink-install --parallel-workers 2 --packages-select car_s
 sudo systemctl restart car_s     # keep the car still while the gyro calibrates
 ```
@@ -512,11 +516,21 @@ ros2 service call /car/shutdown std_srvs/srv/Trigger
 ros2 service call /car/reboot std_srvs/srv/Trigger
 ```
 
-`car_power` ([scripts/car_power.py](scripts/car_power.py)) disables the
-motors, replies, then runs `sudo systemctl poweroff` (or `reboot`) 2 s
-later, so systemd stops the `car_s` service first. It needs passwordless
-`sudo` for the Pi user. Wait for the Pi's green activity LED to stop
-flashing before cutting the power.
+`car_power` ([scripts/car_power.py](scripts/car_power.py)) first checks
+that `sudo` will run the command, and refuses (the Pi keeps running) if
+not. Then it disables the motors, replies, keeps them disabled, and 2 s
+later runs `sudo systemctl poweroff` (or `reboot`), so systemd stops the
+`car_s` service first. Wait for the Pi's green activity LED to stop flashing
+before cutting the power.
+
+It needs passwordless `sudo` for those two commands only. If the Pi user
+doesn't already have passwordless `sudo` for everything, add a rule:
+
+```bash
+echo "$USER ALL=(root) NOPASSWD: /usr/bin/systemctl poweroff, /usr/bin/systemctl reboot" | sudo tee /etc/sudoers.d/car_power
+sudo chmod 440 /etc/sudoers.d/car_power
+sudo visudo -c        # checks the syntax
+```
 
 ### Lidar motor
 

@@ -19,7 +19,9 @@ amcl:
     global_frame_id: "map"
     lambda_short: 0.1
     laser_likelihood_max_dist: 2.0
-    laser_max_range: 12.0
+    # The maps are built to 8 m (slam.yaml), about what the A1 manages
+    # reliably indoors
+    laser_max_range: 8.0
     laser_min_range: 0.15
     laser_model_type: "likelihood_field"
     max_beams: 60
@@ -119,8 +121,10 @@ controller_server:
       time_steps: 56
       model_dt: 0.05
       batch_size: 2000
-      ax_max: 1.0
-      ax_min: -1.0
+      # The same limits as the velocity smoother, so the trajectories MPPI
+      # scores are ones the car can follow
+      ax_max: 0.8
+      ax_min: -0.8
       ay_max: 3.0
       ay_min: -3.0
       az_max: 2.0
@@ -224,14 +228,17 @@ local_costmap:
       # each side over the wheels. Spinning on the spot, the rear corners
       # sweep a 0.20 m radius
       footprint: "[[0.12, 0.11], [0.12, -0.11], [-0.17, -0.11], [-0.17, 0.11]]"
-      plugins: ["obstacle_layer", "inflation_layer"]
+      # The static layer (the SLAM or saved map) keeps thin obstacles such as
+      # chair legs: the lidar sees a leg with only one or two beams, and the
+      # obstacle layer's clearing (beams passing beside it) wipes it again
+      # between scans, but a leg in the map stays
+      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         # The controller (MPPI) steers by this costmap. A wider, slower-fading
         # margin than the global costmap's keeps the car further from chair
-        # legs as it passes, while the planner (global costmap, 0.25 m) can
-        # still route through the gaps. It never blocks a path: only lethal
-        # and inscribed cells do
+        # legs as it passes. Inflation only adds cost; what counts as a
+        # collision is the footprint touching an obstacle cell
         cost_scaling_factor: 3.0
         inflation_radius: 0.40
       # 2D lidar only, so a plain obstacle layer rather than voxels
@@ -290,8 +297,12 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 5.0
-        # 0.35 merged into a solid wall between furniture and trapped the car
-        # in a cluttered room, so keep the margin round obstacles small
+        # The planner (Smac 2D) treats the car as a point, blocked only within
+        # the footprint's inscribed radius (0.11 m) of an obstacle; inflation
+        # beyond that only adds cost. 0.25 m keeps a margin without making
+        # narrow gaps too costly to use. When the car was boxed in among
+        # furniture, the blocked cells came from the 0.17 m circle then used
+        # as the footprint, not from the inflation (0.35 m then)
         inflation_radius: 0.25
       always_send_full_costmap: True
 
@@ -413,8 +424,11 @@ velocity_smoother:
     scale_velocities: False
     feedback: "OPEN_LOOP"
     max_velocity: [0.2, 0.0, 1.0]
-    min_velocity: [-0.15, 0.0, -1.0]
-    # At or below the controller motor_accel (1.0 m/s^2) so the steppers do not slip
+    # The same reverse limit as MPPI's vx_min
+    min_velocity: [-0.1, 0.0, -1.0]
+    # Gentle, so the steppers don't skip. Each wheel sees the linear plus the
+    # turning part: 0.8 + 2.0 x 0.265 / 2 = 1.07 m/s^2 at most, slightly more
+    # than the controller's own ramp (motor_accel 1.0), which smooths it
     max_accel: [0.8, 0.0, 2.0]
     max_decel: [-0.8, 0.0, -2.0]
     odom_topic: "odometry/filtered"

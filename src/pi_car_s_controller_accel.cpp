@@ -255,6 +255,7 @@ public:
     set_substep(sub_steps_);
     last_control_time_ = this->now();
     last_cmd_vel_time_ = this->now();
+    last_odom_time_ = this->now();
   }
 
   // Destructor
@@ -321,6 +322,7 @@ private:
   bool turn_started_;
   rclcpp::Time last_control_time_;
   rclcpp::Time last_cmd_vel_time_;
+  rclcpp::Time last_odom_time_;
   // Distance (m) from steps counted before a microstep change, not yet in
   // the odometry
   double pending_left_m_;
@@ -666,10 +668,23 @@ private:
     pending_left_m_ = 0.0;
     pending_right_m_ = 0.0;
 
-    left_speed_msg.data = static_cast<float>(left_delta / ODOM_TIMEOUT);
-    right_speed_msg.data = static_cast<float>(right_delta / ODOM_TIMEOUT);
+    // The steps cover however long it really was since the last update, so
+    // divide by that, not the nominal period: a late update would otherwise
+    // report a speed spike, which the EKF takes as real
+    rclcpp::Time now = this->now();
+    double dt = (now - last_odom_time_).seconds();
+    last_odom_time_ = now;
+    if (!(dt > 0.001 && dt < 1.0)) {
+      dt = ODOM_TIMEOUT;
+    }
+
+    left_speed_msg.data = static_cast<float>(left_delta / dt);
+    right_speed_msg.data = static_cast<float>(right_delta / dt);
     theta_delta = (right_delta - left_delta) / wheel_separation_;
 
+    // Move along the heading halfway through this step, which is exact for
+    // a constant-curvature arc to second order
+    double heading_mid = theta_ + theta_delta / 2.0;
     theta_ += theta_delta;
     if (theta_ > M_PI) {
       theta_ -= 2.0 * M_PI;
@@ -695,10 +710,8 @@ private:
       motor_set_target(0.0, 0.0); // Set target velocities to zero to stop
     }
 
-    x_delta = cos(theta_) * (left_speed_msg.data + right_speed_msg.data) / 2.0 *
-              ODOM_TIMEOUT; // Approx. for small angle delta
-    y_delta = sin(theta_) * (left_speed_msg.data + right_speed_msg.data) / 2.0 *
-              ODOM_TIMEOUT; // Approx. for small angle delta
+    x_delta = cos(heading_mid) * (left_delta + right_delta) / 2.0;
+    y_delta = sin(heading_mid) * (left_delta + right_delta) / 2.0;
     x_pos_ += x_delta;
     y_pos_ += y_delta;
 
@@ -737,7 +750,7 @@ private:
     odom.twist.twist.linear.x =
         (left_speed_msg.data + right_speed_msg.data) / 2.0;
     odom.twist.twist.linear.y = 0.0;
-    odom.twist.twist.angular.z = theta_delta / ODOM_TIMEOUT;
+    odom.twist.twist.angular.z = theta_delta / dt;
 
     // Covariances, row-major 6x6 over (x, y, z, roll, pitch, yaw)
     odom.pose.covariance[0] = ODOM_POSE_XY_VAR;

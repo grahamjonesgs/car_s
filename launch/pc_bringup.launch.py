@@ -20,7 +20,6 @@
 
 import os
 import subprocess
-import tempfile
 
 import yaml
 
@@ -87,12 +86,14 @@ def slam_params_file(context):
     else:
         # Where the saved mapping started
         p['map_start_at_dock'] = True
-    out = tempfile.NamedTemporaryFile('w', prefix='car_s_slam_', suffix='.yaml', delete=False)
-    yaml.safe_dump(params, out)
-    out.close()
+    # One file, overwritten each time, rather than a new temporary file per run
+    out_path = os.path.expanduser('~/.ros/car_s_slam_map.yaml')
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, 'w') as out:
+        yaml.safe_dump(params, out)
     print(f'[pc_bringup] SLAM continues from {saved} '
           f'({"at " + " ".join(pose) if pose else "where it started"})', flush=True)
-    return out.name
+    return out_path
 
 
 def start_slam(context):

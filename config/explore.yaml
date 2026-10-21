@@ -13,7 +13,9 @@ explore_node:
     return_to_init: true
     # How often (Hz) to pick a new frontier
     planner_frequency: 0.15
-    # Give up on a frontier if the car makes no progress for this long (s)
+    # A goal is given up after 3 x this (s), or as soon as Nav2 aborts it
+    # (its progress checker aborts when the car is stuck). See
+    # patches/README.md: the patched explore_lite keeps its goal until then
     progress_timeout: 30.0
     potential_scale: 3.0
     orientation_scale: 0.0

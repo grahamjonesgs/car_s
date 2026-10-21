@@ -87,10 +87,6 @@
 #define QMC5883L_CONFIG_STANDBY 0b00000000
 #define QMC5883L_CONFIG_CONT 0b00000001
 
-/* Apparently M_PI isn't available in all environments. */
-#ifndef M_PI
-#define M_PI 3.14159265358979323846264338327950288
-#endif
 
 // Global variables
 rclcpp::TimerBase::SharedPtr mag_timer;
@@ -99,8 +95,6 @@ int pi;   // Pi ID from Pigpio
 int i2ch; // I2C handle
 rclcpp::Node::SharedPtr nh;
 
-int16_t xhigh, x_low;
-int16_t y_high, y_low;
 uint8_t mode;
 uint8_t rate;
 uint8_t range;
@@ -108,14 +102,6 @@ uint8_t oversampling;
 
 // Normalisation values
 float DigitPermg;
-
-short read_raw_data(int addr) {
-  short high_byte, low_byte, value;
-  high_byte = i2c_read_byte_data(pi, i2ch, addr + 1);
-  low_byte = i2c_read_byte_data(pi, i2ch, addr);
-  value = (high_byte << 8) | low_byte;
-  return value;
-}
 
 void reconfigure() {
   i2c_write_byte_data(pi, i2ch, QMC5883L_CONFIG,
@@ -187,60 +173,26 @@ void QMC5883L_init() {
   reset();
 }
 
-int readRaw(int16_t *x, int16_t *y, int16_t *z, [[maybe_unused]] int16_t *t) {
-  *x = read_raw_data(QMC5883L_X_LSB);
-  *y = read_raw_data(QMC5883L_Y_LSB);
-  *z = read_raw_data(QMC5883L_Z_LSB);
-  return 1;
-}
-
-void resetCalibration() {
-  xhigh = y_high = 0;
-  x_low = y_low = 0;
-}
-
-int readHeading() {
-  int16_t x, y, z, t;
-
-  if (!readRaw(&x, &y, &z, &t))
-    return 0;
-
-  /* Update the observed boundaries of the measurements */
-
-  if (x < x_low)
-    x_low = x;
-  if (x > xhigh)
-    xhigh = x;
-  if (y < y_low)
-    y_low = y;
-  if (y > y_high)
-    y_high = y;
-
-  /* Bail out if not enough data is available. */
-
-  if (x_low == xhigh || y_low == y_high)
-    return 0;
-
-  /* Recenter the measurement by subtracting the average */
-
-  x -= (xhigh + x_low) / 2;
-  y -= (y_high + y_low) / 2;
-
-  /* Rescale the measurement to the range observed. */
-
-  float fx = (float)x / (xhigh - x_low);
-  float fy = (float)y / (y_high - y_low);
-
-  int heading = 180.0 * atan2(fy, fx) / M_PI;
-  if (heading <= 0)
-    heading += 360;
-
-  return heading;
+// Read X, Y and Z in one transfer, so they all come from the same sample.
+// Returns false if the read fails
+bool readRaw(int16_t *x, int16_t *y, int16_t *z) {
+  char buf[6];
+  if (i2c_read_i2c_block_data(pi, i2ch, QMC5883L_X_LSB, buf, 6) != 6) {
+    return false;
+  }
+  auto word = [&](int i) {
+    return static_cast<int16_t>((static_cast<uint8_t>(buf[i + 1]) << 8) |
+                                static_cast<uint8_t>(buf[i]));
+  };
+  *x = word(0);
+  *y = word(2);
+  *z = word(4);
+  return true;
 }
 
 void mag_timer_callback() {
   // ROS timer callback to publish mag data
-  int16_t x, y, z, t;
+  int16_t x, y, z;
   short status;
   sensor_msgs::msg::MagneticField mag_msg;
 
@@ -252,8 +204,11 @@ void mag_timer_callback() {
     return;
   }
 
-  readRaw(&x, &y, &z, &t);
-  // ROS_INFO("Raw data %i, %i,%i",x,y,z);
+  if (!readRaw(&x, &y, &z)) {
+    RCLCPP_WARN_THROTTLE(nh->get_logger(), *nh->get_clock(), 5000,
+                         "Failed to read the magnetometer");
+    return;
+  }
   mag_msg.header.stamp = nh->get_clock()->now();
   mag_msg.header.frame_id = "mag_link";
   // Convert from milligauss to Tesla (1 mG = 1e-7 T)
@@ -275,15 +230,17 @@ int main(int argc, char **argv) {
   i2ch = i2c_open(pi, 1, QMC5883L_ADDR, 0);
   if (i2ch < 0) {
     RCLCPP_ERROR(nh->get_logger(), "Failed to open I2C device");
-    exit(1);
+    pigpio_stop(pi);
+    return 1;
   }
 
   QMC5883L_init();
 
   // Set up ROS
+  mag_pub = nh->create_publisher<sensor_msgs::msg::MagneticField>(
+      TOPIC_MAG, rclcpp::SensorDataQoS());
   mag_timer = nh->create_wall_timer(std::chrono::duration<double>(MAG_TIMER),
                                     std::bind(&mag_timer_callback));
-  mag_pub = nh->create_publisher<sensor_msgs::msg::MagneticField>(TOPIC_MAG, 2);
   rclcpp::spin(nh);
   pigpio_stop(pi); // Stop pigpio
 }
