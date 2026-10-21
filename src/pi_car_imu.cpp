@@ -323,4 +323,11 @@ int main(int argc, char **argv) {
   rclcpp::spin(nh);
   i2c_close(pi, i2ch);
   pigpio_stop(pi); // Stop pigpio
+  // Release the global ROS objects before shutting down: destroyed later, as
+  // globals at exit, they threw and the node aborted (exit code -6)
+  imu_timer.reset();
+  imu_pub.reset();
+  nh.reset();
+  rclcpp::shutdown();
+  return 0;
 }

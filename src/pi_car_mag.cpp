@@ -242,5 +242,13 @@ int main(int argc, char **argv) {
   mag_timer = nh->create_wall_timer(std::chrono::duration<double>(MAG_TIMER),
                                     std::bind(&mag_timer_callback));
   rclcpp::spin(nh);
+  i2c_close(pi, i2ch);
   pigpio_stop(pi); // Stop pigpio
+  // Release the global ROS objects before shutting down: destroyed later, as
+  // globals at exit, they threw and the node aborted (exit code -6)
+  mag_timer.reset();
+  mag_pub.reset();
+  nh.reset();
+  rclcpp::shutdown();
+  return 0;
 }
