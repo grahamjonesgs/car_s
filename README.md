@@ -36,15 +36,19 @@ As of 2026-10-20, all of this has been checked on the real car:
   single walls.
 - Nav2 to goals clicked in RViz, on a saved map with AMCL.
 - Autonomous exploration (`explore:=true`): mapped about 42 m² of a large,
-  cluttered room by itself before it was stopped.
+  cluttered room by itself before it was stopped, and on 2026-10-21 a second
+  room (saved as `~/maps/cave`).
 
 Still to look at:
 
-- Exploration in a smaller room with fewer small obstacles. In the large
-  room, Nav2 sometimes reported "Failed to make progress" and ran its
-  recoveries, probably near chair and table legs.
-- `robot_radius` (0.17 m) and the costmap inflation (0.35 m) in
-  [config/nav2.yaml](config/nav2.yaml) are estimates. Measure the car.
+- Exploration in cluttered rooms. In the second room, the car ended up in a
+  gap between furniture where the inflated obstacles merged, so Nav2 found
+  no path out ("no valid path found" from every goal) and kept running its
+  recoveries. The inflation radius is now 0.25 m instead of 0.35 m. That
+  hasn't been tried on the real car yet.
+- `robot_radius` (0.17 m) in [config/nav2.yaml](config/nav2.yaml) is an
+  estimate. Measure the car, and consider a rectangular footprint, which
+  would let Nav2 use tighter gaps.
 - While planning long routes into unknown space, the Nav2 controller
   sometimes ran at about 13 Hz instead of 20 Hz. It still drove fine.
 - The magnetometer is unused (see [How localisation works](#how-localisation-works)).
@@ -577,7 +581,8 @@ car:
   heavy for the old 4-core VM, which needed 1000 × 40.
 - **Planner:** Smac 2D. NavFn often failed to plan into unknown space, which
   is where exploration sends the car.
-- **Costmaps:** a 0.17 m robot radius and 0.35 m inflation.
+- **Costmaps:** a 0.17 m robot radius and 0.25 m inflation. With 0.35 m,
+  the margins round furniture legs merged and trapped the car.
 - **Timeouts:** longer transform tolerances for WiFi, and
   `default_server_timeout: 100` so goals don't abort under load.
 - Nav2 runs composed in one process.
