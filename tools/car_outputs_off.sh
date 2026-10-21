@@ -1,8 +1,10 @@
 #!/bin/bash
 # Stop the step pulses and disable the stepper drivers, however the car_s
 # service ended (the controller can't do it after a crash: the PWM, kernel or
-# pigpio, keeps running without it). Run as root by the service's
-# ExecStopPost, with CAR_S_GPIO_BACKEND from /etc/default/car_s.
+# pigpio, keeps running without it). Run straight away by robot_car.launch.py
+# when the controller exits, and again as root by the service's ExecStopPost
+# (with CAR_S_GPIO_BACKEND from /etc/default/car_s). It works as the car's
+# user too: car_pwm_setup.sh gives it the kernel PWM files.
 #
 # For the linux backend it doesn't use pigpio's PWM commands: those
 # reprogram the PWM clock behind the kernel's back, and the kernel then sets

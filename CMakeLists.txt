@@ -84,6 +84,7 @@ endif()
 # Shutdown and reboot services for the Pi, and the PC's watch on the car
 install(PROGRAMS scripts/car_power.py DESTINATION lib/${PROJECT_NAME} RENAME car_power)
 install(PROGRAMS scripts/car_guard.py DESTINATION lib/${PROJECT_NAME} RENAME car_guard)
+install(PROGRAMS tools/car_outputs_off.sh DESTINATION lib/${PROJECT_NAME} RENAME car_outputs_off)
 
 install(DIRECTORY launch urdf config rviz overlays DESTINATION share/${PROJECT_NAME})
 

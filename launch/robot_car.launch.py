@@ -8,6 +8,7 @@ from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 import os
+from ament_index_python.packages import get_package_prefix
 
 def generate_launch_description():
     # Declare arguments
@@ -113,9 +114,18 @@ def generate_launch_description():
             'gpio_backend': ParameterValue(
                 LaunchConfiguration('gpio_backend'), value_type=str),
         }],
-        # If the controller dies, end the whole launch, so the car_s service
-        # stops the step pulses (ExecStopPost) and restarts everything
-        on_exit=Shutdown(reason='car_controller exited'),
+        # If the controller dies, the PWM keeps running without it: stop the
+        # step pulses and disable the drivers at once, then end the whole
+        # launch, so the car_s service (whose ExecStopPost does the same
+        # again) restarts everything
+        on_exit=[
+            ExecuteProcess(
+                cmd=[os.path.join(get_package_prefix(package_name), 'lib',
+                                  package_name, 'car_outputs_off'),
+                     LaunchConfiguration('gpio_backend')],
+                output='screen'),
+            Shutdown(reason='car_controller exited'),
+        ],
     )
 
     picar_imu_node = Node(
