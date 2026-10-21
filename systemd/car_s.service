@@ -24,10 +24,8 @@ TimeoutStartSec=120
 TimeoutStopSec=20
 # However the service ended (including a crashed controller, after which
 # the PWM, kernel or pigpio, would keep the step pulses running), stop the
-# kernel PWM, then disable the drivers (ENABLE, GPIO 14, high) and stop
-# pigpio's PWM on the four STEP pins
-ExecStopPost=-+/bin/sh -c 'for c in 0 1; do f=/sys/class/pwm/pwmchip0/pwm$$c/enable; [ -e $$f ] && echo 0 2>/dev/null > $$f; done; exit 0'
-ExecStopPost=-/usr/local/bin/pigs w 14 1 hp 12 0 0 hp 13 0 0 hp 18 0 0 hp 19 0 0
+# step pulses and disable the drivers (ENABLE, GPIO 14, high)
+ExecStopPost=-+/home/graham/ros_ws/src/car_s/tools/car_outputs_off.sh
 # A crashed controller ends the launch (on_exit in robot_car.launch.py), and
 # ros2 launch then exits 0, so restart on any exit, not only failures
 Restart=always
