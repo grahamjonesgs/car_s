@@ -58,7 +58,11 @@ def generate_launch_description():
         output='screen',
         parameters=[{
             'use_sim_time': LaunchConfiguration('use_sim_time'),
-            'robot_description': Command(['xacro ', urdf_path, ' robot_name:=', LaunchConfiguration('robot_name')])
+            # As a string: otherwise launch reads it as YAML, and a colon
+            # followed by a space anywhere in the URDF breaks it
+            'robot_description': ParameterValue(
+                Command(['xacro ', urdf_path, ' robot_name:=', LaunchConfiguration('robot_name')]),
+                value_type=str)
         }],
     )
 

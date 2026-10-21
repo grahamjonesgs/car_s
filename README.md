@@ -61,9 +61,11 @@ Still to look at:
   map, it drove its nose to within a few centimetres of a chair leg; the
   wider local margin hasn't been tried on the real car yet. Chair legs are
   the hardest case: thin, and seen by only a few lidar points.
-- `robot_radius` (0.17 m) in [config/nav2.yaml](config/nav2.yaml) is an
-  estimate. Measure the car, and consider a rectangular footprint, which
-  would let Nav2 use tighter gaps.
+- The lidar's height above the floor hasn't been measured (the URDF guesses
+  0.13 m). Nav2's planner logs "Inflation layer either not found or
+  inflation is not set sufficiently for optimized non-circular collision
+  checking" at start-up, although the 0.25 m inflation exceeds the
+  footprint's 0.20 m corner radius. It seems harmless; exploration works.
 - While planning long routes into unknown space, the Nav2 controller
   sometimes ran at about 13 Hz instead of 20 Hz. It still drove fine.
 - The magnetometer is unused (see [How localisation works](#how-localisation-works)).
@@ -74,8 +76,9 @@ Still to look at:
 |---|---|
 | Computer | Raspberry Pi 4 Model B (8 GB), Ubuntu 24.04, ROS 2 Jazzy |
 | Motors | 4 steppers, 200 steps/rev, step/dir drivers with M0/M1/M2 microstep pins (up to 1/32) |
-| Wheels | 4 fixed wheels, skid steer. Physically 0.21 m travel per revolution and 0.2337 m between left and right wheels. The controller uses calibrated values (see [Calibration](#calibration)) |
-| Lidar | RPLIDAR A1 on USB, `/dev/ttyUSB0`, 115200 baud, about 7 Hz, 360 points. **Mounted facing backwards**: its 0° points to the rear, so the URDF turns `laser_link` by 180° |
+| Wheels | 4 fixed 65 mm wheels, skid steer, about 0.204 m travel per revolution. Axles about 0.13 m apart, wheel centres about 0.19 m apart side to side. The controller uses calibrated values (see [Calibration](#calibration)) |
+| Size | About 0.29 m long and 0.22 m wide over the wheels. Measured from base_link (midway between the axles): front 0.12 m ahead, rear 0.17 m behind, as the rear deck overhangs. Spinning on the spot, the rear corners sweep a 0.20 m radius |
+| Lidar | RPLIDAR A1 on USB, `/dev/ttyUSB0`, 115200 baud, about 7 Hz, 360 points. Spin axis 0.05 m ahead of base_link, on the centre line. **Mounted facing backwards** (its motor end to the rear): its 0° points to the rear, so the URDF turns `laser_link` by 180° |
 | IMU | MPU6050 on I2C bus 1, address `0x68`. Mounted level and facing forward: Z up, positive Z rotation is anticlockwise |
 | Magnetometer | QMC5883L on I2C bus 1, address `0x0D` |
 | LEDs | Red on GPIO 23, blue on GPIO 24 (blue flashes while the motors are enabled) |
@@ -186,7 +189,7 @@ Parameters (all can be changed while it runs, with
 | Parameter | Default | Meaning |
 |---|---|---|
 | `publish_odom_tf` | `true` | Publish the TF `odom` → `base_link`. `pc_bringup.launch.py` turns it off while its EKF publishes that TF instead, and back on when it stops |
-| `wheel_separation` | `0.265` | Effective distance between left and right wheels (m), calibrated against the gyro. Skid steer needs more than the physical 0.2337 m |
+| `wheel_separation` | `0.265` | Effective distance between left and right wheels (m), calibrated against the gyro. Skid steer needs more than the physical 0.19 m |
 | `m_per_revolution` | `0.2016` | Distance travelled per wheel revolution (m), calibrated by tape measure (nominal 0.21) |
 | `cmd_vel_timeout` | `0.3` | In auto mode, stop this long (s) after the last `cmd_vel`. Long enough for WiFi jitter |
 | `max_wheel_speed` | `0.5` | Cap on each wheel's speed (m/s). Above it, both wheels are scaled down together, keeping the turn. The steppers stall above about this, while odometry would still count the commanded steps |
@@ -657,7 +660,10 @@ car:
   heavy for the old 4-core VM, which needed 1000 × 40.
 - **Planner:** Smac 2D. NavFn often failed to plan into unknown space, which
   is where exploration sends the car.
-- **Costmaps:** a 0.17 m robot radius. The global costmap, which the
+- **Costmaps:** the car's measured rectangle as the footprint (0.12 m ahead,
+  0.17 m behind, 0.11 m each side), which MPPI checks as it steers
+  (`consider_footprint: true`): it's narrower than the old 0.17 m circle at
+  the sides, but the rear corners reach further. The global costmap, which the
   planner uses, has 0.25 m inflation: with 0.35 m, the margins round
   furniture legs merged and trapped the car. The local costmap, which the
   controller steers by, has a wider, slower-fading 0.40 m margin, so the car

@@ -1,26 +1,36 @@
 <?xml version="1.0" ?>
 
- 
-
 <robot name="robot_car">
 
-  <!-- The wheel joints are fixed because nothing publishes joint_states, so
-       robot_state_publisher can publish their TF. Wheel spacing (0.2337 m)
-       and radius (0.21 m per revolution) are the physical sizes; the
-       controller uses calibrated values (0.265 m effective spacing, 0.2016 m
-       per revolution). -->
-
+  <!-- Sizes measured from a top-down photo on A4 paper (2026-10-21), about
+       +-1 cm. base_link is midway between the front and rear axles, at axle
+       height (0.0325 m above the floor), x forward, y left.
+       - The body runs from 0.12 m ahead of base_link to 0.17 m behind it
+         (the rear deck overhangs), about 0.18 m wide; 0.22 m wide over the
+         wheels.
+       - The wheels are 65 mm (0.0325 m radius), 26 mm wide, axles 0.13 m
+         apart, centres 0.19 m apart side to side. The controller uses
+         calibrated values instead (0.265 m effective spacing for skid steer,
+         0.2016 m per revolution).
+       - The lidar spin axis is 0.05 m ahead of base_link, centred; its
+         height hasn't been measured.
+       No colon followed by a space anywhere in this file, as ROS reads
+       robot_description passed with -p as YAML and that breaks it.
+       The wheel joints are fixed because nothing publishes joint_states, so
+       robot_state_publisher can publish their TF. -->
 
   <link name="base_link">
     <visual>
+      <origin xyz="-0.025 0 0.02"/>
       <geometry>
-        <box size="0.2 0.15 0.1"/>
+        <box size="0.29 0.18 0.06"/>
       </geometry>
       <material name="blue"/>
     </visual>
     <collision>
+      <origin xyz="-0.025 0 0.02"/>
       <geometry>
-        <box size="0.2 0.15 0.1"/>
+        <box size="0.29 0.18 0.06"/>
       </geometry>
     </collision>
     <inertial>
@@ -32,16 +42,16 @@
     </inertial>
   </link>
 
-  <link name="left_wheel_link">
+  <link name="left_front_wheel_link">
     <visual>
       <geometry>
-        <cylinder radius="0.0334" length="0.05"/>
+        <cylinder radius="0.0325" length="0.026"/>
       </geometry>
       <material name="black"/>
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.0334" length="0.05"/>
+        <cylinder radius="0.0325" length="0.026"/>
       </geometry>
     </collision>
     <inertial>
@@ -53,16 +63,58 @@
     </inertial>
   </link>
 
-  <link name="right_wheel_link">
+  <link name="left_rear_wheel_link">
     <visual>
       <geometry>
-        <cylinder radius="0.0334" length="0.05"/>
+        <cylinder radius="0.0325" length="0.026"/>
       </geometry>
       <material name="black"/>
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.0334" length="0.05"/>
+        <cylinder radius="0.0325" length="0.026"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.1"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0"
+               iyy="0.0001" iyz="0"
+               izz="0.0002"/>
+    </inertial>
+  </link>
+
+  <link name="right_front_wheel_link">
+    <visual>
+      <geometry>
+        <cylinder radius="0.0325" length="0.026"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="0.0325" length="0.026"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.1"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.0001" ixy="0" ixz="0"
+               iyy="0.0001" iyz="0"
+               izz="0.0002"/>
+    </inertial>
+  </link>
+
+  <link name="right_rear_wheel_link">
+    <visual>
+      <geometry>
+        <cylinder radius="0.0325" length="0.026"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="0.0325" length="0.026"/>
       </geometry>
     </collision>
     <inertial>
@@ -116,17 +168,28 @@
     </inertial>
   </link>
 
-
-  <joint name="left_wheel_joint" type="fixed">
+  <joint name="left_front_wheel_joint" type="fixed">
     <parent link="base_link"/>
-    <child link="left_wheel_link"/>
-    <origin xyz="0 0.11685 0" rpy="1.5707 0 0"/>
+    <child link="left_front_wheel_link"/>
+    <origin xyz="0.065 0.095 0" rpy="1.5707 0 0"/>
   </joint>
 
-  <joint name="right_wheel_joint" type="fixed">
+  <joint name="left_rear_wheel_joint" type="fixed">
     <parent link="base_link"/>
-    <child link="right_wheel_link"/>
-    <origin xyz="0 -0.11685 0" rpy="1.5707 0 0"/>
+    <child link="left_rear_wheel_link"/>
+    <origin xyz="-0.065 0.095 0" rpy="1.5707 0 0"/>
+  </joint>
+
+  <joint name="right_front_wheel_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="right_front_wheel_link"/>
+    <origin xyz="0.065 -0.095 0" rpy="1.5707 0 0"/>
+  </joint>
+
+  <joint name="right_rear_wheel_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="right_rear_wheel_link"/>
+    <origin xyz="-0.065 -0.095 0" rpy="1.5707 0 0"/>
   </joint>
 
   <joint name="imu_joint" type="fixed">
@@ -139,7 +202,8 @@
     <parent link="base_link"/>
     <child link="laser_link"/>
     <!-- The lidar is mounted with its 0 degree direction facing backwards
-         (checked 2026-10-20 with an object in front of the car) -->
-    <origin xyz="0.1 0 0.1" rpy="0 0 3.14159"/>
+         (checked 2026-10-20 with an object in front of the car). Its spin
+         axis is 0.05 m ahead of base_link; the height is a guess -->
+    <origin xyz="0.05 0 0.1" rpy="0 0 3.14159"/>
   </joint>
 </robot>
