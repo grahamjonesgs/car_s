@@ -410,7 +410,9 @@ velocity_smoother:
     odom_topic: "odometry/filtered"
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]
-    velocity_timeout: 1.0
+    # Stop repeating the last command after this long without a new one. At
+    # 1.0 it hid a stalled controller from the car's own 0.3 s timeout
+    velocity_timeout: 0.3
 
 collision_monitor:
   ros__parameters:

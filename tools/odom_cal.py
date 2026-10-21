@@ -19,6 +19,7 @@ by running the test again, then make it the default in
 src/pi_car_s_controller_accel.cpp.
 """
 import math
+import signal
 import statistics
 import sys
 import time
@@ -29,6 +30,7 @@ from nav_msgs.msg import Odometry
 from rcl_interfaces.srv import GetParameters
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
+from rclpy.signals import SignalHandlerOptions
 from sensor_msgs.msg import Imu, LaserScan
 from std_msgs.msg import Bool, Int32
 from tf2_ros import Buffer, TransformListener
@@ -36,6 +38,7 @@ from tf2_ros import Buffer, TransformListener
 MIN_CLEAR = 0.40          # m, all round, for any test
 FORWARD_SPEED = 0.1       # m/s
 SPIN_RATE = 0.5           # rad/s
+SCAN_WAIT = 2.0           # s to wait for a new scan before giving up
 
 
 class OdomCal(Node):
@@ -98,10 +101,16 @@ class OdomCal(Node):
         f, b = [], []
         for _ in range(n):
             cur = self.scan
+            deadline = time.time() + SCAN_WAIT
             while self.scan is cur:
+                if time.time() > deadline:
+                    raise RuntimeError('No new lidar scan: has the lidar stopped?')
                 rclpy.spin_once(self, timeout_sec=0.05)
             f += self.ranges_towards(self.scan, 0, 3, yaw)
             b += self.ranges_towards(self.scan, 180, 3, yaw)
+        if not f or not b:
+            raise RuntimeError('Nothing within range straight ahead or behind '
+                               'for the lidar to measure against')
         return statistics.median(f), statistics.median(b)
 
     def pose(self):
@@ -152,7 +161,15 @@ def main():
     test = sys.argv[1]
     amount = float(sys.argv[2]) if len(sys.argv) > 2 else (0.5 if test == 'forward' else 2.0)
 
-    rclpy.init()
+    # Our own signal handling: rclpy's would shut ROS down on Ctrl-C before the
+    # clean-up below could disable the motors. SIGTERM and SIGHUP (a closed
+    # SSH session) get the same clean-up as Ctrl-C
+    rclpy.init(signal_handler_options=SignalHandlerOptions.NO)
+
+    def interrupt(signum, frame):
+        raise KeyboardInterrupt
+    signal.signal(signal.SIGTERM, interrupt)
+    signal.signal(signal.SIGHUP, interrupt)
     n = OdomCal()
     t0 = time.time()
     while (n.scan is None or n.odom is None) and time.time() - t0 < 20:
@@ -170,6 +187,8 @@ def main():
         sys.exit(f'Need {MIN_CLEAR} m clear all round, not driving')
     if test == 'forward' and c['front'] < amount + 0.4:
         sys.exit(f'Need {amount + 0.4:.1f} m clear in front, not driving')
+    if n.last_imu is None:
+        sys.exit('No /imu/data_raw: is car_imu running? Not driving')
 
     try:
         n.mode.publish(Int32(data=2))   # auto mode: stops if commands stop
@@ -188,7 +207,9 @@ def main():
             lidar = ((f0 - f1) + (b1 - b0)) / 2
             print(f'Odometry: {moved:.3f} m. Lidar: front {f0 - f1:+.3f} m, back {b1 - b0:+.3f} m, '
                   f'mean {lidar:.3f} m. Gyro: {math.degrees(n.gyro_yaw):+.1f} deg')
-            if current:
+            if moved < 0.05:
+                print('The car hardly moved: were the motors enabled?')
+            elif current:
                 print(f'm_per_revolution {current:.4f} -> {current * lidar / moved:.4f} from the lidar. '
                       f'From a tape measure: {current:.4f} x tape / {moved:.3f}')
         else:
@@ -205,15 +226,28 @@ def main():
             n.drive(0.0, SPIN_RATE, amount * 2 * math.pi / SPIN_RATE, on_step=track)
             n.spin_for(1.0)
             track()
-            ratio = odom_yaw / n.gyro_yaw
-            print(f'Odometry: {math.degrees(odom_yaw):+.1f} deg. Gyro: {math.degrees(n.gyro_yaw):+.1f} deg. '
-                  f'Ratio {ratio:.3f}')
-            if current:
+            print(f'Odometry: {math.degrees(odom_yaw):+.1f} deg. Gyro: {math.degrees(n.gyro_yaw):+.1f} deg.')
+            if abs(n.gyro_yaw) < math.radians(10):
+                print('The gyro saw almost no rotation: did the car turn?')
+            elif current:
+                ratio = odom_yaw / n.gyro_yaw
+                print(f'Ratio {ratio:.3f}')
                 print(f'wheel_separation {current:.4f} -> {current * ratio:.4f}')
+    except KeyboardInterrupt:
+        print('Interrupted')
+    except RuntimeError as e:
+        print(f'Stopped: {e}')
     finally:
-        n.stop()
-        n.set_motors(False)
+        # Each step on its own, so a failure in one can't skip disabling the
+        # motors; a second Ctrl-C here is ignored until they're off
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        for step in (n.stop, lambda: n.set_motors(False)):
+            try:
+                step()
+            except Exception as e:  # noqa: BLE001
+                print(f'Clean-up step failed: {e}')
         print('Motors stopped and disabled')
+        rclpy.try_shutdown()
 
 
 if __name__ == '__main__':

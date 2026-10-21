@@ -20,6 +20,7 @@ from rclpy.qos import qos_profile_sensor_data
 from geometry_msgs.msg import Twist, TransformStamped
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Imu, LaserScan
+from std_msgs.msg import Bool
 from std_srvs.srv import Empty
 from tf2_ros import TransformBroadcaster
 
@@ -49,7 +50,11 @@ class FakeCar(Node):
         self.x = self.y = self.th = 0.0
         self.v = self.w = 0.0
         self.last_cmd = self.get_clock().now()
+        # Like the real controller: motors off until motor_on, and cmd_vel
+        # ignored while they're off, so a missing enable shows up here too
+        self.motor_on = False
         self.create_subscription(Twist, 'cmd_vel', self.cmd, 2)
+        self.create_subscription(Bool, 'motor_on', self.motor, 1)
         self.odom_pub = self.create_publisher(Odometry, 'odom', 50)
         self.imu_pub = self.create_publisher(Imu, 'imu/data_raw', qos_profile_sensor_data)
         self.scan_pub = self.create_publisher(LaserScan, 'scan', qos_profile_sensor_data)
@@ -61,7 +66,15 @@ class FakeCar(Node):
         self.create_timer(1 / 7.0, self.scan)
         self.create_timer(1.0, lambda: print(f'TRUTH {self.x:.3f} {self.y:.3f} {math.degrees(self.th):.1f}', flush=True))
 
+    def motor(self, m):
+        self.motor_on = m.data
+        if not m.data:
+            self.v = self.w = 0.0
+        print(f'motor_on {m.data}', flush=True)
+
     def cmd(self, m):
+        if not self.motor_on:
+            return
         self.v, self.w = m.linear.x, m.angular.z
         self.last_cmd = self.get_clock().now()
 
@@ -122,7 +135,11 @@ class FakeCar(Node):
         self.scan_pub.publish(s)
 
 
-if os.environ.get('ROS_DOMAIN_ID', '0') in ('', '0'):
+try:
+    domain = int(os.environ.get('ROS_DOMAIN_ID') or 0)
+except ValueError:
+    sys.exit(f'Unreadable ROS_DOMAIN_ID {os.environ.get("ROS_DOMAIN_ID")!r}')
+if domain == 0:
     sys.exit('Refusing to run on ROS domain 0, where the real car is. '
              'Use tools/sim_test.sh, or set ROS_DOMAIN_ID and '
              'ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST.')

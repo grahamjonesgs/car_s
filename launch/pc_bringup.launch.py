@@ -12,8 +12,11 @@
 #                        ros2 launch car_s pc_bringup.launch.py \
 #                          slam_map:=$HOME/maps/cave
 #
-# While the EKF runs it publishes odom -> base_link, so this turns off the
-# controller's own TF (publish_odom_tf) and turns it back on at shutdown.
+# While the EKF runs it publishes odom -> base_link, so car_guard
+# (scripts/car_guard.py) turns off the controller's own TF (publish_odom_tf),
+# keeps the lidar running and enables the motors, again if the car restarts.
+# At shutdown the TF is turned back on, the lidar stopped and the motors
+# disabled.
 
 import os
 import subprocess
@@ -23,7 +26,7 @@ import yaml
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import (DeclareLaunchArgument, ExecuteProcess,
+from launch.actions import (DeclareLaunchArgument,
                             IncludeLaunchDescription, LogInfo, OpaqueFunction,
                             RegisterEventHandler)
 from launch.conditions import IfCondition
@@ -31,17 +34,21 @@ from launch.event_handlers import OnShutdown
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 from nav2_common.launch import RewrittenYaml
 
 CONTROLLER_NODE = '/car_controller'
 
-# Discovery of the Pi's nodes over WiFi can take a few seconds, so retry
-RETRY = 'for i in $(seq 30); do {cmd} && exit 0; sleep 1; done; exit 1'
-
 
 def restore_on_shutdown(context):
-    """Give the controller back its TF, and stop the lidar, when this exits."""
+    """Give the controller back its TF, stop the lidar, and disable the motors
+    if this enabled them, when it exits."""
     commands = []
+    if LaunchConfiguration('motors_on').perform(context).lower() == 'true':
+        # First, so the car can't act on a last command from Nav2
+        commands.append(['ros2', 'topic', 'pub', '-w', '1', '--times', '3',
+                         '--rate', '10', '/motor_on', 'std_msgs/msg/Bool',
+                         '{data: false}'])
     if LaunchConfiguration('ekf').perform(context).lower() == 'true':
         commands.append(['ros2', 'param', 'set', CONTROLLER_NODE,
                          'publish_odom_tf', 'true'])
@@ -164,26 +171,18 @@ def generate_launch_description():
         condition=IfCondition(ekf),
     )
 
-    controller_tf_off = ExecuteProcess(
-        cmd=['bash', '-c', RETRY.format(
-            cmd=f'ros2 param set {CONTROLLER_NODE} publish_odom_tf false')],
+    # Turns the car's TF off for the EKF, keeps the lidar spinning and enables
+    # the motors, and does it again if the car restarts during the session
+    car_guard = Node(
+        package='car_s',
+        executable='car_guard',
+        name='car_guard',
         output='screen',
-        condition=IfCondition(ekf),
-    )
-
-    lidar_on = ExecuteProcess(
-        cmd=['ros2', 'service', 'call', '/start_motor', 'std_srvs/srv/Empty'],
-        output='log',
-        condition=IfCondition(start_lidar),
-    )
-
-    # Publish a few times: a single message from a process that exits
-    # straight away can be lost over WiFi
-    enable_motors = ExecuteProcess(
-        cmd=['ros2', 'topic', 'pub', '-w', '1', '--times', '3', '--rate', '2',
-             '/motor_on', 'std_msgs/msg/Bool', '{data: true}'],
-        output='log',
-        condition=IfCondition(motors_on),
+        parameters=[{
+            'ekf': ParameterValue(ekf, value_type=bool),
+            'start_lidar': ParameterValue(start_lidar, value_type=bool),
+            'motors_on': ParameterValue(motors_on, value_type=bool),
+        }],
     )
 
     slam_launch = OpaqueFunction(function=start_slam, condition=IfCondition(slam))
@@ -275,10 +274,8 @@ def generate_launch_description():
 
     return LaunchDescription(args + [
         both_maps_warning,
-        controller_tf_off,
+        car_guard,
         ekf_node,
-        lidar_on,
-        enable_motors,
         slam_launch,
         nav2_container,
         localization_launch,

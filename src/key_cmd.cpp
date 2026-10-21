@@ -4,15 +4,24 @@
 #include "std_msgs/msg/float32.hpp"
 #include "std_msgs/msg/int32.hpp"
 #include "std_srvs/srv/empty.hpp"
+#include <chrono>
+#include <errno.h>
+#include <poll.h>
 #include <rclcpp/rclcpp.hpp>
 #include <signal.h>
 #include <stdio.h>
 #include <termios.h>
+#include <thread>
+#include <unistd.h>
 
-#define KEYCODE_R_ARROW 0x43  // Right
-#define KEYCODE_L_ARROW 0x44  // Left
-#define KEYCODE_U_ARROW 0x41  // Forwards
-#define KEYCODE_D_ARROW 0x42  // Backwards
+// Arrow keys arrive as escape sequences (ESC [ A); readKey() turns them into
+// these codes, outside the range of single bytes
+#define KEYCODE_U_ARROW 0x101 // Forwards
+#define KEYCODE_D_ARROW 0x102 // Backwards
+#define KEYCODE_R_ARROW 0x103 // Right
+#define KEYCODE_L_ARROW 0x104 // Left
+#define KEY_NONE 0            // Nothing, or a key that does nothing
+#define KEY_QUIT -1           // Quit, end of input, or an error
 #define KEYCODE_Q 0x71  // Quit
 #define KEYCODE_F 0x66  // Faster
 #define KEYCODE_S 0x73  // Slower
@@ -43,8 +52,11 @@ class TeleopCmd {
 public:
   TeleopCmd();
   void keyLoop();
+  void stop();
 
 private:
+  int readKey();
+  bool moving; // the last command sent was not a stop
   std::shared_ptr<rclcpp::Node> nh;
   double linear, angular, velocity, acceleration;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr twist_pub_;
@@ -57,7 +69,7 @@ private:
 };
 
 TeleopCmd::TeleopCmd()
-    : linear(0), angular(0), velocity(0.2), acceleration(0.5),
+    : moving(false), linear(0), angular(0), velocity(0.2), acceleration(0.5),
       lidar_on(false) {
   nh = rclcpp::Node::make_shared("teleop_cmd");
   nh->declare_parameter("velocity", velocity);
@@ -77,27 +89,118 @@ TeleopCmd::TeleopCmd()
 int kfd = 0;
 struct termios cooked, raw;
 
-void quit(int sig) {
-  (void)sig;
-  tcsetattr(kfd, TCSANOW, &cooked);
-  rclcpp::shutdown();
-  exit(0);
-}
+// Set by SIGINT, SIGTERM and SIGHUP; the key loop then stops the car and
+// restores the terminal, which isn't safe to do inside a signal handler
+static volatile sig_atomic_t quit_requested = 0;
+static void on_quit_signal(int) { quit_requested = 1; }
 
 int main(int argc, char **argv) {
-  rclcpp::init(argc, argv);
+  // Our own signal handling, so Ctrl-C stops the car before exiting
+  rclcpp::init(argc, argv, rclcpp::InitOptions(),
+               rclcpp::SignalHandlerOptions::None);
+  if (!isatty(kfd) || tcgetattr(kfd, &cooked) < 0) {
+    fprintf(stderr, "key_cmd needs a terminal to read keys from\n");
+    rclcpp::shutdown();
+    return 1;
+  }
+  struct sigaction sa = {};
+  sa.sa_handler = on_quit_signal; // no SA_RESTART, so poll() wakes up
+  sigaction(SIGINT, &sa, nullptr);
+  sigaction(SIGTERM, &sa, nullptr);
+  sigaction(SIGHUP, &sa, nullptr);
+  // A suspended key_cmd couldn't stop the car, so Ctrl-Z does nothing
+  signal(SIGTSTP, SIG_IGN);
+
   TeleopCmd teleop_cmd;
-  signal(SIGINT, quit);
   teleop_cmd.keyLoop();
-  return (0);
+  teleop_cmd.stop();
+  tcsetattr(kfd, TCSANOW, &cooked);
+  rclcpp::shutdown();
+  return 0;
+}
+
+// Wait up to timeout_ms for one byte. Returns 1 if read, 0 if none came, or
+// -1 on quit, end of input or an error (never repeat the last key)
+static int readByte(unsigned char &b, int timeout_ms) {
+  if (quit_requested) {
+    return -1;
+  }
+  struct pollfd pfd = {kfd, POLLIN, 0};
+  int r = poll(&pfd, 1, timeout_ms);
+  if (r < 0) {
+    return (errno == EINTR && !quit_requested) ? 0 : -1;
+  }
+  if (r == 0) {
+    return 0;
+  }
+  return (read(kfd, &b, 1) == 1) ? 1 : -1;
+}
+
+// The next key: a byte, an arrow code, KEY_NONE or KEY_QUIT. Other escape
+// sequences (F-keys, PgUp, Insert, Ctrl-arrows) are read whole and ignored,
+// so their last byte isn't taken as a key
+int TeleopCmd::readKey() {
+  unsigned char b;
+  int r = readByte(b, 100);
+  if (r <= 0) {
+    return r < 0 ? KEY_QUIT : KEY_NONE;
+  }
+  if (b != 0x1B) {
+    return b;
+  }
+  // ESC [ or ESC O, optional parameter bytes, then a final byte
+  if ((r = readByte(b, 30)) <= 0) {
+    return r < 0 ? KEY_QUIT : KEY_NONE; // Esc on its own
+  }
+  if (b != '[' && b != 'O') {
+    return KEY_NONE;
+  }
+  bool parameters = false;
+  for (;;) {
+    if ((r = readByte(b, 30)) <= 0) {
+      return r < 0 ? KEY_QUIT : KEY_NONE;
+    }
+    if (b >= 0x40 && b <= 0x7E) {
+      break;
+    }
+    parameters = true;
+  }
+  if (parameters) {
+    return KEY_NONE;
+  }
+  switch (b) {
+  case 'A':
+    return KEYCODE_U_ARROW;
+  case 'B':
+    return KEYCODE_D_ARROW;
+  case 'C':
+    return KEYCODE_R_ARROW;
+  case 'D':
+    return KEYCODE_L_ARROW;
+  default:
+    return KEY_NONE;
+  }
+}
+
+// Stop the car if this program last told it to move
+void TeleopCmd::stop() {
+  if (!moving) {
+    return;
+  }
+  geometry_msgs::msg::Twist zero;
+  for (int i = 0; i < 3; ++i) {
+    twist_pub_->publish(zero);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+  }
+  moving = false;
+  puts("Stopped");
 }
 
 void TeleopCmd::keyLoop() {
-  char c;
+  int c;
   bool dirty = false;
 
   // get the console in raw mode
-  tcgetattr(kfd, &cooked);
   memcpy(&raw, &cooked, sizeof(struct termios));
   raw.c_lflag &= ~(ICANON | ECHO);
   // Setting a new line, then end of file
@@ -107,13 +210,16 @@ void TeleopCmd::keyLoop() {
 
   puts("Reading from keyboard");
   puts("---------------------------");
-  puts("Use arrow keys to move the car.");
+  puts("Use arrow keys to move the car. q or Ctrl-C to quit.");
 
   for (;;) {
     // get the next event from the keyboard
-    if (read(kfd, &c, 1) < 0) {
-      perror("read():");
-      exit(-1);
+    c = readKey();
+    if (c == KEY_QUIT || c == KEYCODE_Q) {
+      break;
+    }
+    if (c == KEY_NONE) {
+      continue;
     }
 
     linear = angular = 0;
@@ -272,6 +378,7 @@ void TeleopCmd::keyLoop() {
     twist.linear.x = velocity * linear;
     if (dirty == true) {
       twist_pub_->publish(twist);
+      moving = (twist.linear.x != 0.0 || twist.angular.z != 0.0);
       dirty = false;
     }
   }

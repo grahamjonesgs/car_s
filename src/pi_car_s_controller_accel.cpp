@@ -42,6 +42,7 @@
 #include <memory>
 #include <pigpiod_if2.h>
 #include <rclcpp/rclcpp.hpp>
+#include <stdexcept>
 
 using namespace std::chrono_literals;
 
@@ -73,6 +74,17 @@ const double ANGLE_DELTA = 3.0;
 
 // Defaults for the ROS parameters
 const double DEFAULT_CMD_VEL_TIMEOUT = 0.3; // Time to stop if no message received
+// Wheel speed cap (m/s). Nav2 drives at up to 0.2 m/s; above about 0.5 m/s
+// the steppers stall, while odometry still counts the commanded steps
+const double DEFAULT_MAX_WHEEL_SPEED = 0.5;
+// In continuous and turn-360 modes, still stop if no cmd_vel arrives for this
+// long (s), e.g. when WiFi drops. Long enough for a 360 degree turn
+const double MODE_HARD_TIMEOUT = 15.0;
+// Slowest deceleration (m/s^2) used for a timeout stop, whatever motor_accel
+// is set to
+const double MIN_STOP_DECEL = 1.0;
+// Highest motor_accel accepted (m/s^2)
+const double MAX_ACCEL = 5.0;
 // Calibrated on the floor on 2026-10-20: 0.5 m by tape (nominal 0.21), and a
 // two-turn spin against the gyro. The physical track is 0.2337 m; skid steer
 // needs a larger effective value
@@ -116,7 +128,8 @@ public:
         last_right_target_velocity_(0.0), current_left_velocity_(0.0),
         current_right_velocity_(0.0), acceleration_rate_(1.0),
         sub_steps_(SUB_STEPS), target_angle_(0.0), current_angle_(0.0),
-        angle_delta_(ANGLE_DELTA), turn_started_(false) {
+        angle_delta_(ANGLE_DELTA), turn_started_(false),
+        pending_left_m_(0.0), pending_right_m_(0.0), timeout_stop_(false) {
     RCLCPP_INFO(
         this->get_logger(),
         "Started Pi Car Stepper Controller with Acceleration (C++ Class)");
@@ -131,30 +144,41 @@ public:
         this->declare_parameter("m_per_revolution", DEFAULT_M_PER_REVOLUTION);
     cmd_vel_timeout_ =
         this->declare_parameter("cmd_vel_timeout", DEFAULT_CMD_VEL_TIMEOUT);
-    if (wheel_separation_ <= 0.0 || m_per_revolution_ <= 0.0 ||
-        cmd_vel_timeout_ <= 0.0) {
+    max_wheel_speed_ =
+        this->declare_parameter("max_wheel_speed", DEFAULT_MAX_WHEEL_SPEED);
+    if (!positive(wheel_separation_) || !positive(m_per_revolution_) ||
+        !positive(cmd_vel_timeout_) || !positive(max_wheel_speed_)) {
       RCLCPP_ERROR(this->get_logger(),
-                   "wheel_separation, m_per_revolution and cmd_vel_timeout "
-                   "must be positive, using defaults");
+                   "wheel_separation, m_per_revolution, cmd_vel_timeout and "
+                   "max_wheel_speed must be positive, using defaults");
       wheel_separation_ = DEFAULT_WHEEL_SEPARATION;
       m_per_revolution_ = DEFAULT_M_PER_REVOLUTION;
       cmd_vel_timeout_ = DEFAULT_CMD_VEL_TIMEOUT;
+      max_wheel_speed_ = DEFAULT_MAX_WHEEL_SPEED;
     }
     param_callback_handle_ = this->add_on_set_parameters_callback(
         std::bind(&PiCarController::parameters_callback, this,
                   std::placeholders::_1));
     RCLCPP_INFO(this->get_logger(),
                 "wheel_separation %.4f m, m_per_revolution %.4f m, "
-                "cmd_vel_timeout %.2f s, publish_odom_tf %s",
+                "cmd_vel_timeout %.2f s, max_wheel_speed %.2f m/s, "
+                "publish_odom_tf %s",
                 wheel_separation_, m_per_revolution_, cmd_vel_timeout_,
-                publish_odom_tf_ ? "true" : "false");
+                max_wheel_speed_, publish_odom_tf_ ? "true" : "false");
 
-    // Initialize pigpio
-    if ((pi_ = pigpio_start(nullptr, nullptr)) < 0) {
-      RCLCPP_ERROR(this->get_logger(), "gpio init failed");
-      rclcpp::shutdown();
-      return;
+    // Initialize pigpio. pigpiod can still be starting at boot, so retry for
+    // a while, then fail loudly so the launch (and systemd) restarts
+    for (int attempt = 0; (pi_ = pigpio_start(nullptr, nullptr)) < 0; ++attempt) {
+      if (attempt >= 10) {
+        throw std::runtime_error("gpio init failed: is pigpiod running?");
+      }
+      RCLCPP_WARN(this->get_logger(), "gpio init failed, retrying");
+      rclcpp::sleep_for(1s);
     }
+
+    // pigpiod keeps PWM running after a client dies, so clear anything a
+    // crashed earlier run left behind before doing anything else
+    stop_step_pulses();
 
     // Set GPIO modes
     gpio_write(pi_, ENABLE_PIN, PI_HIGH); // Disable drive initially
@@ -230,17 +254,19 @@ public:
     gpio_write(pi_, ENABLE_PIN, PI_HIGH); // Disable drive initially
     set_substep(sub_steps_);
     last_control_time_ = this->now();
+    last_cmd_vel_time_ = this->now();
   }
 
   // Destructor
-  // It stops the motors, disables the drive, and stops pigpio
+  // It stops the motors, disables the drive, and stops pigpio. It only runs
+  // on a clean shutdown: after a crash, the car_s service's ExecStopPost
+  // does the same through pigs
   ~PiCarController() {
+    if (pi_ < 0) {
+      return;
+    }
     RCLCPP_INFO(this->get_logger(), "Shutting down Pi Car Controller");
-    gpio_write(pi_, ENABLE_PIN, PI_HIGH); // Disable drive
-    hardware_PWM(pi_, LEFT_FRONT_STEP_PIN, 0, 0);
-    hardware_PWM(pi_, LEFT_BACK_STEP_PIN, 0, 0);
-    hardware_PWM(pi_, RIGHT_FRONT_STEP_PIN, 0, 0);
-    hardware_PWM(pi_, RIGHT_BACK_STEP_PIN, 0, 0);
+    stop_step_pulses();
     gpio_write(pi_, BLUE_LED_PIN, PI_HIGH); // Disable blue LED
     gpio_write(pi_, RED_LED_PIN, PI_LOW);   // Disable red LED
     pigpio_stop(pi_);                       // Stop pigpio
@@ -271,6 +297,7 @@ private:
   double wheel_separation_;
   double m_per_revolution_;
   double cmd_vel_timeout_;
+  double max_wheel_speed_;
 
   // Step counts and directions are shared with the pigpio callback thread
   std::atomic<int> left_step_count_;
@@ -293,6 +320,25 @@ private:
   float angle_delta_;
   bool turn_started_;
   rclcpp::Time last_control_time_;
+  rclcpp::Time last_cmd_vel_time_;
+  // Distance (m) from steps counted before a microstep change, not yet in
+  // the odometry
+  double pending_left_m_;
+  double pending_right_m_;
+  // Stopping because cmd_vel stopped arriving: decelerate at least
+  // MIN_STOP_DECEL
+  bool timeout_stop_;
+
+  static bool positive(double v) { return std::isfinite(v) && v > 0.0; }
+
+  // Disable the drivers and stop all step pulses
+  void stop_step_pulses() {
+    gpio_write(pi_, ENABLE_PIN, PI_HIGH); // Disable drive
+    hardware_PWM(pi_, LEFT_FRONT_STEP_PIN, 0, 0);
+    hardware_PWM(pi_, LEFT_BACK_STEP_PIN, 0, 0);
+    hardware_PWM(pi_, RIGHT_FRONT_STEP_PIN, 0, 0);
+    hardware_PWM(pi_, RIGHT_BACK_STEP_PIN, 0, 0);
+  }
 
   // (Re)create the timer that stops the motors when cmd_vel stops arriving
   void create_message_timeout_timer() {
@@ -314,8 +360,8 @@ private:
     for (const auto &param : params) {
       const std::string &name = param.get_name();
       if ((name == "wheel_separation" || name == "m_per_revolution" ||
-           name == "cmd_vel_timeout") &&
-          param.as_double() <= 0.0) {
+           name == "cmd_vel_timeout" || name == "max_wheel_speed") &&
+          !positive(param.as_double())) {
         result.successful = false;
         result.reason = name + " must be positive";
         return result;
@@ -333,6 +379,8 @@ private:
       } else if (name == "cmd_vel_timeout") {
         cmd_vel_timeout_ = param.as_double();
         create_message_timeout_timer();
+      } else if (name == "max_wheel_speed") {
+        max_wheel_speed_ = param.as_double();
       } else {
         continue;
       }
@@ -354,6 +402,12 @@ private:
                     : static_cast<int>(std::log2(static_cast<double>(steps)));
     RCLCPP_INFO(this->get_logger(), "Substeps set to %i", steps);
 
+    // Steps counted so far were made at the old setting, so convert them now
+    pending_left_m_ += static_cast<double>(left_step_count_.exchange(0)) *
+                       m_per_revolution_ / (sub_steps_ * STEPS_PER_REVOLUTION);
+    pending_right_m_ += static_cast<double>(right_step_count_.exchange(0)) *
+                        m_per_revolution_ / (sub_steps_ * STEPS_PER_REVOLUTION);
+
     m0 = bin_steps & 1;
     m1 = bin_steps & 2;
     m2 = bin_steps & 4;
@@ -363,6 +417,11 @@ private:
     gpio_write(pi_, M2_SUBSTEP, (m2 == 1) ? PI_HIGH : PI_LOW);
 
     sub_steps_ = steps;
+
+    // The step rate for the same speed depends on the setting, so set it
+    // again now, or a steady speed would change with the microsteps
+    set_motor_pwm_left(current_left_velocity_);
+    set_motor_pwm_right(current_right_velocity_);
   }
 
   // Apply acceleration to the current velocity
@@ -372,15 +431,21 @@ private:
       current_velocity = target_velocity; // Instant change
       return;
     } else {
+      // A timeout stop never uses a gentle comfort ramp
+      float rate = timeout_stop_ ? std::max(acceleration_rate_,
+                                            static_cast<float>(MIN_STOP_DECEL))
+                                 : acceleration_rate_;
+      // Don't jump if the loop was held up
+      time_diff = std::min(time_diff, 0.05);
 
       if (current_velocity != target_velocity) {
         if (target_velocity > current_velocity) {
-          current_velocity += acceleration_rate_ * time_diff;
+          current_velocity += rate * time_diff;
           if (current_velocity > target_velocity) {
             current_velocity = target_velocity;
           }
         } else {
-          current_velocity -= acceleration_rate_ * time_diff;
+          current_velocity -= rate * time_diff;
           if (current_velocity < target_velocity) {
             current_velocity = target_velocity;
           }
@@ -441,8 +506,20 @@ private:
     }
 
     float wheel_offset = turn_rate * wheel_separation_ / 2.0;
-    last_left_target_velocity_ = speed - wheel_offset;
-    last_right_target_velocity_ = speed + wheel_offset;
+    float left = speed - wheel_offset;
+    float right = speed + wheel_offset;
+    // Cap the faster wheel, scaling both so the path's curvature is kept
+    float fastest = std::max(std::abs(left), std::abs(right));
+    if (fastest > max_wheel_speed_) {
+      float scale = max_wheel_speed_ / fastest;
+      left *= scale;
+      right *= scale;
+      RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
+                           "Wheel speed capped at max_wheel_speed %.2f m/s",
+                           max_wheel_speed_);
+    }
+    last_left_target_velocity_ = left;
+    last_right_target_velocity_ = right;
   }
 
   // Control loop to set the motor PWM based on the target velocities
@@ -451,6 +528,18 @@ private:
   void control_loop() {
     rclcpp::Time current_time = this->now();
     double time_diff = (current_time - last_control_time_).seconds();
+
+    // Continuous and turn-360 modes have no cmd_vel timeout of their own,
+    // but still stop if commands stop arriving for a long time
+    if (motor_mode_ != MotorMode::AUTO &&
+        (last_left_target_velocity_ != 0.0 ||
+         last_right_target_velocity_ != 0.0) &&
+        (current_time - last_cmd_vel_time_).seconds() > MODE_HARD_TIMEOUT) {
+      RCLCPP_WARN(this->get_logger(),
+                  "No cmd_vel for %.0f s, stopping", MODE_HARD_TIMEOUT);
+      timeout_stop_ = true;
+      motor_set_target(0.0, 0.0);
+    }
     float old_current_left_velocity = current_left_velocity_;
     float old_current_right_velocity = current_right_velocity_;
 
@@ -483,7 +572,7 @@ private:
     if ((last_left_target_velocity_ != 0.0 ||
          last_right_target_velocity_ != 0.0) &&
         motor_mode_ == MotorMode::AUTO) {
-
+      timeout_stop_ = true;
       motor_set_target(0.0, 0.0); // Set target velocities to zero
     }
   }
@@ -532,6 +621,13 @@ private:
   // Callback for motor acceleration
   // It sets the acceleration rate for the motors
   void motor_accel_callback(const std_msgs::msg::Float32 &msg) {
+    // A negative or NaN rate would ramp away from the target for ever
+    if (!std::isfinite(msg.data) || msg.data < 0.0 || msg.data > MAX_ACCEL) {
+      RCLCPP_WARN(this->get_logger(),
+                  "Ignoring motor_accel %.2f: must be 0 (no ramp) to %.1f",
+                  msg.data, MAX_ACCEL);
+      return;
+    }
     acceleration_rate_ = msg.data;
     RCLCPP_INFO(this->get_logger(), "Setting acceleration rate to %.2f",
                 acceleration_rate_);
@@ -562,9 +658,13 @@ private:
 
     // Read and reset atomically so no steps are lost to the callback thread
     left_delta = static_cast<double>(left_step_count_.exchange(0)) *
-                 m_per_revolution_ / (sub_steps_ * STEPS_PER_REVOLUTION);
+                     m_per_revolution_ / (sub_steps_ * STEPS_PER_REVOLUTION) +
+                 pending_left_m_;
     right_delta = static_cast<double>(right_step_count_.exchange(0)) *
-                  m_per_revolution_ / (sub_steps_ * STEPS_PER_REVOLUTION);
+                      m_per_revolution_ / (sub_steps_ * STEPS_PER_REVOLUTION) +
+                  pending_right_m_;
+    pending_left_m_ = 0.0;
+    pending_right_m_ = 0.0;
 
     left_speed_msg.data = static_cast<float>(left_delta / ODOM_TIMEOUT);
     right_speed_msg.data = static_cast<float>(right_delta / ODOM_TIMEOUT);
@@ -673,8 +773,18 @@ private:
       return;
     }
 
+    // A NaN or infinite command would break the ramp, so stop instead
+    if (!std::isfinite(msg.linear.x) || !std::isfinite(msg.angular.z)) {
+      RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
+                           "Ignoring non-finite cmd_vel, stopping");
+      motor_set_target(0.0, 0.0);
+      return;
+    }
+
     // reset the message timeout timer
     message_timeout_timer_->reset();
+    last_cmd_vel_time_ = this->now();
+    timeout_stop_ = false;
     motor_set_target(msg.linear.x, msg.angular.z);
   }
 
@@ -734,8 +844,15 @@ private:
 
 int main(int argc, char **argv) {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<PiCarController>();
-  rclcpp::spin(node);
+  int result = 0;
+  try {
+    auto node = std::make_shared<PiCarController>();
+    rclcpp::spin(node);
+  } catch (const std::exception &e) {
+    // Exit non-zero, so the launch shuts down and systemd restarts the car
+    RCLCPP_FATAL(rclcpp::get_logger("car_controller"), "%s", e.what());
+    result = 1;
+  }
   rclcpp::shutdown();
-  return 0;
+  return result;
 }

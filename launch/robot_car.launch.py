@@ -1,7 +1,8 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription
-from launch.conditions import UnlessCondition
-from launch.substitutions import Command, LaunchConfiguration
+from launch.actions import (DeclareLaunchArgument, ExecuteProcess,
+                            IncludeLaunchDescription, Shutdown)
+from launch.conditions import IfCondition
+from launch.substitutions import Command, LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
@@ -19,6 +20,12 @@ def generate_launch_description():
         name='use_sim_time',
         default_value='false',
         description='Use simulation time if true.'
+    )
+
+    declare_lidar_arg = DeclareLaunchArgument(
+        name='lidar',
+        default_value='true',
+        description='Run the lidar driver. false runs the car without it.'
     )
 
     declare_lidar_on_arg = DeclareLaunchArgument(
@@ -66,6 +73,10 @@ def generate_launch_description():
             'frame_id': 'laser_link', # Important to match the URDF link name
             'angle_compensate': True,
         }],
+        # Restart it if it dies (USB glitch); it comes back with its motor on
+        respawn=True,
+        respawn_delay=2.0,
+        condition=IfCondition(LaunchConfiguration('lidar')),
     )
 
     # The lidar node always spins up its motor, so stop it once the service is
@@ -73,7 +84,9 @@ def generate_launch_description():
     stop_lidar_motor = ExecuteProcess(
         cmd=['ros2', 'service', 'call', '/stop_motor', 'std_srvs/srv/Empty'],
         output='log',
-        condition=UnlessCondition(LaunchConfiguration('lidar_on')),
+        condition=IfCondition(PythonExpression([
+            "'", LaunchConfiguration('lidar'), "'.lower() == 'true' and '",
+            LaunchConfiguration('lidar_on'), "'.lower() != 'true'"])),
     )
 
     #  Include your controller node, assuming it's in your package.
@@ -86,6 +99,9 @@ def generate_launch_description():
             'publish_odom_tf': ParameterValue(
                 LaunchConfiguration('publish_odom_tf'), value_type=bool),
         }],
+        # If the controller dies, end the whole launch, so the car_s service
+        # stops the step pulses (ExecStopPost) and restarts everything
+        on_exit=Shutdown(reason='car_controller exited'),
     )
 
     picar_imu_node = Node(
@@ -93,6 +109,9 @@ def generate_launch_description():
         executable='car_imu', # Replace with your executable name
         name='car_imu',
         output='screen',
+        # It recalibrates the gyro on a restart, so best done standing still
+        respawn=True,
+        respawn_delay=2.0,
     )
 
     picar_mag_node = Node(
@@ -100,6 +119,8 @@ def generate_launch_description():
         executable='car_mag', # Replace with your executable name
         name='car_mag',
         output='screen',
+        respawn=True,
+        respawn_delay=2.0,
     )
 
     # /car/shutdown and /car/reboot services
@@ -114,6 +135,7 @@ def generate_launch_description():
     ld = LaunchDescription()
     ld.add_action(declare_robot_name_arg)
     ld.add_action(declare_use_sim_time_arg)
+    ld.add_action(declare_lidar_arg)
     ld.add_action(declare_lidar_on_arg)
     ld.add_action(declare_publish_odom_tf_arg)
     ld.add_action(robot_state_publisher_node)

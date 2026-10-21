@@ -10,12 +10,21 @@ Group=graham
 Environment=HOME=/home/graham
 # DDS only uses network interfaces that exist at start-up, so wait for WiFi
 ExecStartPre=/bin/sh -c 'until ip -4 addr show wlan0 | grep -q inet; do sleep 1; done'
+# The Pi has no clock battery: give NTP up to 30 s to set the time, so the
+# PC doesn't see stamps from the future, but start anyway without internet
+ExecStartPre=-/bin/sh -c 'timeout 30 sh -c "until timedatectl show -p NTPSynchronized --value | grep -q yes; do sleep 1; done"'
 ExecStart=/bin/bash -c 'source /opt/ros/jazzy/setup.bash && source /home/graham/ros_ws/install/setup.bash && exec ros2 launch car_s robot_car.launch.py'
 # SIGINT lets ros2 launch shut the nodes down cleanly (the controller disables the motors)
 KillSignal=SIGINT
 TimeoutStartSec=120
 TimeoutStopSec=20
-Restart=on-failure
+# However the service ended (including a crashed controller, after which
+# pigpiod would keep the step pulses running), disable the drivers (ENABLE,
+# GPIO 14, high) and stop the PWM on the four STEP pins
+ExecStopPost=-/usr/local/bin/pigs w 14 1 hp 12 0 0 hp 13 0 0 hp 18 0 0 hp 19 0 0
+# A crashed controller ends the launch (on_exit in robot_car.launch.py), and
+# ros2 launch then exits 0, so restart on any exit, not only failures
+Restart=always
 RestartSec=5
 
 [Install]

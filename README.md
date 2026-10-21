@@ -146,6 +146,7 @@ The magnetometer shares the IMU's I2C bus (SDA/SCL).
 | `car_power` | Pi | `/car/shutdown` and `/car/reboot` services, to turn the Pi off cleanly |
 | `key_cmd` | PC | Keyboard teleop |
 | `imu_normalize` | Either | Prints running averages of `imu/data_raw`, for calibration |
+| `car_guard` | PC | Started by `pc_bringup.launch.py`: keeps the car's TF off for the EKF, the lidar spinning, and enables the motors, again after a car restart |
 
 The controller ramps each wheel's speed towards its target at `motor_accel`
 m/s² (default 1.0) rather than jumping straight to it, so the steppers don't
@@ -176,6 +177,17 @@ Parameters (all can be changed while it runs, with
 | `wheel_separation` | `0.265` | Effective distance between left and right wheels (m), calibrated against the gyro. Skid steer needs more than the physical 0.2337 m |
 | `m_per_revolution` | `0.2016` | Distance travelled per wheel revolution (m), calibrated by tape measure (nominal 0.21) |
 | `cmd_vel_timeout` | `0.3` | In auto mode, stop this long (s) after the last `cmd_vel`. Long enough for WiFi jitter |
+| `max_wheel_speed` | `0.5` | Cap on each wheel's speed (m/s). Above it, both wheels are scaled down together, keeping the turn. The steppers stall above about this, while odometry would still count the commanded steps |
+
+Safety limits that aren't parameters:
+
+- In continuous and turn-360 modes, the car still stops if no `cmd_vel`
+  arrives for 15 s, e.g. when WiFi drops.
+- A timeout stop decelerates at 1 m/s² or more, whatever `motor_accel` is.
+- `cmd_vel` with NaN or infinite values stops the car; `motor_accel` must be
+  0 (no ramp) to 5 m/s².
+- Changing microsteps while moving keeps the speed: the step rate is set
+  again, and steps already counted are converted at the old setting.
 
 Values set with `ros2 param set` are lost when the node restarts. To keep
 them, change the defaults in
@@ -354,8 +366,20 @@ packages, rebuild the whole workspace.
 
 [systemd/car_s.service](systemd/car_s.service) runs
 `ros2 launch car_s robot_car.launch.py` at boot, after `pigpiod` and once
-WiFi has an address. It restarts the launch if it crashes. Edit `User`,
-`HOME` and the paths if your user isn't `graham`.
+WiFi has an address, and after giving NTP up to 30 s to set the clock (the Pi
+has no clock battery). Edit `User`, `HOME` and the paths if your user isn't
+`graham`.
+
+If the controller crashes, the whole launch stops (`on_exit` in
+[launch/robot_car.launch.py](launch/robot_car.launch.py)), and the service's
+`ExecStopPost` disables the drivers and stops the step pulses with `pigs`.
+That matters because `pigpiod` keeps the PWM running after its client dies.
+The service then restarts after 5 s (`Restart=always`, since `ros2 launch`
+exits 0 even then). The lidar, IMU and magnetometer nodes restart by
+themselves if they die. The IMU recalibrates the gyro when it restarts.
+
+After changing the service file, copy it again and run
+`sudo systemctl daemon-reload`.
 
 ```bash
 sudo cp ~/ros_ws/src/car_s/systemd/car_s.service /etc/systemd/system/
@@ -461,7 +485,7 @@ boot, and you can go straight to the PC. Otherwise, start it by hand:
 
 ```bash
 ros2 launch car_s robot_car.launch.py     # motors, IMU, magnetometer, lidar, robot_state_publisher
-ros2 launch car_s car_s_launch.yaml       # the same without the lidar
+ros2 launch car_s robot_car.launch.py lidar:=false   # the same without the lidar
 ```
 
 ### Shutting down the Pi
@@ -515,7 +539,7 @@ time after any change to the motion code.
 | `v` / `c` | Acceleration ramp to 1.0 / off |
 | `0`–`5` | Microsteps 1, 2, 4, 8, 16, 32 |
 | `l` | Lidar motor on / off (starts off) |
-| Ctrl-C | Quit |
+| `q` or Ctrl-C | Quit. If it last sent a move, it sends a stop first |
 
 In the default auto mode, the car stops 0.3 s after the last command, and
 `key_cmd` sends one command per key press, so **hold the key down** to keep
@@ -554,14 +578,19 @@ frame.
 
 [launch/pc_bringup.launch.py](launch/pc_bringup.launch.py) runs everything on
 the PC: the EKF, `slam_toolbox` or AMCL, Nav2, `explore_lite` and RViz, with
-the parameters in [config/](config/). It also:
+the parameters in [config/](config/). Its `car_guard` node
+([scripts/car_guard.py](scripts/car_guard.py)) also:
 
-- turns off the controller's TF while the EKF runs
-- starts the lidar motor
-- with `motors_on:=true`, enables the motors
+- turns off the controller's TF while the EKF runs, and checks it stays off
+- starts the lidar motor, and again whenever scans stop for 5 s
+- with `motors_on:=true`, enables the motors once the controller is listening
 
-When you stop it with Ctrl-C, it gives the controller its TF back and stops
-the lidar.
+If the car restarts during a session (a crash, `/car/reboot`), `car_guard`
+sets up the TF and lidar again, but leaves the motors off and logs an error:
+enable them with `m` in `key_cmd` when it's safe.
+
+When you stop it with Ctrl-C, it disables the motors (if it enabled them),
+gives the controller its TF back and stops the lidar.
 
 | Task | Command |
 |---|---|
@@ -624,7 +653,10 @@ car:
   the gaps. In the simulator, the closest approach to the box went from
   0.36 m to 0.44 m.
 - **Timeouts:** longer transform tolerances for WiFi, and
-  `default_server_timeout: 100` so goals don't abort under load.
+  `default_server_timeout: 100` so goals don't abort under load. The
+  velocity smoother stops repeating the last command after 0.3 s
+  (`velocity_timeout`), so a stalled Nav2 can't hide behind it from the
+  car's own 0.3 s timeout.
 - Nav2 runs composed in one process.
 - **The map subscription depends on the mode,** and `pc_bringup` sets it.
   slam_toolbox publishes `/map` as volatile, and a transient-local subscriber
@@ -717,10 +749,13 @@ box in it. It uses ROS domain 42, limited to localhost, so the real car is
 never involved. Arguments pass through to `pc_bringup.launch.py`:
 
 ```bash
-tools/sim_test.sh                         # EKF + SLAM + RViz
-tools/sim_test.sh nav2:=true              # send goals with Nav2 Goal
-tools/sim_test.sh explore:=true           # explores the room in about 40 s
+tools/sim_test.sh                                    # EKF + SLAM + RViz
+tools/sim_test.sh nav2:=true motors_on:=true         # send goals with Nav2 Goal
+tools/sim_test.sh explore:=true motors_on:=true      # explores the room in about 40 s
 ```
+
+Like the real controller, the simulated car ignores `cmd_vel` until
+`motor_on` is true, so Nav2 and exploration need `motors_on:=true` here too.
 
 It prints the simulated car's true pose once a second ("TRUTH x y yaw"), for
 comparison with the EKF, SLAM and AMCL. It tests the configuration and
@@ -754,6 +789,11 @@ Other tools:
 
 ### Pitfalls when scripting
 
+- **Signalling a background command from a script:** `cmd &` in a script
+  starts it with SIGINT ignored, and if `cmd` is a shell function, `$!` is a
+  subshell, not the program. Start it as `python3 -c 'import signal,os,sys;
+  signal.signal(signal.SIGINT, signal.SIG_DFL); os.execvp(sys.argv[1],
+  sys.argv[1:])' <program> <args> &` and signal `$!`.
 - **Leftover processes.** A simulator `robot_state_publisher` left over from
   an interrupted run kept publishing an old URDF's TF on domain 42 a day
   later. Find leftovers with `pgrep -af robot_state_publisher`, and check
