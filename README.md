@@ -548,6 +548,8 @@ the lidar.
 |---|---|
 | Build a map, driving with `key_cmd` | `ros2 launch car_s pc_bringup.launch.py` |
 | Save the map (before stopping the launch) | `ros2 run nav2_map_server map_saver_cli -f ~/maps/room` |
+| Save the SLAM model too, to extend the map later | `ros2 service call /slam_toolbox/serialize_map slam_toolbox/srv/SerializePoseGraph "{filename: '$HOME/maps/room'}"` |
+| Carry on mapping from a saved SLAM model | `ros2 launch car_s pc_bringup.launch.py slam_map:=$HOME/maps/room` (add `explore:=true motors_on:=true` to explore) |
 | Navigate on a saved map | `ros2 launch car_s pc_bringup.launch.py slam:=false nav2:=true motors_on:=true map:=$HOME/maps/room.yaml` |
 | Map and navigate at the same time | `ros2 launch car_s pc_bringup.launch.py nav2:=true motors_on:=true` |
 | Explore and map by itself | `ros2 launch car_s pc_bringup.launch.py explore:=true motors_on:=true` |
@@ -561,6 +563,20 @@ Drive slowly (0.1–0.15 m/s) with gentle turns, and pause after turns. Go back
 over places you've already been, and finish where you started, so SLAM can
 close loops. If walls appear doubled or smeared, slow down and drive back
 over that area.
+
+### Continuing a saved map
+
+`map_saver_cli` saves the map image (`.pgm` + `.yaml`), which is what AMCL
+navigates on. To add to a map later, also save slam_toolbox's own model with
+`serialize_map` (`.posegraph` + `.data`), as in the table. Then
+`slam_map:=$HOME/maps/<name>` loads it and carries on mapping, with no
+extension on the name. Save both again at the end, and the image afterwards
+matches the model.
+
+slam_toolbox assumes the car starts where the saved mapping started, facing
+the same way. If it's elsewhere, give its pose on the saved map with
+`slam_map_pose:="x y yaw"` (metres and radians, in the map frame). Hover over
+the spot in RViz to read the coordinates.
 
 ### Navigating
 

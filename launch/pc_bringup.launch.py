@@ -7,12 +7,19 @@
 #                          nav2:=true map:=$HOME/maps/room.yaml
 #   Explore and map by itself: ros2 launch car_s pc_bringup.launch.py \
 #                          explore:=true motors_on:=true
+#   Carry on mapping from a saved SLAM model (cave.posegraph + cave.data),
+#   with the car where that mapping started:
+#                        ros2 launch car_s pc_bringup.launch.py \
+#                          slam_map:=$HOME/maps/cave
 #
 # While the EKF runs it publishes odom -> base_link, so this turns off the
 # controller's own TF (publish_odom_tf) and turns it back on at shutdown.
 
 import os
 import subprocess
+import tempfile
+
+import yaml
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
@@ -52,9 +59,49 @@ def restore_on_shutdown(context):
     return []
 
 
+def slam_params_file(context):
+    """slam.yaml, plus loading a saved pose graph when slam_map is set."""
+    path = os.path.join(get_package_share_directory('car_s'), 'config', 'slam.yaml')
+    saved = os.path.expanduser(LaunchConfiguration('slam_map').perform(context))
+    if not saved:
+        return path
+    saved = saved.removesuffix('.posegraph')
+    if not os.path.exists(saved + '.posegraph'):
+        raise RuntimeError(f'slam_map: {saved}.posegraph not found')
+    with open(path) as f:
+        params = yaml.safe_load(f)
+    p = params['slam_toolbox']['ros__parameters']
+    p['map_file_name'] = saved
+    pose = LaunchConfiguration('slam_map_pose').perform(context).split()
+    if pose:
+        # Where the car is now on the saved map: x, y (m), yaw (rad)
+        p['map_start_pose'] = [float(v) for v in pose]
+        p['map_start_at_dock'] = False
+    else:
+        # Where the saved mapping started
+        p['map_start_at_dock'] = True
+    out = tempfile.NamedTemporaryFile('w', prefix='car_s_slam_', suffix='.yaml', delete=False)
+    yaml.safe_dump(params, out)
+    out.close()
+    print(f'[pc_bringup] SLAM continues from {saved} '
+          f'({"at " + " ".join(pose) if pose else "where it started"})', flush=True)
+    return out.name
+
+
+def start_slam(context):
+    return [IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(
+            get_package_share_directory('slam_toolbox'), 'launch', 'online_async_launch.py')),
+        launch_arguments={
+            'slam_params_file': slam_params_file(context),
+            # Its default is true, which would wait for a simulator clock
+            'use_sim_time': 'false',
+        }.items(),
+    )]
+
+
 def generate_launch_description():
     car_s_dir = get_package_share_directory('car_s')
-    slam_dir = get_package_share_directory('slam_toolbox')
     nav2_dir = get_package_share_directory('nav2_bringup')
 
     ekf = LaunchConfiguration('ekf')
@@ -93,6 +140,14 @@ def generate_launch_description():
             'explore', default_value='false',
             description='Explore with explore_lite, which sends Nav2 goals to '
                         'the edges of the SLAM map (turns Nav2 on)'),
+        DeclareLaunchArgument(
+            'slam_map', default_value='',
+            description='Saved SLAM model to carry on mapping from, without '
+                        'extension (saved with /slam_toolbox/serialize_map)'),
+        DeclareLaunchArgument(
+            'slam_map_pose', default_value='',
+            description='With slam_map: the car\'s pose on the saved map, '
+                        '"x y yaw" in m and rad. Default: where that mapping started'),
     ]
 
     # Exploration drives with Nav2
@@ -131,16 +186,7 @@ def generate_launch_description():
         condition=IfCondition(motors_on),
     )
 
-    slam_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(slam_dir, 'launch', 'online_async_launch.py')),
-        launch_arguments={
-            'slam_params_file': os.path.join(car_s_dir, 'config', 'slam.yaml'),
-            # Its default is true, which would wait for a simulator clock
-            'use_sim_time': 'false',
-        }.items(),
-        condition=IfCondition(slam),
-    )
+    slam_launch = OpaqueFunction(function=start_slam, condition=IfCondition(slam))
 
     # slam_toolbox publishes /map as volatile (republished every
     # map_update_interval), and a transient local subscriber never receives
