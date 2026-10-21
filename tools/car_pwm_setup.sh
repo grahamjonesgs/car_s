@@ -24,7 +24,13 @@ take_down() {
 }
 
 if [ "$BACKEND" != linux ]; then
-  if loaded; then take_down; echo "car-pwm: overlay removed, pigpio drives the step pulses"; fi
+  if loaded; then
+    take_down
+    # Removing the kernel driver stops the PWM clock, which pigpiod only sets
+    # up when it starts
+    echo "car-pwm: overlay removed. Restart pigpiod before pigpio's PWM works again:"
+    echo "  sudo systemctl restart pigpiod car_s"
+  fi
   exit 0
 fi
 
