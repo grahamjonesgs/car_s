@@ -59,6 +59,9 @@ else()
   message(WARNING "pigpio not found: building key_cmd and imu_normalize only")
 endif()
 
+# Shutdown and reboot services for the Pi
+install(PROGRAMS scripts/car_power.py DESTINATION lib/${PROJECT_NAME} RENAME car_power)
+
 install(DIRECTORY launch urdf config rviz DESTINATION share/${PROJECT_NAME})
 
 ament_package()

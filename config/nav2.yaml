@@ -221,10 +221,13 @@ local_costmap:
       plugins: ["obstacle_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 5.0
-        # 0.35 merged into a solid wall between furniture and trapped the car
-        # in a cluttered room, so keep the margin round obstacles small
-        inflation_radius: 0.25
+        # The controller (MPPI) steers by this costmap. A wider, slower-fading
+        # margin than the global costmap's keeps the car further from chair
+        # legs as it passes, while the planner (global costmap, 0.25 m) can
+        # still route through the gaps. It never blocks a path: only lethal
+        # and inscribed cells do
+        cost_scaling_factor: 3.0
+        inflation_radius: 0.40
       # 2D lidar only, so a plain obstacle layer rather than voxels
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"

@@ -44,8 +44,11 @@ Still to look at:
 - Exploration in cluttered rooms. In the second room, the car ended up in a
   gap between furniture where the inflated obstacles merged, so Nav2 found
   no path out ("no valid path found" from every goal) and kept running its
-  recoveries. The inflation radius is now 0.25 m instead of 0.35 m. That
-  hasn't been tried on the real car yet.
+  recoveries. The global inflation is now 0.25 m (planning), and the local
+  0.40 m with a gentler fall-off (steering). In a later run from the saved
+  map, it drove its nose to within a few centimetres of a chair leg; the
+  wider local margin hasn't been tried on the real car yet. Chair legs are
+  the hardest case: thin, and seen by only a few lidar points.
 - `robot_radius` (0.17 m) in [config/nav2.yaml](config/nav2.yaml) is an
   estimate. Measure the car, and consider a rectangular footprint, which
   would let Nav2 use tighter gaps.
@@ -140,6 +143,7 @@ The magnetometer shares the IMU's I2C bus (SDA/SCL).
 | `car_mag` | Pi | Reads the QMC5883L at 10 Hz, publishes `imu/mag` |
 | `rplidar_composition` | Pi | The lidar driver (`rplidar_ros`), publishes `scan` |
 | `robot_state_publisher` | Pi | Publishes the URDF's fixed frames |
+| `car_power` | Pi | `/car/shutdown` and `/car/reboot` services, to turn the Pi off cleanly |
 | `key_cmd` | PC | Keyboard teleop |
 | `imu_normalize` | Either | Prints running averages of `imu/data_raw`, for calibration |
 
@@ -460,6 +464,21 @@ ros2 launch car_s robot_car.launch.py     # motors, IMU, magnetometer, lidar, ro
 ros2 launch car_s car_s_launch.yaml       # the same without the lidar
 ```
 
+### Shutting down the Pi
+
+Turn the Pi off cleanly from any machine before switching off the battery:
+
+```bash
+ros2 service call /car/shutdown std_srvs/srv/Trigger
+ros2 service call /car/reboot std_srvs/srv/Trigger
+```
+
+`car_power` ([scripts/car_power.py](scripts/car_power.py)) disables the
+motors, replies, then runs `sudo systemctl poweroff` (or `reboot`) 2 s
+later, so systemd stops the `car_s` service first. It needs passwordless
+`sudo` for the Pi user. Wait for the Pi's green activity LED to stop
+flashing before cutting the power.
+
 ### Lidar motor
 
 With `robot_car.launch.py`, the lidar motor is **stopped by default**: it
@@ -597,8 +616,13 @@ car:
   heavy for the old 4-core VM, which needed 1000 × 40.
 - **Planner:** Smac 2D. NavFn often failed to plan into unknown space, which
   is where exploration sends the car.
-- **Costmaps:** a 0.17 m robot radius and 0.25 m inflation. With 0.35 m,
-  the margins round furniture legs merged and trapped the car.
+- **Costmaps:** a 0.17 m robot radius. The global costmap, which the
+  planner uses, has 0.25 m inflation: with 0.35 m, the margins round
+  furniture legs merged and trapped the car. The local costmap, which the
+  controller steers by, has a wider, slower-fading 0.40 m margin, so the car
+  keeps further from chair legs as it passes them without the planner losing
+  the gaps. In the simulator, the closest approach to the box went from
+  0.36 m to 0.44 m.
 - **Timeouts:** longer transform tolerances for WiFi, and
   `default_server_timeout: 100` so goals don't abort under load.
 - Nav2 runs composed in one process.

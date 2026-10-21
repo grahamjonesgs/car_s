@@ -102,6 +102,14 @@ def generate_launch_description():
         output='screen',
     )
 
+    # /car/shutdown and /car/reboot services
+    car_power_node = Node(
+        package='car_s',
+        executable='car_power',
+        name='car_power',
+        output='screen',
+    )
+
     # Create launch description and add actions
     ld = LaunchDescription()
     ld.add_action(declare_robot_name_arg)
@@ -113,5 +121,6 @@ def generate_launch_description():
     ld.add_action(stop_lidar_motor)
     ld.add_action(picar_controller_node)
     ld.add_action(picar_imu_node)
+    ld.add_action(car_power_node)
     ld.add_action(picar_mag_node)
     return ld
