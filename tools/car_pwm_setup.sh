@@ -44,7 +44,8 @@ for i in $(seq 50); do [ -d $P ] && break; sleep 0.1; done
 for c in 0 1; do [ -d $P/pwm$c ] || echo $c > $P/export; done
 for i in $(seq 50); do [ -e $P/pwm1/enable ] && break; sleep 0.1; done
 for c in 0 1; do
-  echo 0 > $P/pwm$c/enable
+  # A newly exported channel is off (and refuses enable writes until it has
+  # a period)
   for a in period duty_cycle enable; do chown "$CAR_USER" $P/pwm$c/$a; done
 done
 echo "car-pwm: kernel PWM ready, pwm0 on GPIO 12 + 18 (right), pwm1 on GPIO 13 + 19 (left), for $CAR_USER"
