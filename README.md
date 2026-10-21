@@ -39,6 +39,22 @@ As of 2026-10-20, all of this has been checked on the real car:
   cluttered room by itself before it was stopped, and on 2026-10-21 a second
   room (saved as `~/maps/cave`).
 
+Next steps, in order:
+
+1. Test the `linux` GPIO backend under power: wheels off the ground (each
+   wheel's direction at 0.1, 0.2 and 0.3 m/s, a microstep change, Ctrl-C in
+   `key_cmd`, `kill -9` on the controller), then on the floor
+   (`tools/odom_cal.py` forward and spin), then a short Nav2 or exploration
+   run.
+2. Move `car_imu` and `car_mag` from pigpio's I²C to the kernel's
+   (`/dev/i2c-1`), and compare rates and readings on the stationary car.
+3. Retire pigpio: drop the `pigpio` backend and the backend choice, use
+   `gpioset` instead of `pigs` in `car_outputs_off`, remove
+   `Requires=pigpiod` and disable `pigpiod`, and rewrite the README. Keep a
+   way to count the real step pulses (`pigpiod` installed but not started,
+   or a libgpiod counter). First check what the drivers' ENABLE pin
+   (GPIO 14) does when no program holds it: after a crash, and during boot.
+
 Still to look at:
 
 - **The controller's new `linux` GPIO backend** (kernel PWM and libgpiod,
