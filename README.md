@@ -1,6 +1,6 @@
 # car_s
 
-ROS 2 (Jazzy) software for a Raspberry Pi 4 robot car with four stepper motors,
+ROS 2 (Lyrical, or Jazzy) software for a Raspberry Pi 4 robot car with four stepper motors,
 an RPLIDAR A1, an MPU6050 IMU (accelerometer + gyro) and a QMC5883L magnetometer.
 
 The Pi runs the hardware nodes. A PC on the same network does the heavy work:
@@ -84,18 +84,22 @@ Still to look at:
 - While planning long routes into unknown space, the Nav2 controller
   sometimes ran at about 13 Hz instead of 20 Hz. It still drove fine.
 - The magnetometer is unused (see [How localisation works](#how-localisation-works)).
-- Moving to ROS 2 Lyrical (Ubuntu 26.04) is under way: the code builds with
-  both Jazzy and Lyrical, and libgpiod 1 (Ubuntu 24.04) or 2 (26.04). The PC
-  stack passes the simulator tests on Lyrical (see
-  [ROS 2 Lyrical on the PC](#ros-2-lyrical-on-the-pc)). The car itself
-  hasn't run Lyrical yet. Jazzy and Lyrical don't reliably talk to each
-  other, so the Pi and the PC have to change over together.
+- On 2026-10-22 the Pi moved to a fresh Ubuntu 26.04 card with ROS 2
+  Lyrical, and the PC to Lyrical too (see
+  [ROS 2 Lyrical on the PC](#ros-2-lyrical-on-the-pc)). Checked on the Pi with
+  the motor battery off: step pulses exact (0.3 m/s gives 9523 pulses/s on
+  all four STEP pins, 1.0 rad/s gives 4158), ENABLE and the direction pins
+  right, the crash stop disables the drivers 23 ms after a `kill -9`, IMU
+  100 Hz, magnetometer 10 Hz, lidar 7.4 Hz. Not yet driven on the floor
+  with Lyrical, nor mapped or navigated on the real car. The code still
+  builds with Jazzy and libgpiod 1 (Ubuntu 24.04). Jazzy and Lyrical don't
+  reliably talk to each other, so the Pi and the PC have to match.
 
 ## Hardware
 
 | Part | Details |
 |---|---|
-| Computer | Raspberry Pi 4 Model B (8 GB), Ubuntu 24.04, ROS 2 Jazzy |
+| Computer | Raspberry Pi 4 Model B (8 GB), Ubuntu 26.04, ROS 2 Lyrical (Ubuntu 24.04 and Jazzy until 2026-10-22) |
 | Motors | 4 steppers, 200 steps/rev, step/dir drivers with M0/M1/M2 microstep pins (up to 1/32) |
 | Wheels | 4 fixed 65 mm wheels, skid steer, about 0.204 m travel per revolution. Axles about 0.13 m apart, wheel centres about 0.19 m apart side to side. The controller uses calibrated values (see [Calibration](#calibration)) |
 | Size | About 0.29 m long and 0.22 m wide over the wheels. Measured from base_link (midway between the axles): front 0.12 m ahead, rear 0.17 m behind, as the rear deck overhangs. Spinning on the spot, the rear corners sweep a 0.20 m radius |
@@ -180,7 +184,8 @@ The magnetometer shares the IMU's I2C bus (SDA/SCL).
 | PC, `Ubuntu-Beelink` | 192.168.68.31, wired | EKF, SLAM, Nav2, exploration, RViz, `key_cmd`. AMD Ryzen AI 9 HX 470 (24 threads), Ubuntu 26.04, ROS in a container (see [Setting up the PC](#setting-up-the-pc)). Workspace `~/ros2_ws` |
 | Old PC, `Ubuntu-ROS` | 192.168.68.82 | A 4-core VM with the same setup. Now too slow for the Nav2 settings |
 
-- Both machines use ROS 2 Jazzy and the default RMW (Fast DDS), with
+- Both machines use ROS 2 Lyrical (the PC through
+  [tools/lyrical](tools/lyrical)) and the default RMW (Fast DDS), with
   `ROS_DOMAIN_ID` unset (0). Keep the same ROS release on every machine.
 - **Run the PC stack on one machine only.** Two EKFs or two SLAM nodes fight
   over the car's TF.
@@ -452,10 +457,16 @@ Two controllers on the Pi fight over the GPIO pins.
 
 ## Setting up the PC
 
-The PC needs ROS 2 Jazzy, to match the car. The Beelink runs Ubuntu 26.04,
-which Jazzy doesn't support, so **ROS lives in a distrobox container called
-`jazzy`** (Ubuntu 24.04). On a PC with Ubuntu 24.04, install ROS natively
-and skip the container part.
+The PC needs the same ROS release as the car: Lyrical since 2026-10-22,
+installed natively on the Beelink (Ubuntu 26.04) and run through
+[tools/lyrical](tools/lyrical) (see
+[ROS 2 Lyrical on the PC](#ros-2-lyrical-on-the-pc)). Every `ros2` command in
+this README works as `tools/lyrical ros2 ...` from the repo folder.
+
+Jazzy, which the car ran before, doesn't support Ubuntu 26.04, so on the
+Beelink it lives in a distrobox container called `jazzy` (Ubuntu 24.04),
+kept as a fallback for a car on Jazzy. On a PC with Ubuntu 24.04, install
+Jazzy natively and skip the container part.
 
 ### The container (Beelink)
 
