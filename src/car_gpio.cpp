@@ -45,7 +45,9 @@ CarGpio::~CarGpio() {
   write(pins_.enable, true);
   for (Channel &c : ch_) {
     if (c.enable_fd >= 0) {
-      write_attr(c.enable_fd, 0);
+      // A channel that never had a period refuses this, harmlessly
+      std::string off = "0";
+      (void)!pwrite(c.enable_fd, off.c_str(), off.size(), 0);
     }
     for (int fd : {c.period_fd, c.duty_fd, c.enable_fd}) {
       if (fd >= 0) {
