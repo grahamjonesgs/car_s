@@ -6,7 +6,7 @@ fixes that aren't upstream. Apply a patch after cloning with
 
 | Patch | Package | Built on | Base commit | Fixes |
 |---|---|---|---|---|
-| [rplidar_ros.patch](rplidar_ros.patch) | [allenh1/rplidar_ros](https://github.com/allenh1/rplidar_ros) (`~/ros_ws/src/rplidar_ros`) | Pi | `6fc037d` (2.1.0) | `/start_motor` while the lidar is already running wedged the driver. Now ignored |
+| [rplidar_ros.patch](rplidar_ros.patch) | [allenh1/rplidar_ros](https://github.com/allenh1/rplidar_ros) (`~/ros_ws/src/rplidar_ros`) | Pi | `6fc037d` (2.1.0) | `/start_motor` while the lidar is already running wedged the driver. Now ignored. Also builds with ROS 2 Lyrical (no `ament_target_dependencies`) |
 | [m-explore-ros2.patch](m-explore-ros2.patch) | [robo-friends/m-explore-ros2](https://github.com/robo-friends/m-explore-ros2) (`~/ros2_ws/src/m-explore-ros2`) | Beelink | `326cf8a` | See below |
 
 The `explore_lite` changes:

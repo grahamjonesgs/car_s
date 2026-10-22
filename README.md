@@ -313,19 +313,22 @@ The localisation is built around that:
 
 ### 1. Operating system
 
-Install Ubuntu 24.04 for Raspberry Pi, then set these in
-`/boot/firmware/config.txt` and reboot:
+Install Ubuntu 26.04 for Raspberry Pi (24.04 works too, with ROS 2 Jazzy),
+then set these in `/boot/firmware/config.txt` and reboot:
 
 ```
 dtparam=audio=off
 dtparam=i2c_arm=on
+enable_uart=0
 ```
 
 Audio must be off because it uses the PWM hardware that drives the motors.
 Leave SPI off too (no `dtparam=spi=on`): SPI0's pins, GPIO 9, 10 and 11, are
 the stepper drivers' microstep lines M0–M2, and anything opening the SPI
 device would toggle them mid-drive. (Turned off on the car on 2026-10-21; an
-SPI sensor would need the microstep lines moving first.)
+SPI sensor would need the microstep lines moving first.) The UART must be
+off because its TX pin, GPIO 14, is the stepper drivers' ENABLE. Ubuntu
+26.04's image turns the UART on, along with audio and SPI.
 
 Add your user to the `dialout` group so the lidar serial port can be opened
 without `sudo` (log out and back in afterwards):
@@ -334,11 +337,12 @@ without `sudo` (log out and back in afterwards):
 sudo usermod -aG dialout $USER
 ```
 
-### 2. ROS 2 Jazzy
+### 2. ROS 2 Lyrical
 
-Follow the [ROS 2 Jazzy Ubuntu install guide](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html),
-installing `ros-jazzy-ros-base` (no desktop is needed on the Pi), then the
-build tools:
+Follow the [ROS 2 Lyrical Ubuntu install guide](https://docs.ros.org/en/lyrical/Installation/Ubuntu-Install-Debs.html),
+installing `ros-lyrical-ros-base` (no desktop is needed on the Pi), then the
+build tools. (On Ubuntu 24.04, use Jazzy: `jazzy` in place of `lyrical`
+throughout.)
 
 ```bash
 sudo apt install python3-colcon-common-extensions python3-rosdep
@@ -371,8 +375,8 @@ git clone -b ros2  https://github.com/allenh1/rplidar_ros.git
 git -C rplidar_ros apply ~/ros_ws/src/car_s/patches/rplidar_ros.patch
 
 cd ~/ros_ws
-source /opt/ros/jazzy/setup.bash
-rosdep install -i --from-paths src --rosdistro jazzy -y
+source /opt/ros/lyrical/setup.bash
+rosdep install -i --from-paths src --rosdistro lyrical -y
 MAKEFLAGS=-j2 colcon build --symlink-install --parallel-workers 2
 ```
 
@@ -385,7 +389,7 @@ nothing uses it now.) The patch was made against `rplidar_ros` commit
 Add these to the end of `~/.bashrc`:
 
 ```bash
-source /opt/ros/jazzy/setup.bash
+source /opt/ros/lyrical/setup.bash
 source ~/ros_ws/install/setup.bash
 ```
 

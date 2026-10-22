@@ -1,3 +1,24 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 496fca1..3f92608 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -49,13 +49,14 @@ add_library(rplidar_composition_node SHARED
+   src/rplidar_node.cpp
+   ${RPLIDAR_SDK_SRC}
+ )
+-ament_target_dependencies(rplidar_composition_node ${req_deps})
++# Exported targets: ament_target_dependencies is gone from ROS 2 Lyrical
++target_link_libraries(rplidar_composition_node rclcpp::rclcpp ${sensor_msgs_TARGETS}
++  ${std_srvs_TARGETS} rclcpp_components::component)
+ rclcpp_components_register_nodes(rplidar_composition_node "rplidar_ros::rplidar_node")
+ 
+ # build composition node
+ ament_auto_add_executable(rplidar_composition src/standalone_rplidar.cpp)
+ target_link_libraries(rplidar_composition rplidar_composition_node)
+-ament_target_dependencies(rplidar_composition ${req_deps})
+ 
+ install(
+   TARGETS rplidar_composition
 diff --git a/src/rplidar_node.cpp b/src/rplidar_node.cpp
 index c1284bc..b3f08fb 100644
 --- a/src/rplidar_node.cpp
