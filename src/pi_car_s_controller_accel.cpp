@@ -85,11 +85,12 @@ const double MODE_HARD_TIMEOUT = 15.0;
 const double MIN_STOP_DECEL = 1.0;
 // Highest motor_accel accepted (m/s^2)
 const double MAX_ACCEL = 5.0;
-// Calibrated on the floor on 2026-10-20: 0.5 m by tape (nominal 0.21), and a
-// two-turn spin against the gyro. The physical track is 0.2337 m; skid steer
-// needs a larger effective value
+// Calibrated on the floor: 0.5 m by tape on 2026-10-20 (nominal 0.21), and
+// two-turn spins against the gyro, redone on 2026-10-22 with the linux GPIO
+// backend (pigpio's right-hand pulses had run about 1% short). The wheel
+// centres are 0.19 m apart; skid steer needs a larger effective value
 const double DEFAULT_M_PER_REVOLUTION = 0.2016;
-const double DEFAULT_WHEEL_SEPARATION = 0.265;
+const double DEFAULT_WHEEL_SEPARATION = 0.262;
 
 // Odometry covariances (diagonals). Wheel yaw is unreliable on a skid steer,
 // so its rate variance is large and the EKF takes yaw rate from the gyro

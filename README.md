@@ -240,7 +240,7 @@ Parameters (all can be changed while it runs, with
 | Parameter | Default | Meaning |
 |---|---|---|
 | `publish_odom_tf` | `true` | Publish the TF `odom` → `base_link`. `pc_bringup.launch.py` turns it off while its EKF publishes that TF instead, and back on when it stops |
-| `wheel_separation` | `0.265` | Effective distance between left and right wheels (m), calibrated against the gyro. Skid steer needs more than the physical 0.19 m |
+| `wheel_separation` | `0.262` | Effective distance between left and right wheels (m), calibrated against the gyro. Skid steer needs more than the physical 0.19 m |
 | `m_per_revolution` | `0.2016` | Distance travelled per wheel revolution (m), calibrated by tape measure (nominal 0.21) |
 | `cmd_vel_timeout` | `0.3` | In auto mode, stop this long (s) after the last `cmd_vel`. Long enough for WiFi jitter |
 | `max_wheel_speed` | `0.5` | Cap on each wheel's speed (m/s). Above it, both wheels are scaled down together, keeping the turn. The steppers stall above about this, while odometry would still count the commanded steps |
@@ -816,6 +816,15 @@ controller source (and `key_cmd`).
 |---|---|---|
 | 0.5 m forward at 0.1 m/s | Tape 0.48 m, lidar 0.47 m | `m_per_revolution` 0.21 → 0.2016 |
 | 2 turns at 0.5 rad/s | Gyro 636° for 720° commanded | `wheel_separation` 0.2337 → 0.265. Recheck: 719.5° commanded, 720.7° gyro |
+
+Rechecked on 2026-10-22 with the `linux` GPIO backend, as pigpio's
+right-hand pulses had run about 1% short even at low rates, so the car now
+turns a little more for the same command:
+
+| Test (2026-10-22, another floor) | Result | New value |
+|---|---|---|
+| 0.5 m forward at 0.1 m/s | Odometry 0.505 m, lidar 0.508 m | `m_per_revolution` unchanged, 0.2016 |
+| 2 turns at 0.5 rad/s | Gyro 731.9° for 721.3° from odometry | `wheel_separation` 0.265 → 0.2612. Recheck: 720.2° odometry, 717.9° gyro; default 0.262 |
 
 At other speeds or on other floors, the slip may differ.
 

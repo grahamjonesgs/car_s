@@ -10,7 +10,7 @@
          wheels.
        - The wheels are 65 mm (0.0325 m radius), 26 mm wide, axles 0.13 m
          apart, centres 0.19 m apart side to side. The controller uses
-         calibrated values instead (0.265 m effective spacing for skid steer,
+         calibrated values instead (0.262 m effective spacing for skid steer,
          0.2016 m per revolution).
        - The lidar spin axis is 0.05 m ahead of base_link, centred; its
          height hasn't been measured.

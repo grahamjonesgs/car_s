@@ -427,7 +427,7 @@ velocity_smoother:
     # The same reverse limit as MPPI's vx_min
     min_velocity: [-0.1, 0.0, -1.0]
     # Gentle, so the steppers don't skip. Each wheel sees the linear plus the
-    # turning part: 0.8 + 2.0 x 0.265 / 2 = 1.07 m/s^2 at most, slightly more
+    # turning part: 0.8 + 2.0 x 0.262 / 2 = 1.06 m/s^2 at most, slightly more
     # than the controller's own ramp (motor_accel 1.0), which smooths it
     max_accel: [0.8, 0.0, 2.0]
     max_decel: [-0.8, 0.0, -2.0]
