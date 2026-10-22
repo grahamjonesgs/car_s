@@ -349,8 +349,9 @@ overlay:
 sudo apt install libgpiod-dev gpiod device-tree-compiler i2c-tools
 ```
 
-The `dialout` group (step 1) gives access to `/dev/gpiochip0`, `/dev/i2c-1`
-and `/dev/gpiomem`. `i2cdetect -y 1` should show the IMU at `68` and the
+The `dialout` group (step 1) gives access to `/dev/gpiochip0` and
+`/dev/i2c-1`. (`/dev/gpiomem`, which `tools/pulse_count.py` reads, is
+root-only on Ubuntu, so that tool needs `sudo`.) `i2cdetect -y 1` should show the IMU at `68` and the
 magnetometer at `0d`.
 
 ### 4. Workspace
@@ -828,7 +829,7 @@ Other tools:
 | [tools/scan_check.py](tools/scan_check.py) | Closest lidar return in each direction around the car |
 | [tools/imu_stats.py](tools/imu_stats.py) | IMU rate, bias and noise |
 | [tools/odom_cal.py](tools/odom_cal.py) | Odometry calibration on the floor |
-| [tools/pulse_count.py](tools/pulse_count.py) | Step pulses per second on the four STEP pins, on the Pi |
+| [tools/pulse_count.py](tools/pulse_count.py) | Step pulses per second on the four STEP pins, on the Pi (`sudo`) |
 | [tools/kernel_pwm_test.sh](tools/kernel_pwm_test.sh) | The kernel PWM on its own at 3–10 kHz, on the Pi (stops `car_s` while it runs) |
 
 ## Troubleshooting

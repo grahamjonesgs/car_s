@@ -18,6 +18,6 @@ for f in 3175 5500 6000 6349 9524; do
   done
   sleep 0.5
   echo "== kernel PWM at $f Hz (period $per ns):"
-  sudo -u "${SUDO_USER:-graham}" python3 "$D/pulse_count.py" 1
+  python3 "$D/pulse_count.py" 1
 done
 for c in 0 1; do echo 0 > $P/pwm$c/enable; done

@@ -1,8 +1,8 @@
 """Count the step pulses on the four STEP pins, for checking what the motors
 are really sent (odometry only knows the rate that was set).
 
-    python3 tools/pulse_count.py          # 2 s
-    python3 tools/pulse_count.py 1.0      # 1 s
+    sudo python3 tools/pulse_count.py          # 2 s
+    sudo python3 tools/pulse_count.py 1.0      # 1 s
 
 Reads the GPIO level register directly through /dev/gpiomem (no daemon) as
 fast as Python can, and counts rising edges. That's about a million samples a
@@ -24,7 +24,8 @@ def main():
     try:
         fd = os.open('/dev/gpiomem', os.O_RDONLY | os.O_SYNC)
     except OSError as e:
-        sys.exit(f"Can't open /dev/gpiomem ({e}): is the user in dialout (or gpio)?")
+        sys.exit(f"Can't open /dev/gpiomem ({e}): run it with sudo (on Ubuntu "
+                 "only root can read /dev/gpiomem)")
     mem = mmap.mmap(fd, 4096, mmap.MAP_SHARED, mmap.PROT_READ)
     unpack = struct.Struct('<I').unpack_from
     mask = sum(1 << p for p in PINS)

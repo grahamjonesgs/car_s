@@ -32,7 +32,11 @@ CarGpio::CarGpio(const CarPins &pins, rclcpp::Logger logger)
     c.period_fd = open_attr(dir + "/period");
     c.duty_fd = open_attr(dir + "/duty_cycle");
     c.enable_fd = open_attr(dir + "/enable");
-    write_attr(c.enable_fd, 0);
+    // Off, in case an earlier run left it on. A freshly exported channel is
+    // already off, and refuses this until it has a period, so ignore the
+    // result
+    std::string off = "0";
+    (void)!pwrite(c.enable_fd, off.c_str(), off.size(), 0);
     c.last = Clock::now();
   }
 }
