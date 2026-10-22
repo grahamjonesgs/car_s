@@ -41,19 +41,21 @@ As of 2026-10-20, all of this has been checked on the real car:
 
 Next steps, in order:
 
-1. Test the `linux` GPIO backend under power: wheels off the ground (each
-   wheel's direction at 0.1, 0.2 and 0.3 m/s, a microstep change, Ctrl-C in
-   `key_cmd`, `kill -9` on the controller), then on the floor
-   (`tools/odom_cal.py` forward and spin), then a short Nav2 or exploration
-   run.
+1. Test the `linux` GPIO backend on the floor (`tools/odom_cal.py` forward
+   and spin), then a short Nav2 or exploration run. Done with the wheels off
+   the ground on 2026-10-22: every wheel's direction forward, backward and
+   turning both ways, both sides' pulses equal up to 0.3 m/s, a microstep
+   change kept the speed, Ctrl-C in `key_cmd` stopped the car, and
+   `kill -9` on the controller disabled the drivers within 49 ms.
 2. Move `car_imu` and `car_mag` from pigpio's I²C to the kernel's
    (`/dev/i2c-1`), and compare rates and readings on the stationary car.
 3. Retire pigpio: drop the `pigpio` backend and the backend choice, use
    `gpioset` instead of `pigs` in `car_outputs_off`, remove
    `Requires=pigpiod` and disable `pigpiod`, and rewrite the README. Keep a
    way to count the real step pulses (`pigpiod` installed but not started,
-   or a libgpiod counter). First check what the drivers' ENABLE pin
-   (GPIO 14) does when no program holds it: after a crash, and during boot.
+   or a libgpiod counter). The drivers' ENABLE pin (GPIO 14) is safe when
+   nothing drives it: the driver board pulls it high (drivers off), reading
+   1 even against the Pi's internal pull-down.
 
 Still to look at:
 
