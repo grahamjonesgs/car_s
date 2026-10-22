@@ -90,8 +90,10 @@ Still to look at:
   the motor battery off: step pulses exact (0.3 m/s gives 9523 pulses/s on
   all four STEP pins, 1.0 rad/s gives 4158), ENABLE and the direction pins
   right, the crash stop disables the drivers 23 ms after a `kill -9`, IMU
-  100 Hz, magnetometer 10 Hz, lidar 7.4 Hz. Not yet driven on the floor
-  with Lyrical, nor mapped or navigated on the real car. The code still
+  100 Hz, magnetometer 10 Hz, lidar 7.4 Hz. With the wheels off the ground
+  and the motors powered, forward, backward and both turns were right. Not
+  yet driven on the floor with Lyrical, nor mapped or navigated on the real
+  car. The code still
   builds with Jazzy and libgpiod 1 (Ubuntu 24.04). Jazzy and Lyrical don't
   reliably talk to each other, so the Pi and the PC have to match.
 
