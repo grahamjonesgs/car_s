@@ -253,6 +253,18 @@ void imu_timer_callback() {
   imu_pub->publish(imu_msg);
 }
 
+// Release the global ROS objects, shut down and return code. Every exit
+// goes through here: destroyed later, as globals at exit, they threw or
+// crashed (exit codes -6 and -11)
+int finish(int code) {
+  imu.close();
+  imu_timer.reset();
+  imu_pub.reset();
+  nh.reset();
+  rclcpp::shutdown();
+  return code;
+}
+
 int main(int argc, char **argv) {
   rclcpp::InitOptions init_options;
   rclcpp::init(argc, argv, init_options);
@@ -276,15 +288,15 @@ int main(int argc, char **argv) {
   if (!imu.open(I2C_BUS, MPU6050_ADDR)) {
     RCLCPP_ERROR(nh->get_logger(),
                  "Can't open /dev/i2c-%d: is I2C enabled (dtparam=i2c_arm=on), "
-                 "and the user in dialout?", I2C_BUS);
-    return 1;
+                 "and the user in the i2c group?", I2C_BUS);
+    return finish(1);
   }
   // A missing chip doesn't answer; exit, and the launch restarts the node.
   // Some clone boards report a different ID but work, so only warn then
   int id = imu.read_byte(WHO_AM_I);
   if (id < 0) {
     RCLCPP_ERROR(nh->get_logger(), "No MPU6050 answering on I2C bus 1 at 0x68");
-    return 1;
+    return finish(1);
   }
   if (id != MPU6050_ID) {
     RCLCPP_WARN(nh->get_logger(),
@@ -293,7 +305,7 @@ int main(int argc, char **argv) {
   }
   if (!MPU6050_Init()) {
     RCLCPP_ERROR(nh->get_logger(), "Failed to set up the MPU6050");
-    return 1;
+    return finish(1);
   }
   if (calibration_samples_needed > 0) {
     RCLCPP_INFO(nh->get_logger(),
@@ -309,12 +321,5 @@ int main(int argc, char **argv) {
                                     std::bind(&imu_timer_callback));
 
   rclcpp::spin(nh);
-  imu.close();
-  // Release the global ROS objects before shutting down: destroyed later, as
-  // globals at exit, they threw and the node aborted (exit code -6)
-  imu_timer.reset();
-  imu_pub.reset();
-  nh.reset();
-  rclcpp::shutdown();
-  return 0;
+  return finish(0);
 }

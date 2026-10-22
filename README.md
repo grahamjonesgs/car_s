@@ -122,7 +122,8 @@ Everything goes through the kernel's own drivers; there's no daemon:
 [tools/car_pwm_setup.sh](tools/car_pwm_setup.sh), run as root by the `car_s`
 service before it starts, loads the overlay fresh at run time (no
 `config.txt` change), exports both PWM channels and gives their files to the
-car's user. `/dev/gpiochip0` and `/dev/i2c-1` belong to the `dialout` group.
+car's user. `/dev/gpiochip0` belongs to the `dialout` group, and `/dev/i2c-1`
+to `i2c` on Ubuntu 26.04 (`dialout` on 24.04).
 
 The kernel can't report 10,000 edges a second to a program, so odometry is
 worked out from the step rate actually set, multiplied by time: hardware PWM
@@ -330,11 +331,12 @@ SPI sensor would need the microstep lines moving first.) The UART must be
 off because its TX pin, GPIO 14, is the stepper drivers' ENABLE. Ubuntu
 26.04's image turns the UART on, along with audio and SPI.
 
-Add your user to the `dialout` group so the lidar serial port can be opened
-without `sudo` (log out and back in afterwards):
+Add your user to the `dialout` and `i2c` groups, for the lidar's serial
+port, the GPIO and the I²C bus without `sudo` (log out and back in
+afterwards; on Ubuntu 24.04 `dialout` covers I²C too):
 
 ```bash
-sudo usermod -aG dialout $USER
+sudo usermod -aG dialout,i2c $USER
 ```
 
 ### 2. ROS 2 Lyrical
@@ -345,7 +347,7 @@ build tools. (On Ubuntu 24.04, use Jazzy: `jazzy` in place of `lyrical`
 throughout.)
 
 ```bash
-sudo apt install python3-colcon-common-extensions python3-rosdep
+sudo apt install build-essential python3-colcon-common-extensions python3-rosdep
 sudo rosdep init
 rosdep update
 ```
@@ -359,7 +361,7 @@ builds against either), and the PWM set-up compiles a device-tree overlay:
 sudo apt install libgpiod-dev gpiod device-tree-compiler i2c-tools
 ```
 
-The `dialout` group (step 1) gives access to `/dev/gpiochip0` and
+The `dialout` and `i2c` groups (step 1) give access to `/dev/gpiochip0` and
 `/dev/i2c-1`. (`/dev/gpiomem`, which `tools/pulse_count.py` reads, is
 root-only on Ubuntu, so that tool needs `sudo`.) `i2cdetect -y 1` should show the IMU at `68` and the
 magnetometer at `0d`.
@@ -887,7 +889,7 @@ Other tools:
 | Motors don't move, and `journalctl -u car_s` says "Ignoring cmd_vel, motors are off" | Send `motor_on` true (`m` in `key_cmd`). In auto mode, hold the key down |
 | No `/scan`, and the lidar node logs "cannot bind to the specified serial port" | The lidar isn't on USB. Check `lsusb` for the CP210x and `ls /dev/ttyUSB*`, then the cable (one failed). Then `sudo systemctl restart car_s` |
 | No `/scan`, the lidar spins, and `rplidar_composition` uses 100% CPU | The driver has wedged, and service calls to it hang. It used to happen when `/start_motor` was called while it was already running; the patch stops that. Restart `car_s` |
-| `car_imu` or `car_mag`: "Can't open /dev/i2c-1" or "No MPU6050/QMC5883L answering" | Check that `dtparam=i2c_arm=on` is set, the user is in `dialout`, and the wiring: `i2cdetect -y 1` should show `68` and `0d` |
+| `car_imu` or `car_mag`: "Can't open /dev/i2c-1" or "No MPU6050/QMC5883L answering" | Check that `dtparam=i2c_arm=on` is set, the user is in `i2c` (`dialout` on Ubuntu 24.04), and the wiring: `i2cdetect -y 1` should show `68` and `0d` |
 | The PC can't see the car's topics, or sees topics but not nodes or parameters | Same network and `ROS_DOMAIN_ID` on both, and the Beelink's firewall rule for the car (see [Machines and network](#machines-and-network)) |
 | "Lookup would require extrapolation into the future" over and over | The clocks disagree: check `timedatectl` on both machines |
 | RViz shows no lidar points with the fixed frame `map` | There's no `map` frame yet: with AMCL, set **2D Pose Estimate** |

@@ -218,6 +218,18 @@ void mag_timer_callback() {
   mag_pub->publish(mag_msg);
 }
 
+// Release the global ROS objects, shut down and return code. Every exit
+// goes through here: destroyed later, as globals at exit, they threw or
+// crashed (exit codes -6 and -11)
+int finish(int code) {
+  mag.close();
+  mag_timer.reset();
+  mag_pub.reset();
+  nh.reset();
+  rclcpp::shutdown();
+  return code;
+}
+
 int main(int argc, char **argv) {
   rclcpp::init(argc, argv);
   nh = rclcpp::Node::make_shared("pi_car_mag");
@@ -225,15 +237,15 @@ int main(int argc, char **argv) {
   if (!mag.open(I2C_BUS, QMC5883L_ADDR)) {
     RCLCPP_ERROR(nh->get_logger(),
                  "Can't open /dev/i2c-%d: is I2C enabled (dtparam=i2c_arm=on), "
-                 "and the user in dialout?", I2C_BUS);
-    return 1;
+                 "and the user in the i2c group?", I2C_BUS);
+    return finish(1);
   }
   // The chip ID register reads 0xFF on a QMC5883L; a failed read means the
   // chip isn't answering
   if (mag.read_byte(QMC5883L_CHIP_ID) < 0) {
     RCLCPP_ERROR(nh->get_logger(), "No QMC5883L answering on I2C bus 1 at 0x%02X",
                  QMC5883L_ADDR);
-    return 1;
+    return finish(1);
   }
 
   QMC5883L_init();
@@ -244,12 +256,5 @@ int main(int argc, char **argv) {
   mag_timer = nh->create_wall_timer(std::chrono::duration<double>(MAG_TIMER),
                                     std::bind(&mag_timer_callback));
   rclcpp::spin(nh);
-  mag.close();
-  // Release the global ROS objects before shutting down: destroyed later, as
-  // globals at exit, they threw and the node aborted (exit code -6)
-  mag_timer.reset();
-  mag_pub.reset();
-  nh.reset();
-  rclcpp::shutdown();
-  return 0;
+  return finish(0);
 }
