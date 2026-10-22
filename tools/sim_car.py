@@ -6,6 +6,15 @@ odom -> base_link TF unless publish_odom_tf is false), /imu/data_raw and a
 start_motor/stop_motor services, and prints the true pose once a second
 ("TRUTH x y yaw_deg") so EKF, SLAM and AMCL can be checked against it.
 
+Like the real car, /odom counts what was commanded, and the parameters fake
+what the real odometry can't see (for testing motion_check):
+
+  ros2 param set /car_controller slip 1.0      # stuck: wheels turn, car doesn't
+  ros2 param set /car_controller slip 0.5      # half the commanded movement
+  ros2 param set /car_controller push_vx 0.1   # pushed forwards at 0.1 m/s
+
+The gyro and the scans follow the true movement.
+
 It is a node called car_controller, like the real one, so it must run on its
 own ROS domain: it refuses to start on domain 0. Use tools/sim_test.sh,
 which sets that up.
@@ -47,7 +56,10 @@ class FakeCar(Node):
     def __init__(self):
         super().__init__('car_controller')
         self.declare_parameter('publish_odom_tf', True)
-        self.x = self.y = self.th = 0.0
+        self.declare_parameter('slip', 0.0)
+        self.declare_parameter('push_vx', 0.0)
+        self.x = self.y = self.th = 0.0        # true pose
+        self.ox = self.oy = self.oth = 0.0     # odometry: what was commanded
         self.v = self.w = 0.0
         self.last_cmd = self.get_clock().now()
         # Like the real controller: motors off until motor_on, and cmd_vel
@@ -82,22 +94,27 @@ class FakeCar(Node):
         if (self.get_clock().now() - self.last_cmd).nanoseconds > 0.3e9:
             self.v = self.w = 0.0
         dt = 0.05
-        self.th += self.w * dt
-        self.x += self.v * math.cos(self.th) * dt
-        self.y += self.v * math.sin(self.th) * dt
+        self.oth += self.w * dt
+        self.ox += self.v * math.cos(self.oth) * dt
+        self.oy += self.v * math.sin(self.oth) * dt
+        keep = 1.0 - min(max(self.get_parameter('slip').value, 0.0), 1.0)
+        v = self.v * keep + self.get_parameter('push_vx').value
+        self.th += self.w * keep * dt
+        self.x += v * math.cos(self.th) * dt
+        self.y += v * math.sin(self.th) * dt
         now = self.get_clock().now().to_msg()
-        q = (0.0, 0.0, math.sin(self.th / 2), math.cos(self.th / 2))
+        q = (0.0, 0.0, math.sin(self.oth / 2), math.cos(self.oth / 2))
         if self.get_parameter('publish_odom_tf').value:
             t = TransformStamped()
             t.header.stamp = now
             t.header.frame_id, t.child_frame_id = 'odom', 'base_link'
-            t.transform.translation.x, t.transform.translation.y = self.x, self.y
+            t.transform.translation.x, t.transform.translation.y = self.ox, self.oy
             t.transform.rotation.z, t.transform.rotation.w = q[2], q[3]
             self.tf.sendTransform(t)
         o = Odometry()
         o.header.stamp = now
         o.header.frame_id, o.child_frame_id = 'odom', 'base_link'
-        o.pose.pose.position.x, o.pose.pose.position.y = self.x, self.y
+        o.pose.pose.position.x, o.pose.pose.position.y = self.ox, self.oy
         o.pose.pose.orientation.z, o.pose.pose.orientation.w = q[2], q[3]
         o.twist.twist.linear.x = self.v
         o.twist.twist.angular.z = self.w
@@ -112,7 +129,8 @@ class FakeCar(Node):
         m.header.stamp = self.get_clock().now().to_msg()
         m.header.frame_id = 'imu_link'
         m.orientation_covariance[0] = -1.0
-        m.angular_velocity.z = self.w
+        keep = 1.0 - min(max(self.get_parameter('slip').value, 0.0), 1.0)
+        m.angular_velocity.z = self.w * keep
         m.linear_acceleration.z = 9.81
         for i in (0, 4, 8):
             m.angular_velocity_covariance[i] = 1e-4

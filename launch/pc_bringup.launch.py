@@ -159,6 +159,7 @@ def generate_launch_description():
     start_lidar = LaunchConfiguration('start_lidar')
     motors_on = LaunchConfiguration('motors_on')
     explore = LaunchConfiguration('explore')
+    motion_check = LaunchConfiguration('motion_check')
 
     args = [
         DeclareLaunchArgument(
@@ -187,6 +188,11 @@ def generate_launch_description():
             'explore', default_value='false',
             description='Explore with explore_lite, which sends Nav2 goals to '
                         'the edges of the SLAM map (turns Nav2 on)'),
+        DeclareLaunchArgument(
+            'motion_check', default_value='true',
+            description='Compare the wheel odometry with the lidar and gyro, and '
+                        'report on /motion_check when the car is stuck, slipping '
+                        'or pushed'),
         DeclareLaunchArgument(
             'slam_map', default_value='',
             description='Saved SLAM model to carry on mapping from, without '
@@ -279,6 +285,16 @@ def generate_launch_description():
         args=[nav2_dir, nav2_on, map_yaml],
         condition=IfCondition(run_nav2))
 
+    # The wheel odometry counts commanded steps; this notices when the car
+    # isn't doing what they say (scripts/motion_check.py)
+    motion_check_node = Node(
+        package='car_s',
+        executable='motion_check',
+        name='motion_check',
+        output='screen',
+        condition=IfCondition(motion_check),
+    )
+
     # explore_lite is only built on the PC, so it is looked up only when used
     explore_node = Node(
         package='explore_lite',
@@ -320,6 +336,7 @@ def generate_launch_description():
     return LaunchDescription(args + [
         both_maps_warning,
         car_guard,
+        motion_check_node,
         ekf_node,
         slam_launch,
         nav2_container,

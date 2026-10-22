@@ -15,6 +15,10 @@ REPO=$PWD
 export ROS_DOMAIN_ID=${SIM_DOMAIN_ID:-42}
 export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
 echo "Simulation on ROS domain $ROS_DOMAIN_ID, localhost only"
+# Processes killed hard (kill -9, a crash) leave Fast DDS shared-memory
+# files in /dev/shm, and enough of them broke discovery between later runs
+# (explore_lite never found Nav2). Clear the ones nothing is using
+command -v fastdds > /dev/null && fastdds shm clean > /dev/null 2>&1
 
 python3 "$REPO/tools/sim_car.py" &
 SIM=$!

@@ -75,7 +75,7 @@ class CarGuard(Node):
         if present and not self.present:
             self.appeared()
         elif self.present and not present:
-            self.get_logger().warn(f'/{CONTROLLER} has gone: is the car still running?')
+            self.get_logger().warning(f'/{CONTROLLER} has gone: is the car still running?')
         self.present = present
         if not present:
             return
@@ -144,7 +144,7 @@ class CarGuard(Node):
             self.busy.discard('get_tf')
             result = future.result()
             if result and result.values and result.values[0].bool_value:
-                self.get_logger().warn('Car TF was back on: turning it off again')
+                self.get_logger().warning('Car TF was back on: turning it off again')
                 self.tf_off = False
         self.get_params.call_async(GetParameters.Request(names=['publish_odom_tf'])).add_done_callback(done)
 

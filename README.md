@@ -792,6 +792,36 @@ When it says "No frontiers found" or "All frontiers traversed", save the map.
   example with the motors off), restart the launch. It doesn't retry dropped
   goals.
 
+### Stuck, slipping or pushed
+
+The wheel odometry counts the steps sent to the motors, so it can't tell
+when the wheels turn without moving the car (stuck on something, slipping,
+lifted off the floor) or when the car is pushed.
+[scripts/motion_check.py](scripts/motion_check.py), started by
+`pc_bringup.launch.py` (`motion_check:=false` turns it off), compares it
+over the last second with what the car really did: the latest lidar scan
+matched against one from a second earlier, and the gyro. It publishes the
+result on `/motion_check`:
+
+| State | Meaning |
+|---|---|
+| `idle` | Nothing commanded, nothing measured |
+| `ok` | Moving about as commanded |
+| `slipping` | Moving, but under 70% of what was commanded |
+| `stuck` | Commanded to move, but under 30% of it |
+| `pushed` | Moving without a command |
+| `unknown` | The scans can't tell, e.g. a featureless corridor |
+
+A state is only reported once it has lasted 1.5 s. Changes are logged in the
+launch terminal ("Motion: stuck (moved 0.00 m of 0.15 m ...)"), as warnings
+for stuck, slipping and pushed. The measured movement is on
+`/motion_check/twist`, to plot against `/odom`. For now it only reports: it
+doesn't stop the car or change Nav2's plans.
+
+```bash
+tools/lyrical ros2 topic echo /motion_check
+```
+
 ## Calibration
 
 ### Sensor mounting
@@ -875,6 +905,11 @@ tools/sim_test.sh nav2:=true motors_on:=true         # send goals with Nav2 Goal
 tools/sim_test.sh explore:=true motors_on:=true      # explores the room in about 40 s
 ```
 
+The simulated car can fake what the real odometry misses, for testing
+`motion_check`: `ros2 param set /car_controller slip 1.0` makes it stuck
+(0.5 is half the commanded movement), and `push_vx 0.1` pushes it forwards
+at 0.1 m/s. `/odom` still reports the commanded movement, as on the real car.
+
 Like the real controller, the simulated car ignores `cmd_vel` until
 `motor_on` is true, so Nav2 and exploration need `motors_on:=true` here too.
 
@@ -919,6 +954,14 @@ Other tools:
   subshell, not the program. Start it as `python3 -c 'import signal,os,sys;
   signal.signal(signal.SIGINT, signal.SIG_DFL); os.execvp(sys.argv[1],
   sys.argv[1:])' <program> <args> &` and signal `$!`.
+- **Stale Fast DDS shared memory.** Processes killed hard leave files in
+  `/dev/shm`, and once there were over a hundred, nodes on the same machine
+  stopped finding each other (explore_lite waited for Nav2 for ever).
+  `fastdds shm clean` (with ROS sourced) removes the unused ones;
+  `tools/sim_test.sh` runs it at start.
+- **`.warn()` in rclpy nodes:** Lyrical removed it; use `.warning()`, which
+  Jazzy has too. One logging call can't switch severity between calls
+  either.
 - **Leftover processes.** A simulator `robot_state_publisher` left over from
   an interrupted run kept publishing an old URDF's TF on domain 42 a day
   later. Find leftovers with `pgrep -af robot_state_publisher`, and check

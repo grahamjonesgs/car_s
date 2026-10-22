@@ -50,7 +50,7 @@ class CarPower(Node):
         self.go_timer = None
         for action in ('poweroff', 'reboot'):
             if not sudo_allows(action):
-                self.get_logger().warn(
+                self.get_logger().warning(
                     f'sudo will not run "systemctl {action}" without a password, '
                     'so it will be refused (see scripts/car_power.py)')
 
@@ -65,7 +65,7 @@ class CarPower(Node):
                                 'without a password. The Pi is still running')
             self.get_logger().error(response.message)
             return response
-        self.get_logger().warn(f'{action} requested: motors off, then {action} in {DELAY_S:.0f} s')
+        self.get_logger().warning(f'{action} requested: motors off, then {action} in {DELAY_S:.0f} s')
         self.pending = action
         self.motors_off()
         # Keep them off until the end: something else (pc_bringup, key_cmd)
