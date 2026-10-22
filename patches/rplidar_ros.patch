@@ -1,38 +1,63 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 496fca1..3f92608 100644
+index af7c560..7a7f575 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -49,13 +49,14 @@ add_library(rplidar_composition_node SHARED
-   src/rplidar_node.cpp
-   ${RPLIDAR_SDK_SRC}
- )
--ament_target_dependencies(rplidar_composition_node ${req_deps})
+@@ -5,7 +5,8 @@ cmake_minimum_required(VERSION 3.5)
+ project(rplidar_ros)
+ 
+ if(NOT CMAKE_CXX_STANDARD)
+-  set(CMAKE_CXX_STANDARD 14)
++  # C++17: ROS 2 Lyrical's rclcpp needs it
++  set(CMAKE_CXX_STANDARD 17)
+ endif()
+ 
+ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+@@ -58,25 +59,16 @@ include_directories(
+ 
+ add_executable(rplidar_node	src/rplidar_node.cpp ${RPLIDAR_SDK_SRC})
+ # target_link_libraries(rplidar_node ${ament_cmake_LIBRARIES})
+-ament_target_dependencies(rplidar_node
+-  rclcpp
+-  std_srvs
+-  sensor_msgs
+-)
 +# Exported targets: ament_target_dependencies is gone from ROS 2 Lyrical
-+target_link_libraries(rplidar_composition_node rclcpp::rclcpp ${sensor_msgs_TARGETS}
-+  ${std_srvs_TARGETS} rclcpp_components::component)
- rclcpp_components_register_nodes(rplidar_composition_node "rplidar_ros::rplidar_node")
++target_link_libraries(rplidar_node rclcpp::rclcpp ${std_srvs_TARGETS} ${sensor_msgs_TARGETS})
  
- # build composition node
- ament_auto_add_executable(rplidar_composition src/standalone_rplidar.cpp)
- target_link_libraries(rplidar_composition rplidar_composition_node)
--ament_target_dependencies(rplidar_composition ${req_deps})
+ add_executable(rplidar_composition src/rplidar_node.cpp ${RPLIDAR_SDK_SRC})
+-ament_target_dependencies(rplidar_composition
+-  rclcpp
+-  std_srvs
+-  sensor_msgs
+-)
++# Exported targets: ament_target_dependencies is gone from ROS 2 Lyrical
++target_link_libraries(rplidar_composition rclcpp::rclcpp ${std_srvs_TARGETS} ${sensor_msgs_TARGETS})
  
- install(
-   TARGETS rplidar_composition
+ add_executable(rplidar_client src/rplidar_client.cpp)
+-ament_target_dependencies(rplidar_client
+-  rclcpp
+-  std_srvs
+-  sensor_msgs
+-)
++# Exported targets: ament_target_dependencies is gone from ROS 2 Lyrical
++target_link_libraries(rplidar_client rclcpp::rclcpp ${std_srvs_TARGETS} ${sensor_msgs_TARGETS})
+ ################################################################################
+ # Install
+ ################################################################################
 diff --git a/src/rplidar_node.cpp b/src/rplidar_node.cpp
-index c1284bc..b3f08fb 100644
+index ee7e7cf..c50e5f4 100644
 --- a/src/rplidar_node.cpp
 +++ b/src/rplidar_node.cpp
-@@ -409,6 +409,12 @@ void rplidar_node::start()
-   if (nullptr == m_drv) {
-     return;
-   }
-+  // Local patch (car_s): starting again while already running wedges the
-+  // driver, so ignore it
-+  if (m_running) {
-+    RCLCPP_INFO(this->get_logger(), "Already running, ignoring start");
-+    return;
-+  }
+@@ -341,6 +341,12 @@ class RPlidarNode : public rclcpp::Node
+         if (nullptr == drv) {
+             return false;
+         }
++        // Local patch (car_s): starting again while already scanning
++        // restarts the scan mid-stream, which wedged the driver, so ignore it
++        if (is_scanning) {
++            RCLCPP_INFO(this->get_logger(), "Already running, ignoring start");
++            return true;
++        }
  
-   RCLCPP_INFO(this->get_logger(), "Start");
-   m_drv->startMotor();
+         RCLCPP_INFO(this->get_logger(), "Start");
+         drv->setMotorSpeed();

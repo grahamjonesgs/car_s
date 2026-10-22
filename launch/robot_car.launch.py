@@ -77,6 +77,9 @@ def generate_launch_description():
             'topic_name': '/scan',  # Adjust if necessary
             'frame_id': 'laser_link', # Important to match the URDF link name
             'angle_compensate': True,
+            # The A1 talks at 115200 baud; Slamtec's driver defaults to 1000000
+            'serial_port': '/dev/ttyUSB0',
+            'serial_baudrate': 115200,
         }],
         # Restart it if it dies (USB glitch); it comes back with its motor on
         respawn=True,

@@ -378,7 +378,7 @@ magnetometer at `0d`.
 ```bash
 mkdir -p ~/ros_ws/src && cd ~/ros_ws/src
 git clone https://github.com/grahamjonesgs/car_s.git
-git clone -b ros2  https://github.com/allenh1/rplidar_ros.git
+git clone -b ros2 https://github.com/Slamtec/rplidar_ros.git
 
 # Fix for the lidar driver (see patches/README.md)
 git -C rplidar_ros apply ~/ros_ws/src/car_s/patches/rplidar_ros.patch
@@ -391,9 +391,10 @@ MAKEFLAGS=-j2 colcon build --symlink-install --parallel-workers 2
 
 The limited parallelism stops the Pi running out of memory; the first build
 takes a while. `rplidar_ros` is built from source rather than installed
-from apt. (The car used to build `imu_tools` for a Madgwick filter too;
-nothing uses it now.) The patch was made against `rplidar_ros` commit
-`6fc037d` (2.1.0).
+from apt, where Lyrical has no package for it. It's Slamtec's own driver
+(the car used the older allenh1 fork until 2026-10-22). (The car used to
+build `imu_tools` for a Madgwick filter too; nothing uses it now.) The
+patch was made against Slamtec's `ros2` branch at commit `24cc9b6`.
 
 Add these to the end of `~/.bashrc`:
 
