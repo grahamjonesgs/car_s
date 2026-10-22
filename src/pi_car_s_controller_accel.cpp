@@ -46,11 +46,9 @@
 
 using namespace std::chrono_literals;
 
-// Pin definitions
-const int LEFT_FRONT_STEP_PIN = 13;  // Y Controller
-const int LEFT_BACK_STEP_PIN = 19;   // X Controller
-const int RIGHT_FRONT_STEP_PIN = 18; // A Controller
-const int RIGHT_BACK_STEP_PIN = 12;  // Z Controller
+// Pin definitions. The STEP pins are GPIO 13 and 19 (left front Y, left back
+// X controllers; PWM channel 1) and 18 and 12 (right front A, right back Z;
+// PWM channel 0), set up by overlays/car-pwm.dts rather than here
 
 const int LEFT_FRONT_DIR_PIN = 6;
 const int LEFT_BACK_DIR_PIN = 26;
@@ -86,9 +84,10 @@ const double MIN_STOP_DECEL = 1.0;
 // Highest motor_accel accepted (m/s^2)
 const double MAX_ACCEL = 5.0;
 // Calibrated on the floor: 0.5 m by tape on 2026-10-20 (nominal 0.21), and
-// two-turn spins against the gyro, redone on 2026-10-22 with the linux GPIO
-// backend (pigpio's right-hand pulses had run about 1% short). The wheel
-// centres are 0.19 m apart; skid steer needs a larger effective value
+// two-turn spins against the gyro, redone on 2026-10-22 after moving to the
+// kernel PWM (pigpio, used before, sent the right-hand pulses about 1%
+// short). The wheel centres are 0.19 m apart; skid steer needs a larger
+// effective value
 const double DEFAULT_M_PER_REVOLUTION = 0.2016;
 const double DEFAULT_WHEEL_SEPARATION = 0.262;
 
@@ -116,7 +115,7 @@ const std::string TOPIC_MODE = "motor_mode";
 const std::string TOPIC_ACCEL = "motor_accel";
 
 // PiCarController class
-// This class controls the Pi Car using pigpio and ROS2
+// This class controls the Pi Car through the kernel's GPIO and PWM drivers
 // It subscribes to velocity commands and publishes odometry and speed
 // information
 class PiCarController : public rclcpp::Node {
@@ -166,21 +165,16 @@ public:
                 wheel_separation_, m_per_revolution_, cmd_vel_timeout_,
                 max_wheel_speed_, publish_odom_tf_ ? "true" : "false");
 
-    // The GPIO backend: "pigpio" (through pigpiod) or "linux" (the kernel's
-    // PWM driver and libgpiod). It throws if it can't start, so the node
-    // exits and the launch (and systemd) restarts it
-    std::string backend =
-        this->declare_parameter("gpio_backend", std::string("pigpio"));
+    // GPIO and step pulses through the kernel's drivers (car_gpio.hpp). It
+    // throws if it can't start, so the node exits and the launch (and
+    // systemd) restarts it
     CarPins pins = {
-        {LEFT_FRONT_STEP_PIN, LEFT_BACK_STEP_PIN},
-        {RIGHT_FRONT_STEP_PIN, RIGHT_BACK_STEP_PIN},
         {LEFT_FRONT_DIR_PIN, LEFT_BACK_DIR_PIN, RIGHT_FRONT_DIR_PIN,
          RIGHT_BACK_DIR_PIN, ENABLE_PIN, RED_LED_PIN, BLUE_LED_PIN, M0_SUBSTEP,
          M1_SUBSTEP, M2_SUBSTEP},
         10,
         ENABLE_PIN};
-    gpio_ = make_car_gpio(backend, pins, this->get_logger());
-    RCLCPP_INFO(this->get_logger(), "GPIO backend: %s", gpio_->name().c_str());
+    gpio_ = std::make_unique<CarGpio>(pins, this->get_logger());
     stop_step_pulses();
     gpio_->write(BLUE_LED_PIN, true); // Initial blue LED state
 

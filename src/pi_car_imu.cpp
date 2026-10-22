@@ -33,13 +33,9 @@ Ave G -0.0617,0.0115,0.0011  A -0.6567,-1.78,10.47
 #include <chrono>
 #include <cmath>
 #include <iostream>
-#include <pigpiod_if2.h>
+#include "i2c_device.hpp"
 #include <rclcpp/rclcpp.hpp>
 #include <stdlib.h>
-
-// Pin definition
-#define RED_LED_PIN 23
-#define BLUE_LED_PIN 24
 
 // Topics
 #define TOPIC_IMU "imu/data_raw"
@@ -79,8 +75,10 @@ Ave G -0.0617,0.0115,0.0011  A -0.6567,-1.78,10.47
 rclcpp::TimerBase::SharedPtr imu_timer; // Timer for reading the IMU
 rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub;
 rclcpp::Node::SharedPtr nh;
-int pi;   // Pi ID from Pigpio
-int i2ch; // I2C handle
+// The MPU6050 on I2C bus 1, through the kernel's i2c-dev driver
+I2cDevice imu;
+#define I2C_BUS 1
+#define MPU6050_ADDR 0x68
 
 // Normalization values
 /*float NGx = 0.0617;
@@ -119,7 +117,7 @@ bool MPU6050_Init() {
                            {CONFIG, 0x03},     {GYRO_CONFIG, 0},
                            {INT_ENABLE, 0x01}};
   for (const auto &w : writes) {
-    if (i2c_write_byte_data(pi, i2ch, w[0], w[1]) < 0) {
+    if (!imu.write_byte(w[0], w[1])) {
       return false;
     }
   }
@@ -129,14 +127,12 @@ bool MPU6050_Init() {
 // Read all the accel and gyro registers in one transfer, so the values all
 // come from the same sample and the high and low bytes match
 bool read_raw_data(short raw[7]) {
-  char buf[DATA_BYTES];
-  if (i2c_read_i2c_block_data(pi, i2ch, ACCEL_XOUT_H, buf, DATA_BYTES) !=
-      DATA_BYTES) {
+  uint8_t buf[DATA_BYTES];
+  if (!imu.read_block(ACCEL_XOUT_H, buf, DATA_BYTES)) {
     return false;
   }
   for (int i = 0; i < 7; i++) {
-    raw[i] = static_cast<short>((static_cast<unsigned char>(buf[2 * i]) << 8) |
-                                static_cast<unsigned char>(buf[2 * i + 1]));
+    raw[i] = static_cast<short>((buf[2 * i] << 8) | buf[2 * i + 1]);
   }
   return true;
 }
@@ -276,24 +272,18 @@ int main(int argc, char **argv) {
       static_cast<int>(std::max(calibration_time, 0.0) * rate_hz);
   calibration_samples = calibration_samples_needed;
 
-  if ((pi = pigpio_start(NULL, NULL)) < 0) {
-    RCLCPP_ERROR(nh->get_logger(), "gpio init failed");
-    return 1;
-  }
   // Set up MPU6050
-  i2ch = i2c_open(pi, 1, 0x68, 0);
-  if (i2ch < 0) {
-    RCLCPP_ERROR(nh->get_logger(), "Failed to open I2C device");
-    pigpio_stop(pi);
+  if (!imu.open(I2C_BUS, MPU6050_ADDR)) {
+    RCLCPP_ERROR(nh->get_logger(),
+                 "Can't open /dev/i2c-%d: is I2C enabled (dtparam=i2c_arm=on), "
+                 "and the user in dialout?", I2C_BUS);
     return 1;
   }
   // A missing chip doesn't answer; exit, and the launch restarts the node.
   // Some clone boards report a different ID but work, so only warn then
-  int id = i2c_read_byte_data(pi, i2ch, WHO_AM_I);
+  int id = imu.read_byte(WHO_AM_I);
   if (id < 0) {
     RCLCPP_ERROR(nh->get_logger(), "No MPU6050 answering on I2C bus 1 at 0x68");
-    i2c_close(pi, i2ch);
-    pigpio_stop(pi);
     return 1;
   }
   if (id != MPU6050_ID) {
@@ -303,8 +293,6 @@ int main(int argc, char **argv) {
   }
   if (!MPU6050_Init()) {
     RCLCPP_ERROR(nh->get_logger(), "Failed to set up the MPU6050");
-    i2c_close(pi, i2ch);
-    pigpio_stop(pi);
     return 1;
   }
   if (calibration_samples_needed > 0) {
@@ -321,8 +309,7 @@ int main(int argc, char **argv) {
                                     std::bind(&imu_timer_callback));
 
   rclcpp::spin(nh);
-  i2c_close(pi, i2ch);
-  pigpio_stop(pi); // Stop pigpio
+  imu.close();
   // Release the global ROS objects before shutting down: destroyed later, as
   // globals at exit, they threw and the node aborted (exit code -6)
   imu_timer.reset();

@@ -30,7 +30,7 @@ index 0f8e610..7a6a076 100644
  };
  
 diff --git a/explore/src/explore.cpp b/explore/src/explore.cpp
-index d72fb18..c9a6f58 100644
+index d72fb18..764c551 100644
 --- a/explore/src/explore.cpp
 +++ b/explore/src/explore.cpp
 @@ -193,7 +193,7 @@ void Explore::visualizeFrontiers(
@@ -82,8 +82,16 @@ index d72fb18..c9a6f58 100644
  
    // time out if we are not making any progress
    bool same_goal = same_point(prev_goal_, target_position);
-@@ -307,6 +322,10 @@ void Explore::makePlan()
-   goal.pose.header.stamp = this->now();
+@@ -304,9 +319,17 @@ void Explore::makePlan()
+   goal.pose.pose.position = target_position;
+   goal.pose.pose.orientation.w = 1.;
+   goal.pose.header.frame_id = costmap_client_.getGlobalFrameID();
+-  goal.pose.header.stamp = this->now();
++  // Local patch (car_s): time zero means "the latest transform" to Nav2.
++  // Stamped now, the goal can be newer than the latest map -> odom
++  // transform from SLAM, and Nav2 then drops it ("extrapolation into the
++  // future")
++  goal.pose.header.stamp = rclcpp::Time(0, 0, this->get_clock()->get_clock_type());
  
    goal_active_ = true;
 +  active_goal_ = target_position;
@@ -93,7 +101,20 @@ index d72fb18..c9a6f58 100644
    auto send_goal_options = rclcpp_action::Client<
        nav2_msgs::action::NavigateToPose>::SendGoalOptions();
  
-@@ -386,6 +405,11 @@ void Explore::reachedGoal(const NavigationGoalHandle::WrappedResult& result,
+@@ -341,7 +364,11 @@ void Explore::returnToInitialPose()
+   goal.pose.pose.position = initial_pose_.position;
+   goal.pose.pose.orientation = initial_pose_.orientation;
+   goal.pose.header.frame_id = costmap_client_.getGlobalFrameID();
+-  goal.pose.header.stamp = this->now();
++  // Local patch (car_s): time zero means "the latest transform" to Nav2.
++  // Stamped now, the goal can be newer than the latest map -> odom
++  // transform from SLAM, and Nav2 then drops it ("extrapolation into the
++  // future")
++  goal.pose.header.stamp = rclcpp::Time(0, 0, this->get_clock()->get_clock_type());
+ 
+   auto send_goal_options =
+       rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SendGoalOptions();
+@@ -386,6 +413,11 @@ void Explore::reachedGoal(const NavigationGoalHandle::WrappedResult& result,
        RCLCPP_DEBUG(logger_, "Goal was successful");
        last_progress_ = this->now();
        prev_distance_ = 0;

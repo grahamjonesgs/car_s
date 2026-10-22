@@ -1,11 +1,56 @@
-"""Count rising edges on the four step pins for 2 s with pigpio (which only
-reads the pins), and print pulses per second. Used by kernel_pwm_test.sh."""
-import time, pigpio
-pi = pigpio.pi()
-cbs = {g: pi.callback(g, pigpio.RISING_EDGE) for g in (12, 13, 18, 19)}
-time.sleep(2.0)
-names = {13: 'left front', 19: 'left back', 18: 'right front', 12: 'right back'}
-for g, cb in cbs.items():
-    print(f'GPIO {g:2d} ({names[g]:11s}): {cb.tally()/2.0:8.0f} pulses/s, mode {pi.get_mode(g)}')
-    cb.cancel()
-pi.stop()
+"""Count the step pulses on the four STEP pins, for checking what the motors
+are really sent (odometry only knows the rate that was set).
+
+    python3 tools/pulse_count.py          # 2 s
+    python3 tools/pulse_count.py 1.0      # 1 s
+
+Reads the GPIO level register directly through /dev/gpiomem (no daemon) as
+fast as Python can, and counts rising edges. That's about a million samples a
+second on a Pi 4, enough for step rates to about 50 kHz; it prints its sample
+rate so you can tell. Only reads, so it's safe alongside the controller.
+"""
+import mmap
+import os
+import struct
+import sys
+import time
+
+PINS = {13: 'left front', 19: 'left back', 18: 'right front', 12: 'right back'}
+GPLEV0 = 0x34  # GPIO level register, pins 0-31
+
+
+def main():
+    duration = float(sys.argv[1]) if len(sys.argv) > 1 else 2.0
+    try:
+        fd = os.open('/dev/gpiomem', os.O_RDONLY | os.O_SYNC)
+    except OSError as e:
+        sys.exit(f"Can't open /dev/gpiomem ({e}): is the user in dialout (or gpio)?")
+    mem = mmap.mmap(fd, 4096, mmap.MAP_SHARED, mmap.PROT_READ)
+    unpack = struct.Struct('<I').unpack_from
+    mask = sum(1 << p for p in PINS)
+    edges = {p: 0 for p in PINS}
+    last = unpack(mem, GPLEV0)[0] & mask
+    samples = 0
+    end = time.perf_counter() + duration
+    while True:
+        # A batch between clock checks keeps the loop fast
+        for _ in range(1000):
+            level = unpack(mem, GPLEV0)[0] & mask
+            rising = level & ~last
+            if rising:
+                for p in PINS:
+                    if rising >> p & 1:
+                        edges[p] += 1
+            last = level
+        samples += 1000
+        if time.perf_counter() >= end:
+            break
+    mem.close()
+    os.close(fd)
+    print(f'{samples / duration / 1e6:.2f} M samples/s')
+    for p, name in sorted(PINS.items()):
+        print(f'GPIO {p:2d} ({name:11s}): {edges[p] / duration:8.0f} pulses/s')
+
+
+if __name__ == '__main__':
+    main()

@@ -1,49 +1,76 @@
-// GPIO and step-pulse access for the car controller, with two backends:
+// GPIO and step pulses for the car controller, through the kernel's own
+// drivers.
 //
-// - pigpio: through the pigpiod daemon (hardware_PWM, gpio_write), counting
-//   the step pulses with pigpio callbacks. Its PWM channel 0 (the right
-//   wheels) fails above about 6 kHz on this car.
-// - linux: the kernel's own drivers. Step pulses from the pwm-bcm2835 driver
-//   through /sys/class/pwm (overlays/car-pwm.dts, set up by
-//   tools/car_pwm_setup.sh), other pins through libgpiod. The kernel can't
-//   count 10,000 edges a second for a program, so the steps are worked out
-//   from the rate actually set, which hardware PWM produces exactly.
+// Step pulses come from the pwm-bcm2835 driver through /sys/class/pwm.
+// overlays/car-pwm.dts puts PWM channel 0 on GPIO 12 and 18 (the right
+// wheels) and channel 1 on GPIO 13 and 19 (the left), and
+// tools/car_pwm_setup.sh (run as root by the car_s service) loads it,
+// exports both channels and hands their files to the car's user. The other
+// pins are outputs through libgpiod (/dev/gpiochip0).
+//
+// The kernel can't report 10,000 edges a second to a program, so the steps
+// are worked out from the rate set: hardware PWM produces it exactly, so
+// steps = rate x time, summed over every change.
 #pragma once
 
-#include <memory>
+#include <chrono>
 #include <string>
+#include <utility>
+#include <vector>
 
+#include <gpiod.h>
 #include <rclcpp/rclcpp.hpp>
 
 enum class Side { LEFT = 0, RIGHT = 1 };
 
-class CarGpio {
-public:
-  virtual ~CarGpio() = default;
-
-  // Set an output pin (BCM GPIO number) high or low
-  virtual void write(int gpio, bool high) = 0;
-
-  // Step pulses on both of a side's STEP pins at freq Hz, 0 to stop.
-  // forwards says which way the steps count; the DIR pins are set separately
-  virtual void set_step_rate(Side side, unsigned freq, bool forwards) = 0;
-
-  // Signed steps on a side since the last call
-  virtual double take_steps(Side side) = 0;
-
-  virtual std::string name() const = 0;
-};
-
-// The pins the backends need as outputs, and the STEP pins of each side
+// The pins to use as outputs, and the drivers' ENABLE pin among them
 struct CarPins {
-  int left_step[2];
-  int right_step[2];
   int outputs[16];
   int n_outputs;
   int enable; // high = drivers off; set high first
 };
 
-// Throws std::runtime_error with the reason if the backend can't start
-std::unique_ptr<CarGpio> make_car_gpio(const std::string &backend,
-                                       const CarPins &pins,
-                                       rclcpp::Logger logger);
+class CarGpio {
+public:
+  // Throws std::runtime_error with the reason if the GPIO or PWM can't be
+  // opened
+  CarGpio(const CarPins &pins, rclcpp::Logger logger);
+  ~CarGpio();
+  CarGpio(const CarGpio &) = delete;
+  CarGpio &operator=(const CarGpio &) = delete;
+
+  // Set an output pin (BCM GPIO number) high or low
+  void write(int gpio, bool high);
+
+  // Step pulses on both of a side's STEP pins at freq Hz, 0 to stop.
+  // forwards says which way the steps count; the DIR pins are set separately
+  void set_step_rate(Side side, unsigned freq, bool forwards);
+
+  // Signed steps on a side since the last call
+  double take_steps(Side side);
+
+private:
+  using Clock = std::chrono::steady_clock;
+
+  struct Channel {
+    int period_fd = -1, duty_fd = -1, enable_fd = -1;
+    long period = 0; // ns
+    bool enabled = false;
+    bool forwards = true;
+    double rate = 0.0;  // steps/s now
+    double steps = 0.0; // signed, since the last take_steps
+    Clock::time_point last;
+  };
+
+  void accumulate(Channel &c);
+  void request_output(int gpio, int initial);
+  static int open_attr(const std::string &path);
+  void write_attr(int fd, long value);
+  static int idx(Side side) { return static_cast<int>(side); }
+
+  CarPins pins_;
+  rclcpp::Logger logger_;
+  gpiod_chip *chip_ = nullptr;
+  std::vector<std::pair<int, gpiod_line *>> lines_;
+  Channel ch_[2];
+};

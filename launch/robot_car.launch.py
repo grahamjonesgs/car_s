@@ -23,14 +23,6 @@ def generate_launch_description():
         description='Use simulation time if true.'
     )
 
-    declare_gpio_backend_arg = DeclareLaunchArgument(
-        name='gpio_backend',
-        default_value='pigpio',
-        description='How the controller drives the GPIO: pigpio, or linux (kernel PWM '
-                    'and libgpiod; needs tools/car_pwm_setup.sh linux first, which the '
-                    'car_s service does)'
-    )
-
     declare_lidar_arg = DeclareLaunchArgument(
         name='lidar',
         default_value='true',
@@ -111,18 +103,15 @@ def generate_launch_description():
         parameters=[{
             'publish_odom_tf': ParameterValue(
                 LaunchConfiguration('publish_odom_tf'), value_type=bool),
-            'gpio_backend': ParameterValue(
-                LaunchConfiguration('gpio_backend'), value_type=str),
         }],
-        # If the controller dies, the PWM keeps running without it: stop the
+        # If the controller dies, the kernel PWM keeps running without it: stop the
         # step pulses and disable the drivers at once, then end the whole
         # launch, so the car_s service (whose ExecStopPost does the same
         # again) restarts everything
         on_exit=[
             ExecuteProcess(
                 cmd=[os.path.join(get_package_prefix(package_name), 'lib',
-                                  package_name, 'car_outputs_off'),
-                     LaunchConfiguration('gpio_backend')],
+                                  package_name, 'car_outputs_off')],
                 output='screen'),
             Shutdown(reason='car_controller exited'),
         ],
@@ -159,7 +148,6 @@ def generate_launch_description():
     ld = LaunchDescription()
     ld.add_action(declare_robot_name_arg)
     ld.add_action(declare_use_sim_time_arg)
-    ld.add_action(declare_gpio_backend_arg)
     ld.add_action(declare_lidar_arg)
     ld.add_action(declare_lidar_on_arg)
     ld.add_action(declare_publish_odom_tf_arg)

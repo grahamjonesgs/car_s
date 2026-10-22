@@ -1,16 +1,11 @@
 #!/bin/bash
-# Set up the kernel PWM for the controller's linux GPIO backend, or take it
-# down for the pigpio backend. Run as root; the car_s service runs it before
-# starting (ExecStartPre=+), with CAR_S_GPIO_BACKEND from /etc/default/car_s.
+# Set up the kernel PWM for the car controller: load overlays/car-pwm.dts,
+# export both PWM channels and give their files to the car's user. Run as
+# root; the car_s service runs it before starting (ExecStartPre=+).
 #
-#   sudo tools/car_pwm_setup.sh linux    # load overlays/car-pwm.dts, export both
-#                                        # channels, give them to the car's user
-#   sudo tools/car_pwm_setup.sh pigpio   # remove the overlay (the default)
-#
-# The two must never both drive the PWM, so pigpio gets it back only with
-# the overlay removed.
+#   sudo tools/car_pwm_setup.sh          # set up (again)
+#   sudo tools/car_pwm_setup.sh remove   # take it down
 set -e
-BACKEND=${1:-${CAR_S_GPIO_BACKEND:-pigpio}}
 CAR_USER=${CAR_S_USER:-graham}
 D=$(dirname "$(readlink -f "$0")")
 P=/sys/class/pwm/pwmchip0
@@ -23,19 +18,12 @@ take_down() {
   dtoverlay -r car-pwm
 }
 
-if [ "$BACKEND" != linux ]; then
-  if loaded; then
-    take_down
-    # Removing the kernel driver stops the PWM clock, which pigpiod only sets
-    # up when it starts
-    echo "car-pwm: overlay removed. Restart pigpiod before pigpio's PWM works again:"
-    echo "  sudo systemctl restart pigpiod car_s"
-  fi
+if [ "$1" = remove ]; then
+  if loaded; then take_down; echo "car-pwm: overlay removed"; fi
   exit 0
 fi
 
-# Load it fresh every time: that also sets the pin functions again, in case
-# something (pigs, pigpio) changed them since
+# Load it fresh every time, which also sets the pin functions again
 if loaded; then take_down; fi
 dtc -q -@ -I dts -O dtb -o /run/car-pwm.dtbo "$D/../overlays/car-pwm.dts"
 dtoverlay -d /run car-pwm

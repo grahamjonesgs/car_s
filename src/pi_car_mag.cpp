@@ -32,7 +32,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <iostream>
-#include <pigpiod_if2.h>
+#include "i2c_device.hpp"
 #include <stdlib.h>
 
 // Topics
@@ -91,8 +91,9 @@
 // Global variables
 rclcpp::TimerBase::SharedPtr mag_timer;
 rclcpp::Publisher<sensor_msgs::msg::MagneticField>::SharedPtr mag_pub;
-int pi;   // Pi ID from Pigpio
-int i2ch; // I2C handle
+// The QMC5883L on I2C bus 1, through the kernel's i2c-dev driver
+I2cDevice mag;
+#define I2C_BUS 1
 rclcpp::Node::SharedPtr nh;
 
 uint8_t mode;
@@ -104,12 +105,12 @@ uint8_t oversampling;
 float DigitPermg;
 
 void reconfigure() {
-  i2c_write_byte_data(pi, i2ch, QMC5883L_CONFIG,
+  mag.write_byte(QMC5883L_CONFIG,
                       oversampling | range | rate | mode);
 }
 
 void reset() {
-  i2c_write_byte_data(pi, i2ch, QMC5883L_RESET, 0x01);
+  mag.write_byte(QMC5883L_RESET, 0x01);
   reconfigure();
 }
 
@@ -176,13 +177,12 @@ void QMC5883L_init() {
 // Read X, Y and Z in one transfer, so they all come from the same sample.
 // Returns false if the read fails
 bool readRaw(int16_t *x, int16_t *y, int16_t *z) {
-  char buf[6];
-  if (i2c_read_i2c_block_data(pi, i2ch, QMC5883L_X_LSB, buf, 6) != 6) {
+  uint8_t buf[6];
+  if (!mag.read_block(QMC5883L_X_LSB, buf, 6)) {
     return false;
   }
   auto word = [&](int i) {
-    return static_cast<int16_t>((static_cast<uint8_t>(buf[i + 1]) << 8) |
-                                static_cast<uint8_t>(buf[i]));
+    return static_cast<int16_t>((buf[i + 1] << 8) | buf[i]);
   };
   *x = word(0);
   *y = word(2);
@@ -196,7 +196,7 @@ void mag_timer_callback() {
   short status;
   sensor_msgs::msg::MagneticField mag_msg;
 
-  status = i2c_read_byte_data(pi, i2ch, QMC5883L_STATUS);
+  status = mag.read_byte(QMC5883L_STATUS);
   // This chip reports new data with DOR (overrun) rather than DRDY when the
   // previous reading was missed, so accept either
   if (status < 0 ||
@@ -222,15 +222,17 @@ int main(int argc, char **argv) {
   rclcpp::init(argc, argv);
   nh = rclcpp::Node::make_shared("pi_car_mag");
   RCLCPP_INFO(nh->get_logger(), "Started Pi Car mag");
-  if ((pi = pigpio_start(NULL, NULL)) < 0) {
-    RCLCPP_ERROR(nh->get_logger(), "gpio init failed");
+  if (!mag.open(I2C_BUS, QMC5883L_ADDR)) {
+    RCLCPP_ERROR(nh->get_logger(),
+                 "Can't open /dev/i2c-%d: is I2C enabled (dtparam=i2c_arm=on), "
+                 "and the user in dialout?", I2C_BUS);
     return 1;
   }
-
-  i2ch = i2c_open(pi, 1, QMC5883L_ADDR, 0);
-  if (i2ch < 0) {
-    RCLCPP_ERROR(nh->get_logger(), "Failed to open I2C device");
-    pigpio_stop(pi);
+  // The chip ID register reads 0xFF on a QMC5883L; a failed read means the
+  // chip isn't answering
+  if (mag.read_byte(QMC5883L_CHIP_ID) < 0) {
+    RCLCPP_ERROR(nh->get_logger(), "No QMC5883L answering on I2C bus 1 at 0x%02X",
+                 QMC5883L_ADDR);
     return 1;
   }
 
@@ -242,8 +244,7 @@ int main(int argc, char **argv) {
   mag_timer = nh->create_wall_timer(std::chrono::duration<double>(MAG_TIMER),
                                     std::bind(&mag_timer_callback));
   rclcpp::spin(nh);
-  i2c_close(pi, i2ch);
-  pigpio_stop(pi); // Stop pigpio
+  mag.close();
   // Release the global ROS objects before shutting down: destroyed later, as
   // globals at exit, they threw and the node aborted (exit code -6)
   mag_timer.reset();
