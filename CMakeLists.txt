@@ -1,9 +1,9 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16)
 project(car_s)
 
-#Default to C++14
+# C++17: required by Lyrical's rclcpp, and fine for Jazzy
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -23,12 +23,11 @@ find_package(std_srvs REQUIRED)
 
 # Nodes that run on any machine (e.g. the remote control PC)
 add_executable(imu_normalize src/imu_normalize.cpp)
-target_link_libraries(imu_normalize)
-ament_target_dependencies(imu_normalize rclcpp std_msgs sensor_msgs)
+target_link_libraries(imu_normalize rclcpp::rclcpp ${std_msgs_TARGETS} ${sensor_msgs_TARGETS})
 
 add_executable(key_cmd src/key_cmd.cpp)
-target_link_libraries(key_cmd)
-ament_target_dependencies(key_cmd rclcpp std_msgs std_srvs tf2_geometry_msgs)
+target_link_libraries(key_cmd rclcpp::rclcpp ${std_msgs_TARGETS} ${std_srvs_TARGETS}
+  ${geometry_msgs_TARGETS})
 
 install(TARGETS
   imu_normalize
@@ -44,7 +43,17 @@ if(GPIOD_LIB AND GPIOD_INCLUDE_DIR)
   add_executable(car_s_controller_accel src/pi_car_s_controller_accel.cpp src/car_gpio.cpp)
   target_include_directories(car_s_controller_accel PRIVATE ${GPIOD_INCLUDE_DIR})
   target_link_libraries(car_s_controller_accel ${GPIOD_LIB})
-  ament_target_dependencies(car_s_controller_accel nav_msgs rclcpp std_msgs geometry_msgs tf2 tf2_ros tf2_geometry_msgs)
+  # libgpiod 2 (Ubuntu 26.04) has a different API from 1 (Ubuntu 24.04)
+  include(CheckSymbolExists)
+  set(CMAKE_REQUIRED_INCLUDES ${GPIOD_INCLUDE_DIR})
+  set(CMAKE_REQUIRED_LIBRARIES ${GPIOD_LIB})
+  check_symbol_exists(gpiod_chip_request_lines "gpiod.h" CAR_GPIOD_V2)
+  if(CAR_GPIOD_V2)
+    target_compile_definitions(car_s_controller_accel PRIVATE CAR_GPIOD_V2)
+  endif()
+  target_link_libraries(car_s_controller_accel rclcpp::rclcpp ${nav_msgs_TARGETS}
+    ${std_msgs_TARGETS} ${geometry_msgs_TARGETS} tf2::tf2 tf2_ros::tf2_ros
+    tf2_geometry_msgs::tf2_geometry_msgs)
   install(TARGETS car_s_controller_accel DESTINATION lib/${PROJECT_NAME})
 else()
   message(WARNING "libgpiod not found: car_s_controller_accel isn't built "
@@ -52,9 +61,9 @@ else()
 endif()
 
 add_executable(car_imu src/pi_car_imu.cpp)
-ament_target_dependencies(car_imu rclcpp std_msgs sensor_msgs)
+target_link_libraries(car_imu rclcpp::rclcpp ${std_msgs_TARGETS} ${sensor_msgs_TARGETS})
 add_executable(car_mag src/pi_car_mag.cpp)
-ament_target_dependencies(car_mag rclcpp std_msgs sensor_msgs)
+target_link_libraries(car_mag rclcpp::rclcpp ${std_msgs_TARGETS} ${sensor_msgs_TARGETS})
 install(TARGETS car_imu car_mag DESTINATION lib/${PROJECT_NAME})
 
 # Shutdown and reboot services for the Pi, and the PC's watch on the car

@@ -78,9 +78,8 @@ bt_navigator:
     # Built-in plugins are added automatically
     # plugin_lib_names: []
 
-    error_code_names:
-      - compute_path_error_code
-      - follow_path_error_code
+    # error_code_names is left at each version's default: Nav2 1.5 renamed
+    # it error_code_name_prefixes and refuses the old name
 
 controller_server:
   ros__parameters:
@@ -97,6 +96,16 @@ controller_server:
     goal_checker_plugins: ["general_goal_checker"] # "precise_goal_checker"
     controller_plugins: ["FollowPath"]
     use_realtime_priority: false
+    # Nav2 1.5 (Lyrical) prunes and transforms the path here, not in MPPI
+    # (whose prune_distance and transform_tolerance it ignores). Jazzy
+    # ignores this
+    path_handler_plugins: ["PathHandler"]
+    PathHandler:
+      plugin: "nav2_controller::FeasiblePathHandler"
+      prune_distance: 1.7
+      transform_tolerance: 0.3
+      enforce_path_inversion: false
+      enforce_path_rotation: false
 
     # Progress checker parameters
     progress_checker:
@@ -128,7 +137,9 @@ controller_server:
       ay_max: 3.0
       ay_min: -3.0
       az_max: 2.0
-      vx_std: 0.1
+      # Nav2's value. At 0.1 Lyrical's MPPI sampled too little speed
+      # variation and stalled short of goals in the simulator
+      vx_std: 0.2
       vy_std: 0.2
       wz_std: 0.4
       vx_max: 0.2
@@ -141,6 +152,10 @@ controller_server:
       temperature: 0.3
       gamma: 0.015
       motion_model: "DiffDrive"
+      # Nav2 1.5 (Lyrical) loads the motion model as a plugin, named by
+      # motion_model. Jazzy reads the name and ignores this
+      DiffDrive:
+        plugin: "mppi::DiffDriveMotionModel"
       visualize: true
       regenerate_noises: true
       TrajectoryVisualizer:
@@ -165,7 +180,11 @@ controller_server:
         enabled: true
         cost_power: 1
         cost_weight: 3.0
-        threshold_to_consider: 0.5
+        # Nav2's 0.5 turns the car to the goal's heading while still up to
+        # 0.5 m away, and from beside the goal it then can't get there
+        # without turning away again, so it stops (seen on Lyrical in the
+        # simulator). Get there first, then turn: the xy goal tolerance
+        threshold_to_consider: 0.25
       PreferForwardCritic:
         enabled: true
         cost_power: 1
@@ -469,6 +488,11 @@ collision_monitor:
       min_height: 0.15
       max_height: 2.0
       enabled: True
+
+# Nav2 1.5 (Lyrical) starts this with the navigation servers. Jazzy has none
+following_server:
+  ros__parameters:
+    enable_stamped_cmd_vel: false
 
 docking_server:
   ros__parameters:

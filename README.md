@@ -84,6 +84,12 @@ Still to look at:
 - While planning long routes into unknown space, the Nav2 controller
   sometimes ran at about 13 Hz instead of 20 Hz. It still drove fine.
 - The magnetometer is unused (see [How localisation works](#how-localisation-works)).
+- Moving to ROS 2 Lyrical (Ubuntu 26.04) is under way: the code builds with
+  both Jazzy and Lyrical, and libgpiod 1 (Ubuntu 24.04) or 2 (26.04). The PC
+  stack passes the simulator tests on Lyrical (see
+  [ROS 2 Lyrical on the PC](#ros-2-lyrical-on-the-pc)). The car itself
+  hasn't run Lyrical yet. Jazzy and Lyrical don't reliably talk to each
+  other, so the Pi and the PC have to change over together.
 
 ## Hardware
 
@@ -342,8 +348,8 @@ rosdep update
 
 ### 3. GPIO, PWM and I²C tools
 
-The controller needs libgpiod, and the PWM set-up compiles a device-tree
-overlay:
+The controller needs libgpiod (version 1 on Ubuntu 24.04, 2 on 26.04: it
+builds against either), and the PWM set-up compiles a device-tree overlay:
 
 ```bash
 sudo apt install libgpiod-dev gpiod device-tree-compiler i2c-tools
@@ -513,6 +519,41 @@ car (see [patches/README.md](patches/README.md)).
 Then add the firewall rule for the car (see
 [Machines and network](#machines-and-network)), and check that
 `ros2 topic list` shows the car's topics while it runs.
+
+### ROS 2 Lyrical on the PC
+
+ROS 2 Lyrical supports Ubuntu 26.04, so on the Beelink it's installed
+natively, beside the Jazzy container (from the ROS install guide, with the
+same packages as above but `ros-lyrical-*`, plus `libgpiod-dev gpiod`). Its
+build is kept apart from the Jazzy one, in `build_lyrical` and
+`install_lyrical`, and [tools/lyrical](tools/lyrical) runs a command with it
+sourced, as `tools/jazzy` does for the container:
+
+```bash
+cd ~/ros2_ws
+src/car_s/tools/lyrical colcon --log-base log_lyrical build --symlink-install \
+    --build-base build_lyrical --install-base install_lyrical \
+    --packages-select car_s explore_lite_msgs explore_lite
+cd src/car_s
+tools/lyrical tools/sim_test.sh explore:=true motors_on:=true
+```
+
+Use the one that matches the car: the two versions don't reliably talk to
+each other. Nav2 1.5 (Lyrical) changed a few things, which the launch file
+and `config/nav2.yaml` handle so that one copy works with both:
+
+- Its `navigation_launch.py` no longer starts a lifecycle manager, so
+  `pc_bringup.launch.py` starts one (`lifecycle_manager_nav2`) when it
+  doesn't.
+- MPPI's motion model is a plugin (`DiffDrive.plugin`), and path pruning
+  moved to the controller server (`PathHandler`). Jazzy ignores both.
+- `bt_navigator` refuses the old `error_code_names`, so it's left at each
+  version's default, and the new `following_server` needs unstamped
+  `cmd_vel` like the other servers.
+- Lyrical's MPPI got stuck with `vx_std: 0.1`. With Nav2's 0.2, and the goal
+  heading only counted within the 0.25 m goal tolerance, both versions
+  reach all the test goals in the simulator. Lyrical was still sometimes
+  slow to finish beside a goal, where only the spin recovery got it out.
 
 ## Running the car
 

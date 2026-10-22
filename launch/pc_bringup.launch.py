@@ -18,6 +18,7 @@
 # At shutdown the TF is turned back on, the lidar stopped and the motors
 # disabled.
 
+import importlib.util
 import os
 import subprocess
 
@@ -32,7 +33,8 @@ from launch.conditions import IfCondition
 from launch.event_handlers import OnShutdown
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PythonExpression
-from launch_ros.actions import Node
+from launch_ros.actions import LoadComposableNodes, Node
+from launch_ros.descriptions import ComposableNode
 from launch_ros.parameter_descriptions import ParameterValue
 from nav2_common.launch import RewrittenYaml
 
@@ -105,6 +107,43 @@ def start_slam(context):
             # Its default is true, which would wait for a simulator clock
             'use_sim_time': 'false',
         }.items(),
+    )]
+
+
+def nav2_launch_has_manager(nav2_dir):
+    # Up to Nav2 1.3 (Jazzy) navigation_launch.py and localization_launch.py
+    # each start a lifecycle manager. From 1.5 (Lyrical) they don't: they
+    # list their nodes in get_lifecycle_nodes() and bringup_launch.py starts
+    # one manager for them all
+    path = os.path.join(nav2_dir, 'launch', 'navigation_launch.py')
+    with open(path) as f:
+        return 'def get_lifecycle_nodes' not in f.read()
+
+
+def start_lifecycle_manager(context, nav2_dir, nav2_on, map_yaml):
+    if nav2_launch_has_manager(nav2_dir):
+        return []
+    nodes = []
+    if map_yaml.perform(context) != '':
+        nodes += ['map_server', 'amcl']
+    if nav2_on.perform(context) == 'True':
+        spec = importlib.util.spec_from_file_location(
+            'nav2_navigation_launch',
+            os.path.join(nav2_dir, 'launch', 'navigation_launch.py'))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        nodes += list(module.get_lifecycle_nodes(context))
+    if not nodes:
+        return []
+    return [LoadComposableNodes(
+        target_container='nav2_container',
+        composable_node_descriptions=[ComposableNode(
+            package='nav2_lifecycle_manager',
+            plugin='nav2_lifecycle_manager::LifecycleManager',
+            name='lifecycle_manager_nav2',
+            parameters=[{'autostart': True, 'node_names': nodes,
+                         'use_sim_time': False}],
+        )],
     )]
 
 
@@ -235,6 +274,11 @@ def generate_launch_description():
         condition=IfCondition(nav2_on),
     )
 
+    lifecycle_manager = OpaqueFunction(
+        function=start_lifecycle_manager,
+        args=[nav2_dir, nav2_on, map_yaml],
+        condition=IfCondition(run_nav2))
+
     # explore_lite is only built on the PC, so it is looked up only when used
     explore_node = Node(
         package='explore_lite',
@@ -281,6 +325,7 @@ def generate_launch_description():
         nav2_container,
         localization_launch,
         navigation_launch,
+        lifecycle_manager,
         explore_needs_slam,
         explore_node,
         rviz_launch,
