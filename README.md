@@ -546,8 +546,13 @@ config was first made for. The launch file and `config/nav2.yaml` now follow
   other servers.
 - Lyrical's MPPI got stuck with `vx_std: 0.1`. With Nav2's 0.2, and the goal
   heading only counted within the 0.25 m goal tolerance, it reaches all the
-  test goals in the simulator. Lyrical was still sometimes
-  slow to finish beside a goal, where only the spin recovery got it out.
+  test goals in the simulator.
+- MPPI still sometimes stalled beside a goal it arrived at sideways (it
+  would have to turn about 90° on the spot first, and rarely samples that),
+  until Nav2's recoveries freed it: up to 90 s for a goal. The goal checker is
+  now Nav2 1.5's `AdaptiveToleranceGoalChecker`: reached within 0.25 m as
+  before, or within 0.40 m once the car has stopped making progress. That
+  goal now takes about 10 s.
 - Lyrical's MPPI checks its chosen trajectory before using it, by default
   rejecting it if the car's centre comes within the inscribed radius of
   anything in the next 2 s. In tight spaces that rejected safe trajectories

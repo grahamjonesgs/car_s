@@ -118,10 +118,19 @@ controller_server:
     #  yaw_goal_tolerance: 0.25
     #  stateful: True
     general_goal_checker:
+      # Reached within 0.25 m, as before, or within 0.40 m once the car has
+      # stopped making progress: MPPI sometimes stalls beside a goal it
+      # arrived at sideways, and only Nav2's recoveries freed it (75 s goals).
+      # "Stopped" is slower than its 0.10 m/s default, the car's slow
+      # approach speed
+      plugin: "nav2_controller::AdaptiveToleranceGoalChecker"
       stateful: True
-      plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.25
+      fine_xy_goal_tolerance: 0.25
+      coarse_xy_goal_tolerance: 0.40
       yaw_goal_tolerance: 0.25
+      trans_stopped_velocity: 0.03
+      rot_stopped_velocity: 0.1
+      required_stagnation_cycles: 15
     FollowPath:
       plugin: "nav2_mppi_controller::MPPIController"
       # The Nav2 defaults: a 2.8 s horizon is 0.56 m at 0.2 m/s. On the old
