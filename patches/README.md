@@ -21,3 +21,7 @@ The `explore_lite` changes:
   3 × `progress_timeout`), instead of switching to the best-scoring frontier
   on every replan, which made the car dither between distant goals.
 - Log each goal sent at INFO.
+- **Exit if Nav2's action server can't be reached within 20 s**, so the
+  launch file restarts it (`respawn` in `pc_bringup.launch.py`). On ROS 2
+  Lyrical, in the simulator, about one start in three never saw the whole
+  server, even with a new client, while a new process connected at once.

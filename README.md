@@ -575,6 +575,15 @@ and `config/nav2.yaml` handle so that one copy works with both:
   heading only counted within the 0.25 m goal tolerance, both versions
   reach all the test goals in the simulator. Lyrical was still sometimes
   slow to finish beside a goal, where only the spin recovery got it out.
+- Lyrical's MPPI checks its chosen trajectory before using it, by default
+  rejecting it if the car's centre comes within the inscribed radius of
+  anything in the next 2 s. In tight spaces that rejected safe trajectories
+  and the car stalled ("Optimizer fail to compute path"), on the real car
+  too. It now checks the real footprint, 1 s ahead (`TrajectoryValidator`).
+- The local costmap's inflation is now 0.30 m with a cost scaling of 5.0
+  (was 0.40 m and 3.0): with the wider one, a narrow but passable gap cost
+  so much that MPPI chose to stand still. Both versions pass the simulator
+  goal and bump tests with it.
 
 ## Running the car
 
@@ -816,8 +825,7 @@ result on `/motion_check`:
 A state is only reported once it has lasted 1.5 s. Changes are logged in the
 launch terminal ("Motion: stuck (moved 0.00 m of 0.15 m ...)"), as warnings
 for stuck, slipping and pushed. The measured movement is on
-`/motion_check/twist`, to plot against `/odom`. For now it only reports: it
-doesn't stop the car or change Nav2's plans.
+`/motion_check/twist`, to plot against `/odom`.
 
 Checked on the real car on 2026-10-23 with the wheels off the ground: driving
 (0.01 m measured of 0.14 m commanded) and turning both showed `stuck`, and
@@ -831,6 +839,47 @@ starts (1 s of movement, then the 1.5 s hold).
 ```bash
 tools/lyrical ros2 topic echo /motion_check
 ```
+
+### Low obstacles the lidar can't see
+
+The lidar sees one horizontal slice, so a low chair leg is invisible to it,
+and the car drives into it. When motion_check finds the car `stuck` while
+driving forwards or backwards, it treats that as an obstacle the lidar
+can't see:
+
+1. It marks a row of points 8 cm beyond the footprint's front (or rear)
+   edge, across its width, at the map pose from before the stuck: the
+   odometry carries on counting while the wheels push, so the pose drifts
+   on past the obstacle.
+2. It holds the EKF at where the car stopped (on `/set_pose`), while the
+   wheels still push and the car isn't turning. Otherwise Nav2 finds the
+   car's own footprint inside the mark and gives up. The pose it holds is
+   the map pose from before the drift, turned into odom with SLAM's
+   map -> odom as it is then: SLAM corrects part of the drift itself.
+3. The marks go to `bump_layer` in both costmaps (config/nav2.yaml), which
+   only motion_check's `/motion_check/bumps` feeds and the lidar never
+   clears, so Nav2 plans round them. They are republished every second, so a
+   costmap clear doesn't lose them.
+
+The log shows "Marked something the lidar can't see ahead at (x, y)". The
+marks are kept beside the map in use, `<map>.bumps.yaml` (for `map:=` or
+`slam_map:=`), and loaded with it next time. A new map keeps them in
+`~/.ros/car_s_bumps.yaml`: copy that to `~/maps/<name>.bumps.yaml` when
+saving the map as `<name>`. To forget them all (a false "stuck", say on a
+ramp):
+
+```bash
+tools/lyrical ros2 service call /motion_check/clear_bumps std_srvs/srv/Empty
+```
+
+A mark is only made after about 2.5 s of pushing, and it is a row at the
+car's edge, not the obstacle's shape. Stuck while turning on the spot
+marks nothing, as which corner caught is unknown.
+
+Checked in the simulator (a chair leg the simulated lidar doesn't see,
+`hidden_leg`, see [Testing without the car](#testing-without-the-car)): the
+car hits it, marks it within 5 cm, backs off, goes round it to the goal, and
+comes back round it. Not yet tried on the real car.
 
 ## Calibration
 
@@ -919,6 +968,8 @@ The simulated car can fake what the real odometry misses, for testing
 `motion_check`: `ros2 param set /car_controller slip 1.0` makes it stuck
 (0.5 is half the commanded movement), and `push_vx 0.1` pushes it forwards
 at 0.1 m/s. `/odom` still reports the commanded movement, as on the real car.
+`hidden_leg "0.8,-0.05"` puts a chair leg there that blocks the car but
+isn't in the scans, for testing the bump marking (`""` removes it).
 
 Like the real controller, the simulated car ignores `cmd_vel` until
 `motor_on` is true, so Nav2 and exploration need `motors_on:=true` here too.

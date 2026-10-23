@@ -30,10 +30,33 @@ index 0f8e610..7a6a076 100644
  };
  
 diff --git a/explore/src/explore.cpp b/explore/src/explore.cpp
-index d72fb18..764c551 100644
+index d72fb18..2236a52 100644
 --- a/explore/src/explore.cpp
 +++ b/explore/src/explore.cpp
-@@ -193,7 +193,7 @@ void Explore::visualizeFrontiers(
+@@ -38,6 +38,7 @@
+ 
+ #include <explore/explore.h>
+ 
++#include <stdexcept>
+ #include <thread>
+ 
+ inline static bool same_point(const geometry_msgs::msg::Point& one,
+@@ -109,7 +110,13 @@ Explore::Explore()
+       std::bind(&Explore::resumeCallback, this, std::placeholders::_1));
+ 
+   RCLCPP_INFO(logger_, "Waiting to connect to move_base nav2 server");
+-  move_base_client_->wait_for_action_server();
++  // On ROS 2 Lyrical this process sometimes never saw the whole server,
++  // even with a new client, while a new process connected at once. So give
++  // up after a while: the launch file restarts the node
++  if (!move_base_client_->wait_for_action_server(std::chrono::seconds(20))) {
++    RCLCPP_ERROR(logger_, "No move_base nav2 server after 20 s: exiting, to be restarted");
++    throw std::runtime_error("no move_base nav2 server");
++  }
+   RCLCPP_INFO(logger_, "Connected to move_base nav2 server");
+ 
+   if (return_to_init_) {
+@@ -193,7 +200,7 @@ void Explore::visualizeFrontiers(
      m.scale.y = 0.1;
      m.scale.z = 0.1;
      m.points = frontier.points;
@@ -42,7 +65,7 @@ index d72fb18..764c551 100644
        m.color = red;
      } else {
        m.color = blue;
-@@ -228,6 +228,21 @@ void Explore::visualizeFrontiers(
+@@ -228,6 +235,21 @@ void Explore::visualizeFrontiers(
  
  void Explore::makePlan()
  {
@@ -64,7 +87,7 @@ index d72fb18..764c551 100644
    // find frontiers
    auto pose = costmap_client_.getRobotPose();
    // get frontiers sorted according to cost
-@@ -255,7 +270,7 @@ void Explore::makePlan()
+@@ -255,7 +277,7 @@ void Explore::makePlan()
    auto frontier =
        std::find_if_not(frontiers.begin(), frontiers.end(),
                         [this](const frontier_exploration::Frontier& f) {
@@ -73,7 +96,7 @@ index d72fb18..764c551 100644
                         });
    if (frontier == frontiers.end()) {
      RCLCPP_WARN(logger_, "All frontiers traversed/tried out, stopping.");
-@@ -265,7 +280,7 @@ void Explore::makePlan()
+@@ -265,7 +287,7 @@ void Explore::makePlan()
      stop(true);
      return;
    }
@@ -82,7 +105,7 @@ index d72fb18..764c551 100644
  
    // time out if we are not making any progress
    bool same_goal = same_point(prev_goal_, target_position);
-@@ -304,9 +319,17 @@ void Explore::makePlan()
+@@ -304,9 +326,17 @@ void Explore::makePlan()
    goal.pose.pose.position = target_position;
    goal.pose.pose.orientation.w = 1.;
    goal.pose.header.frame_id = costmap_client_.getGlobalFrameID();
@@ -101,7 +124,7 @@ index d72fb18..764c551 100644
    auto send_goal_options = rclcpp_action::Client<
        nav2_msgs::action::NavigateToPose>::SendGoalOptions();
  
-@@ -341,7 +364,11 @@ void Explore::returnToInitialPose()
+@@ -341,7 +371,11 @@ void Explore::returnToInitialPose()
    goal.pose.pose.position = initial_pose_.position;
    goal.pose.pose.orientation = initial_pose_.orientation;
    goal.pose.header.frame_id = costmap_client_.getGlobalFrameID();
@@ -114,7 +137,7 @@ index d72fb18..764c551 100644
  
    auto send_goal_options =
        rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SendGoalOptions();
-@@ -386,6 +413,11 @@ void Explore::reachedGoal(const NavigationGoalHandle::WrappedResult& result,
+@@ -386,6 +420,11 @@ void Explore::reachedGoal(const NavigationGoalHandle::WrappedResult& result,
        RCLCPP_DEBUG(logger_, "Goal was successful");
        last_progress_ = this->now();
        prev_distance_ = 0;

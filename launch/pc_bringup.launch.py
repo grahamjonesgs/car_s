@@ -147,6 +147,28 @@ def start_lifecycle_manager(context, nav2_dir, nav2_on, map_yaml):
     )]
 
 
+def start_motion_check(context):
+    # Bumps (low obstacles motion_check marks) belong to a map frame: keep
+    # them beside the saved map in use, and load them with it. A new map
+    # starts with none, in ~/.ros/car_s_bumps.yaml (copy it beside the map
+    # when saving it)
+    slam_map = os.path.expanduser(LaunchConfiguration('slam_map').perform(context))
+    map_yaml = os.path.expanduser(LaunchConfiguration('map').perform(context))
+    if slam_map:
+        bumps_file, load = slam_map + '.bumps.yaml', True
+    elif map_yaml:
+        bumps_file, load = os.path.splitext(map_yaml)[0] + '.bumps.yaml', True
+    else:
+        bumps_file, load = '~/.ros/car_s_bumps.yaml', False
+    return [Node(
+        package='car_s',
+        executable='motion_check',
+        name='motion_check',
+        output='screen',
+        parameters=[{'bumps_file': bumps_file, 'load_bumps': load}],
+    )]
+
+
 def generate_launch_description():
     car_s_dir = get_package_share_directory('car_s')
     nav2_dir = get_package_share_directory('nav2_bringup')
@@ -287,13 +309,8 @@ def generate_launch_description():
 
     # The wheel odometry counts commanded steps; this notices when the car
     # isn't doing what they say (scripts/motion_check.py)
-    motion_check_node = Node(
-        package='car_s',
-        executable='motion_check',
-        name='motion_check',
-        output='screen',
-        condition=IfCondition(motion_check),
-    )
+    motion_check_node = OpaqueFunction(function=start_motion_check,
+                                       condition=IfCondition(motion_check))
 
     # explore_lite is only built on the PC, so it is looked up only when used
     explore_node = Node(
@@ -302,6 +319,10 @@ def generate_launch_description():
         name='explore_node',
         output='screen',
         parameters=[os.path.join(car_s_dir, 'config', 'explore.yaml')],
+        # It exits if it can't reach Nav2 within 20 s (the patch, for a
+        # discovery problem seen on Lyrical), and a new process connects
+        respawn=True,
+        respawn_delay=2.0,
         condition=IfCondition(explore),
     )
 

@@ -156,6 +156,15 @@ controller_server:
       # motion_model. Jazzy reads the name and ignores this
       DiffDrive:
         plugin: "mppi::DiffDriveMotionModel"
+      # Nav2 1.4+ (Lyrical) checks MPPI's chosen trajectory before using it.
+      # Its default, the centre point inside the inscribed radius of anything
+      # within 2 s, rejected safe trajectories in tight spaces and the car
+      # stalled ("Optimizer fail to compute path"). Check the real outline
+      # against obstacles, 1 s ahead, as CostCritic does. Jazzy ignores this
+      TrajectoryValidator:
+        plugin: "mppi::DefaultOptimalTrajectoryValidator"
+        collision_lookahead_time: 1.0
+        consider_footprint: true
       visualize: true
       regenerate_noises: true
       TrajectoryVisualizer:
@@ -251,15 +260,32 @@ local_costmap:
       # chair legs: the lidar sees a leg with only one or two beams, and the
       # obstacle layer's clearing (beams passing beside it) wipes it again
       # between scans, but a leg in the map stays
-      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      plugins: ["static_layer", "obstacle_layer", "bump_layer", "inflation_layer"]
+      bump_layer:
+        # Low obstacles the lidar can't see, marked by motion_check when the
+        # car gets stuck against them. Nothing clears them but
+        # /motion_check/clear_bumps, which republishes them every second
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: True
+        footprint_clearing_enabled: False
+        observation_sources: bumps
+        bumps:
+          topic: /motion_check/bumps
+          data_type: "PointCloud2"
+          marking: True
+          clearing: False
+          min_obstacle_height: 0.0
+          max_obstacle_height: 2.0
+          obstacle_max_range: 100.0
+          obstacle_min_range: 0.0
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         # The controller (MPPI) steers by this costmap. A wider, slower-fading
         # margin than the global costmap's keeps the car further from chair
         # legs as it passes. Inflation only adds cost; what counts as a
         # collision is the footprint touching an obstacle cell
-        cost_scaling_factor: 3.0
-        inflation_radius: 0.40
+        cost_scaling_factor: 5.0
+        inflation_radius: 0.30
       # 2D lidar only, so a plain obstacle layer rather than voxels
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
@@ -295,7 +321,24 @@ global_costmap:
       footprint: "[[0.12, 0.11], [0.12, -0.11], [-0.17, -0.11], [-0.17, 0.11]]"
       resolution: 0.05
       track_unknown_space: true
-      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      plugins: ["static_layer", "obstacle_layer", "bump_layer", "inflation_layer"]
+      bump_layer:
+        # Low obstacles the lidar can't see, marked by motion_check when the
+        # car gets stuck against them. Nothing clears them but
+        # /motion_check/clear_bumps, which republishes them every second
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: True
+        footprint_clearing_enabled: False
+        observation_sources: bumps
+        bumps:
+          topic: /motion_check/bumps
+          data_type: "PointCloud2"
+          marking: True
+          clearing: False
+          min_obstacle_height: 0.0
+          max_obstacle_height: 2.0
+          obstacle_max_range: 100.0
+          obstacle_min_range: 0.0
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True

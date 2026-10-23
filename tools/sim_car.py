@@ -12,6 +12,9 @@ what the real odometry can't see (for testing motion_check):
   ros2 param set /car_controller slip 1.0      # stuck: wheels turn, car doesn't
   ros2 param set /car_controller slip 0.5      # half the commanded movement
   ros2 param set /car_controller push_vx 0.1   # pushed forwards at 0.1 m/s
+  ros2 param set /car_controller hidden_leg "0.8,-0.2"  # a chair leg at
+                                  # (0.8, -0.2) the scans don't show, which
+                                  # blocks the car ("" removes it)
 
 The gyro and the scans follow the true movement.
 
@@ -58,6 +61,7 @@ class FakeCar(Node):
         self.declare_parameter('publish_odom_tf', True)
         self.declare_parameter('slip', 0.0)
         self.declare_parameter('push_vx', 0.0)
+        self.declare_parameter('hidden_leg', '')
         self.x = self.y = self.th = 0.0        # true pose
         self.ox = self.oy = self.oth = 0.0     # odometry: what was commanded
         self.v = self.w = 0.0
@@ -99,9 +103,11 @@ class FakeCar(Node):
         self.oy += self.v * math.sin(self.oth) * dt
         keep = 1.0 - min(max(self.get_parameter('slip').value, 0.0), 1.0)
         v = self.v * keep + self.get_parameter('push_vx').value
-        self.th += self.w * keep * dt
-        self.x += v * math.cos(self.th) * dt
-        self.y += v * math.sin(self.th) * dt
+        th = self.th + self.w * keep * dt
+        x = self.x + v * math.cos(th) * dt
+        y = self.y + v * math.sin(th) * dt
+        if not self.hits_leg(x, y, th):
+            self.x, self.y, self.th = x, y, th
         now = self.get_clock().now().to_msg()
         q = (0.0, 0.0, math.sin(self.oth / 2), math.cos(self.oth / 2))
         if self.get_parameter('publish_odom_tf').value:
@@ -123,6 +129,18 @@ class FakeCar(Node):
         for i, v in zip((0, 7, 14, 21, 28, 35), (0.01, 0.01, 1e6, 1e6, 1e6, 0.5)):
             o.twist.covariance[i] = v
         self.odom_pub.publish(o)
+
+    def hits_leg(self, x, y, th):
+        leg = self.get_parameter('hidden_leg').value
+        if not leg:
+            return False
+        lx, ly = (float(v) for v in leg.split(','))
+        # The leg in base_link, against the footprint (config/nav2.yaml)
+        dx, dy = lx - x, ly - y
+        bx = math.cos(th) * dx + math.sin(th) * dy
+        by = -math.sin(th) * dx + math.cos(th) * dy
+        r = 0.015
+        return -0.17 - r < bx < 0.12 + r and abs(by) < 0.11 + r
 
     def imu(self):
         m = Imu()
