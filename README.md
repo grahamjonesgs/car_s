@@ -184,12 +184,11 @@ The magnetometer shares the IMU's I2C bus (SDA/SCL).
 | Machine | Address | Role |
 |---|---|---|
 | Pi, `pi-car` | 192.168.68.78, WiFi | Hardware nodes, run at boot by the `car_s` service. Workspace `~/ros_ws` |
-| PC, `Ubuntu-Beelink` | 192.168.68.31, wired | EKF, SLAM, Nav2, exploration, RViz, `key_cmd`. AMD Ryzen AI 9 HX 470 (24 threads), Ubuntu 26.04, ROS in a container (see [Setting up the PC](#setting-up-the-pc)). Workspace `~/ros2_ws` |
+| PC, `Ubuntu-Beelink` | 192.168.68.31, wired | EKF, SLAM, Nav2, exploration, RViz, `key_cmd`. AMD Ryzen AI 9 HX 470 (24 threads), Ubuntu 26.04, ROS 2 Lyrical (see [Setting up the PC](#setting-up-the-pc)). Workspace `~/ros2_ws` |
 | Old PC, `Ubuntu-ROS` | 192.168.68.82 | A 4-core VM with the same setup. Now too slow for the Nav2 settings |
 
-- Both machines use ROS 2 Lyrical (the PC through
-  [tools/lyrical](tools/lyrical)) and **Cyclone DDS**
-  (`RMW_IMPLEMENTATION=rmw_cyclonedds_cpp`, set in `tools/lyrical` and
+- Both machines use ROS 2 Lyrical and **Cyclone DDS**
+  (`RMW_IMPLEMENTATION=rmw_cyclonedds_cpp`, set in `~/.bashrc` on both and in
   `systemd/car_s.service`), with `ROS_DOMAIN_ID` unset (0). Keep the same ROS
   release and RMW on every machine: a node on another RMW doesn't see the
   car at all. With Lyrical's default, Fast DDS, a process sometimes never
@@ -483,61 +482,33 @@ Two controllers on the Pi fight over the GPIO pins.
 
 ## Setting up the PC
 
-The PC needs the same ROS release as the car: Lyrical since 2026-10-22,
-installed natively on the Beelink (Ubuntu 26.04) and run through
-[tools/lyrical](tools/lyrical) (see
-[ROS 2 Lyrical on the PC](#ros-2-lyrical-on-the-pc)). Every `ros2` command in
-this README works as `tools/lyrical ros2 ...` from the repo folder.
+The PC needs the same ROS release and DDS as the car: ROS 2 Lyrical on
+Cyclone DDS. Lyrical supports Ubuntu 26.04, so the Beelink runs it natively.
+(Until 2026-10-23 it also had Jazzy in a distrobox container, for the car's
+old Ubuntu 24.04; that is gone.)
 
-Jazzy, which the car ran before, doesn't support Ubuntu 26.04, so on the
-Beelink it lives in a distrobox container called `jazzy` (Ubuntu 24.04),
-kept as a fallback for a car on Jazzy. On a PC with Ubuntu 24.04, install
-Jazzy natively and skip the container part.
+### ROS 2 Lyrical
 
-### The container (Beelink)
+Follow the [ROS 2 Lyrical Ubuntu install guide](https://docs.ros.org/en/lyrical/Installation/Ubuntu-Install-Debs.html),
+then:
 
 ```bash
-sudo apt install distrobox podman
-distrobox create --name jazzy --image docker.io/library/ubuntu:24.04
-distrobox enter jazzy
-# Inside the container: install ROS 2 Jazzy from the install guide, then
-sudo apt install ros-jazzy-desktop ros-jazzy-navigation2 ros-jazzy-nav2-bringup \
-  ros-jazzy-robot-localization ros-jazzy-slam-toolbox ros-jazzy-tf2-tools \
-  ros-jazzy-xacro ros-jazzy-teleop-twist-keyboard \
+sudo apt install ros-lyrical-desktop ros-lyrical-navigation2 ros-lyrical-nav2-bringup \
+  ros-lyrical-robot-localization ros-lyrical-slam-toolbox ros-lyrical-tf2-tools \
+  ros-lyrical-xacro ros-lyrical-teleop-twist-keyboard ros-lyrical-rmw-cyclonedds-cpp \
   python3-colcon-common-extensions python3-rosdep
 ```
 
-The container shares the host's home folder, network, display and GPU. So
-`~/ros2_ws` is the same on both sides, the car sees ROS traffic as coming
-from the Beelink itself, and RViz opens as a normal window.
-
-`~/.bashrc` is shared too, so it only sources ROS where ROS exists, i.e.
-inside the container. Put this at the end (the Beelink's original is saved
-as `~/.bashrc.before-ros`):
+Add this to the end of `~/.bashrc` (the Beelink's earlier versions are saved
+as `~/.bashrc.before-ros` and `~/.bashrc.before-lyrical`), so every terminal,
+including VS Code's, has ROS, the workspace and Cyclone DDS:
 
 ```bash
-# ROS 2 Jazzy lives in the "jazzy" distrobox container. This file is shared
-# by the host and the container, so only source ROS where it exists.
-if [ -f /opt/ros/jazzy/setup.bash ]; then
-  source /opt/ros/jazzy/setup.bash
-  [ -f ~/ros2_ws/install/setup.bash ] && source ~/ros2_ws/install/setup.bash
-fi
+# ROS 2 Lyrical and the car_s workspace, on Cyclone DDS like the car
+source /opt/ros/lyrical/setup.bash
+[ -f ~/ros2_ws/install/setup.bash ] && source ~/ros2_ws/install/setup.bash
+export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 ```
-
-**From a host shell (including a VS Code terminal), use
-[tools/jazzy](tools/jazzy).** It runs a command in the container, with ROS
-and `~/ros2_ws` sourced, in the current folder. Every `ros2` command in this
-README can be run that way from the repo folder:
-
-```bash
-cd ~/ros2_ws/src/car_s
-tools/jazzy ros2 topic list
-tools/jazzy ros2 launch car_s pc_bringup.launch.py
-tools/jazzy                  # no command: an interactive shell in the container
-```
-
-Don't use `distrobox enter jazzy -- bash -lc '...'`: Ubuntu's `.bashrc`
-returns early in non-interactive shells, so ROS isn't sourced.
 
 ### Workspace
 
@@ -546,44 +517,26 @@ mkdir -p ~/ros2_ws/src && cd ~/ros2_ws/src
 git clone https://github.com/grahamjonesgs/car_s.git
 git clone https://github.com/robo-friends/m-explore-ros2.git
 git -C m-explore-ros2 apply ~/ros2_ws/src/car_s/patches/m-explore-ros2.patch
+touch m-explore-ros2/map_merge/COLCON_IGNORE   # not used, and doesn't build
 
 cd ~/ros2_ws
-source /opt/ros/jazzy/setup.bash      # inside the container
-colcon build --symlink-install --packages-select car_s explore_lite_msgs explore_lite
+colcon build --symlink-install
 ```
 
-Without libgpiod on the PC, `car_s` doesn't build the controller there.
-`key_cmd` and `imu_normalize` are what the PC needs, plus the launch files and
-configs; `car_imu` and `car_mag` build too but are only useful on the Pi.
-`explore_lite` isn't in apt for Jazzy. The patch was made against
-`m-explore-ros2` commit `326cf8a`, and fixes three problems found on the real
-car (see [patches/README.md](patches/README.md)).
+`car_s` builds the controller only where libgpiod is installed (the Pi, or
+the PC with `libgpiod-dev`). `key_cmd` and `imu_normalize` are what the PC
+needs, plus the launch files and configs; `car_imu` and `car_mag` build too
+but are only useful on the Pi. `explore_lite` isn't in apt. The patch was
+made against `m-explore-ros2` commit `326cf8a`, and fixes problems found on
+the real car (see [patches/README.md](patches/README.md)).
 
-Then add the firewall rule for the car (see
-[Machines and network](#machines-and-network)), and check that
-`ros2 topic list` shows the car's topics while it runs.
+Then add the firewall rules (see [Machines and network](#machines-and-network)),
+and check that `ros2 topic list` shows the car's topics while it runs.
 
-### ROS 2 Lyrical on the PC
+### Nav2 1.5
 
-ROS 2 Lyrical supports Ubuntu 26.04, so on the Beelink it's installed
-natively, beside the Jazzy container (from the ROS install guide, with the
-same packages as above but `ros-lyrical-*`, plus `libgpiod-dev gpiod`). Its
-build is kept apart from the Jazzy one, in `build_lyrical` and
-`install_lyrical`, and [tools/lyrical](tools/lyrical) runs a command with it
-sourced, as `tools/jazzy` does for the container:
-
-```bash
-cd ~/ros2_ws
-src/car_s/tools/lyrical colcon --log-base log_lyrical build --symlink-install \
-    --build-base build_lyrical --install-base install_lyrical \
-    --packages-select car_s explore_lite_msgs explore_lite
-cd src/car_s
-tools/lyrical tools/sim_test.sh explore:=true motors_on:=true
-```
-
-Use the one that matches the car: the two versions don't reliably talk to
-each other. Nav2 1.5 (Lyrical) changed a few things, which the launch file
-and `config/nav2.yaml` handle so that one copy works with both:
+Nav2 1.5 (Lyrical) changed a few things from Jazzy's 1.3, which the launch
+file and `config/nav2.yaml` handle (they still work with Jazzy too):
 
 - Its `navigation_launch.py` no longer starts a lifecycle manager, so
   `pc_bringup.launch.py` starts one (`lifecycle_manager_nav2`) when it
@@ -859,7 +812,7 @@ showed `ok` with the lidar and gyro agreeing with the odometry to about
 starts (1 s of movement, then the 1.5 s hold).
 
 ```bash
-tools/lyrical ros2 topic echo /motion_check
+ros2 topic echo /motion_check
 ```
 
 ### Low obstacles the lidar can't see
@@ -891,7 +844,7 @@ saving the map as `<name>`. To forget them all (a false "stuck", say on a
 ramp):
 
 ```bash
-tools/lyrical ros2 service call /motion_check/clear_bumps std_srvs/srv/Empty
+ros2 service call /motion_check/clear_bumps std_srvs/srv/Empty
 ```
 
 A mark is only made after about 2.5 s of pushing, and it is a row at the
@@ -1037,7 +990,7 @@ Other tools:
   subshell, not the program. Start it as `python3 -c 'import signal,os,sys;
   signal.signal(signal.SIGINT, signal.SIG_DFL); os.execvp(sys.argv[1],
   sys.argv[1:])' <program> <args> &` and signal `$!`.
-- **Stale Fast DDS shared memory.** Processes killed hard leave files in
+- **Stale Fast DDS shared memory** (before the move to Cyclone DDS). Processes killed hard leave files in
   `/dev/shm`, and once there were over a hundred, nodes on the same machine
   stopped finding each other (explore_lite waited for Nav2 for ever).
   `fastdds shm clean` (with ROS sourced) removes the unused ones;
@@ -1053,17 +1006,14 @@ Other tools:
   an interrupted run kept publishing an old URDF's TF on domain 42 a day
   later. Find leftovers with `pgrep -af robot_state_publisher`, and check
   their domain with `tr '\0' '\n' < /proc/<pid>/environ | grep ROS_DOMAIN_ID`.
-- **`timeout tools/jazzy ...`** only kills the `distrobox` wrapper, not the
-  ROS command inside the container. A timed-out `ros2 service call` stays
-  waiting, and can fire much later when the service reappears.
 - **Background jobs** in non-interactive shells start with SIGINT ignored, so
   `kill -INT` doesn't stop `ros2 launch`. SIGTERM kills it without cleanup,
   leaving its nodes running and the car's TF off. Reset SIGINT before
-  exec'ing the launch. To run one in the background through `tools/jazzy`,
-  keep it in the foreground of that command (`setsid --wait`, not `&`):
-  background processes die when the `distrobox enter` session ends.
+  exec'ing the launch.
 - **`pkill -f` and `pgrep -f` match their own shell** when the pattern
-  appears anywhere in the command line.
+  appears anywhere in the command line: write the pattern as `[p]c_bringup`.
+- **`ros2 topic hz` and `echo` ignore `timeout`'s SIGTERM** on Lyrical when
+  nothing arrives; use `timeout -s KILL`.
 - **`ros2 topic pub --once`** from a process that exits straight away can
   lose the message over WiFi. Use `--times 3`.
 - slam_toolbox's `online_async_launch.py` defaults to `use_sim_time:=true`;

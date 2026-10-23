@@ -7,7 +7,7 @@ Wants=network-online.target
 User=graham
 Group=graham
 Environment=HOME=/home/graham
-# Cyclone DDS, as on the PC (tools/lyrical): with Lyrical's default Fast DDS,
+# Cyclone DDS, as on the PC (~/.bashrc): with Lyrical's default Fast DDS,
 # processes sometimes never saw each other's services (Nav2 unreachable).
 # Every machine must use the same one
 Environment=RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
