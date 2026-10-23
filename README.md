@@ -213,6 +213,17 @@ The magnetometer shares the IMU's I2C bus (SDA/SCL).
   topics work but `ros2 node list` and parameter calls don't. Any other
   machine that needs to talk ROS to the Beelink needs its own rule.
 
+  It also needs one for its own address,
+  `sudo ufw allow proto udp from 192.168.68.31`. Cyclone DDS (unlike Fast
+  DDS, which used shared memory) finds the nodes on the same machine by
+  multicast, which loops back with the Beelink's own address as the source.
+  Without the rule, the firewall dropped it: the Beelink's own nodes didn't
+  find each other (explore_lite couldn't reach Nav2, the launch couldn't
+  configure slam_toolbox), while everything to and from the car worked.
+  `sudo dmesg | grep "UFW BLOCK"` shows such drops. The simulator wasn't
+  affected: on `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST` it uses the loopback
+  interface, which ufw always allows.
+
 ## Nodes and topics
 
 | Executable | Runs on | What it does |
