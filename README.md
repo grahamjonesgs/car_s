@@ -818,6 +818,10 @@ for stuck, slipping and pushed. The measured movement is on
 `/motion_check/twist`, to plot against `/odom`. For now it only reports: it
 doesn't stop the car or change Nav2's plans.
 
+Checked on the real car on 2026-10-23 with the wheels off the ground: driving
+(0.01 m measured of 0.14 m commanded) and turning both showed `stuck`, and
+standing still `idle`. Not yet tried on the floor, or pushed.
+
 ```bash
 tools/lyrical ros2 topic echo /motion_check
 ```
