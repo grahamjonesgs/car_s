@@ -91,9 +91,10 @@ Still to look at:
   all four STEP pins, 1.0 rad/s gives 4158), ENABLE and the direction pins
   right, the crash stop disables the drivers 23 ms after a `kill -9`, IMU
   100 Hz, magnetometer 10 Hz, lidar 7.4 Hz. With the wheels off the ground
-  and the motors powered, forward, backward and both turns were right. Not
-  yet driven on the floor with Lyrical, nor mapped or navigated on the real
-  car. The code still
+  and the motors powered, forward, backward and both turns were right. On
+  2026-10-23 it drove on the floor (0.4 m forward and back, and turns),
+  which looked right. Not yet mapped or navigated on the real car with
+  Lyrical. The code still
   builds with Jazzy and libgpiod 1 (Ubuntu 24.04). Jazzy and Lyrical don't
   reliably talk to each other, so the Pi and the PC have to match.
 
@@ -822,7 +823,10 @@ Checked on the real car on 2026-10-23 with the wheels off the ground: driving
 (0.01 m measured of 0.14 m commanded) and turning both showed `stuck`, and
 standing still `idle`. Turning it by hand with the motors off showed
 `pushed` for each quarter-turn (27° and 44° measured), and `idle` between
-them. Not yet tried driving on the floor.
+them. Driving on the floor (forward and back 0.4 m, turns of about 85°)
+showed `ok` with the lidar and gyro agreeing with the odometry to about
+2 cm and 1°, and no false alarms. A state is reported about 2.5 s after it
+starts (1 s of movement, then the 1.5 s hold).
 
 ```bash
 tools/lyrical ros2 topic echo /motion_check
