@@ -188,8 +188,15 @@ The magnetometer shares the IMU's I2C bus (SDA/SCL).
 | Old PC, `Ubuntu-ROS` | 192.168.68.82 | A 4-core VM with the same setup. Now too slow for the Nav2 settings |
 
 - Both machines use ROS 2 Lyrical (the PC through
-  [tools/lyrical](tools/lyrical)) and the default RMW (Fast DDS), with
-  `ROS_DOMAIN_ID` unset (0). Keep the same ROS release on every machine.
+  [tools/lyrical](tools/lyrical)) and **Cyclone DDS**
+  (`RMW_IMPLEMENTATION=rmw_cyclonedds_cpp`, set in `tools/lyrical` and
+  `systemd/car_s.service`), with `ROS_DOMAIN_ID` unset (0). Keep the same ROS
+  release and RMW on every machine: a node on another RMW doesn't see the
+  car at all. With Lyrical's default, Fast DDS, a process sometimes never
+  saw another's services: explore_lite and the CLI couldn't reach Nav2
+  (2026-10-23, on the real car and in about half the simulator runs). Five
+  simulator explorations in a row then worked on Cyclone. A plain shell on
+  the Pi gets it from `~/.bashrc` (see [4. Workspace](#4-workspace)).
 - **Run the PC stack on one machine only.** Two EKFs or two SLAM nodes fight
   over the car's TF.
 - **SSH to the car:** `ssh graham@192.168.68.78` (key login from the
@@ -402,7 +409,11 @@ Add these to the end of `~/.bashrc`:
 ```bash
 source /opt/ros/lyrical/setup.bash
 source ~/ros_ws/install/setup.bash
+export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 ```
+
+Cyclone DDS (`sudo apt install ros-lyrical-rmw-cyclonedds-cpp`, also on the
+PC) is what every machine uses; see [Machines and network](#machines-and-network).
 
 ### Updating
 

@@ -20,6 +20,7 @@
   <depend>tf2_geometry_msgs</depend>
 
   <exec_depend>rclpy</exec_depend>
+  <exec_depend>rmw_cyclonedds_cpp</exec_depend>
   <exec_depend>sensor_msgs_py</exec_depend>
   <exec_depend>nav2_msgs</exec_depend>
   <exec_depend>python3-numpy</exec_depend>

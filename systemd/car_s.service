@@ -7,6 +7,10 @@ Wants=network-online.target
 User=graham
 Group=graham
 Environment=HOME=/home/graham
+# Cyclone DDS, as on the PC (tools/lyrical): with Lyrical's default Fast DDS,
+# processes sometimes never saw each other's services (Nav2 unreachable).
+# Every machine must use the same one
+Environment=RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 # DDS only uses network interfaces that exist at start-up, so wait for WiFi
 ExecStartPre=/bin/sh -c 'until ip -4 addr show wlan0 | grep -q inet; do sleep 1; done'
 # The Pi has no clock battery: give NTP up to 30 s to set the time, so the

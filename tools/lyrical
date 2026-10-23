@@ -13,6 +13,10 @@ if [ ! -f /opt/ros/lyrical/setup.bash ]; then
   exit 1
 fi
 source /opt/ros/lyrical/setup.bash
+# Cyclone DDS, as on the car (systemd/car_s.service): with Lyrical's default
+# Fast DDS, processes sometimes never saw each other's services (explore_lite
+# and the CLI couldn't reach Nav2). Every machine must use the same one
+export RMW_IMPLEMENTATION=${RMW_IMPLEMENTATION:-rmw_cyclonedds_cpp}
 [ -f ~/ros2_ws/install_lyrical/setup.bash ] && source ~/ros2_ws/install_lyrical/setup.bash
 if [ $# -eq 0 ]; then exec bash; fi
 exec "$@"
