@@ -1020,6 +1020,10 @@ Other tools:
   stopped finding each other (explore_lite waited for Nav2 for ever).
   `fastdds shm clean` (with ROS sourced) removes the unused ones;
   `tools/sim_test.sh` runs it at start.
+- **A long-running `ros2` daemon** for the simulator's domain, left by CLI
+  calls during many test runs, went with explore_lite failing to reach Nav2
+  more often. Stop it (`pgrep -af "ros-domain-id 42"`, then `kill`); it's
+  only a cache, and the next `ros2` command starts a new one.
 - **`.warn()` in rclpy nodes:** Lyrical removed it; use `.warning()`, which
   Jazzy has too. One logging call can't switch severity between calls
   either.
