@@ -1,5 +1,6 @@
 # Nav2 parameters for car_s, run on the PC by launch/pc_bringup.launch.py.
-# Copied from nav2_bringup's nav2_params.yaml (Jazzy 1.3.13) and changed for
+# Copied from nav2_bringup's nav2_params.yaml (Jazzy 1.3.13, then updated for
+# Nav2 1.5 on Lyrical) and changed for
 # this car: base_link as the base frame, /odometry/filtered from the EKF,
 # unstamped cmd_vel, speeds of 0.2 m/s and 1.0 rad/s, gentle acceleration,
 # the car's measured rectangular footprint, smaller inflation, a 2D obstacle layer, and longer
@@ -96,9 +97,7 @@ controller_server:
     goal_checker_plugins: ["general_goal_checker"] # "precise_goal_checker"
     controller_plugins: ["FollowPath"]
     use_realtime_priority: false
-    # Nav2 1.5 (Lyrical) prunes and transforms the path here, not in MPPI
-    # (whose prune_distance and transform_tolerance it ignores). Jazzy
-    # ignores this
+    # Nav2 1.5 prunes and transforms the path here, not in the controller
     path_handler_plugins: ["PathHandler"]
     PathHandler:
       plugin: "nav2_controller::FeasiblePathHandler"
@@ -147,20 +146,16 @@ controller_server:
       vy_max: 0.5
       wz_max: 1.0
       iteration_count: 1
-      prune_distance: 1.7
-      transform_tolerance: 0.3
       temperature: 0.3
       gamma: 0.015
-      motion_model: "DiffDrive"
-      # Nav2 1.5 (Lyrical) loads the motion model as a plugin, named by
-      # motion_model. Jazzy reads the name and ignores this
-      DiffDrive:
+      motion_model: "diff_drive"
+      diff_drive:
         plugin: "mppi::DiffDriveMotionModel"
-      # Nav2 1.4+ (Lyrical) checks MPPI's chosen trajectory before using it.
+      # MPPI checks its chosen trajectory before using it.
       # Its default, the centre point inside the inscribed radius of anything
       # within 2 s, rejected safe trajectories in tight spaces and the car
       # stalled ("Optimizer fail to compute path"). Check the real outline
-      # against obstacles, 1 s ahead, as CostCritic does. Jazzy ignores this
+      # against obstacles, 1 s ahead, as CostCritic does
       TrajectoryValidator:
         plugin: "mppi::DefaultOptimalTrajectoryValidator"
         collision_lookahead_time: 1.0
@@ -170,8 +165,6 @@ controller_server:
       TrajectoryVisualizer:
         trajectory_step: 5
         time_step: 3
-      AckermannConstraints:
-        min_turning_r: 0.2
       critics: [
         "ConstraintCritic", "CostCritic", "GoalCritic",
         "GoalAngleCritic", "PathAlignCritic", "PathFollowCritic",
@@ -532,7 +525,7 @@ collision_monitor:
       max_height: 2.0
       enabled: True
 
-# Nav2 1.5 (Lyrical) starts this with the navigation servers. Jazzy has none
+# Nav2 1.5 starts this with the navigation servers
 following_server:
   ros__parameters:
     enable_stamped_cmd_vel: false

@@ -110,19 +110,10 @@ def start_slam(context):
     )]
 
 
-def nav2_launch_has_manager(nav2_dir):
-    # Up to Nav2 1.3 (Jazzy) navigation_launch.py and localization_launch.py
-    # each start a lifecycle manager. From 1.5 (Lyrical) they don't: they
-    # list their nodes in get_lifecycle_nodes() and bringup_launch.py starts
-    # one manager for them all
-    path = os.path.join(nav2_dir, 'launch', 'navigation_launch.py')
-    with open(path) as f:
-        return 'def get_lifecycle_nodes' not in f.read()
-
-
 def start_lifecycle_manager(context, nav2_dir, nav2_on, map_yaml):
-    if nav2_launch_has_manager(nav2_dir):
-        return []
+    # Nav2 1.5's navigation_launch.py and localization_launch.py don't start
+    # a lifecycle manager: they list their nodes in get_lifecycle_nodes(),
+    # and bringup_launch.py starts one manager for them all, as this does
     nodes = []
     if map_yaml.perform(context) != '':
         nodes += ['map_server', 'amcl']

@@ -6,19 +6,15 @@
         "limitSymbolsToIncludedHeaders": false
       },
       "includePath": [
-        "/home/graham/ros2_ws/install/turtlesim/include/**",
-        "/opt/ros/jazzy/include/**",
-        "/home/graham/ros2_ws/cpp_pubsub/include/**",
-        "/home/graham/ros2_ws/src/car_s/include/**",
-        "/home/graham/ros2_ws/src/my_package/include/**",
-        "/home/graham/ros2_ws/src/ros_tutorials/turtlesim/include/**",
+        "/opt/ros/lyrical/include/**",
+        "/home/graham/ros2_ws/src/car_s/src/**",
         "/usr/include/**"
       ],
       "name": "ROS",
       "intelliSenseMode": "gcc-x64",
       "compilerPath": "/usr/bin/gcc",
       "cStandard": "gnu11",
-      "cppStandard": "c++14"
+      "cppStandard": "c++17"
     }
   ],
   "version": 4

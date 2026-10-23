@@ -11,13 +11,8 @@ done
 # ENABLE (GPIO 14) high = drivers off: drive it high, then leave it as an
 # input. The driver board's pull-up keeps it high from then on, whatever
 # the pin was last set to
-if gpioset --version 2>/dev/null | grep -q " v1"; then
-  gpioset gpiochip0 14=1 2>/dev/null
-  gpioget gpiochip0 14 >/dev/null 2>&1
-else
-  # libgpiod 2 (Ubuntu 26.04): gpioset holds the pin until it exits; -t0
-  # makes it exit at once. gpioget makes the pin an input
-  gpioset -c gpiochip0 -t0 14=1 2>/dev/null
-  gpioget -c gpiochip0 14 >/dev/null 2>&1
-fi
+# (gpioset holds the pin until it exits; -t0 makes it exit at once, and
+# gpioget makes the pin an input)
+gpioset -c gpiochip0 -t0 14=1 2>/dev/null
+gpioget -c gpiochip0 14 >/dev/null 2>&1
 exit 0

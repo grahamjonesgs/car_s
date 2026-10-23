@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(car_s)
 
-# C++17: required by Lyrical's rclcpp, and fine for Jazzy
+# C++17: required by Lyrical's rclcpp
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
 endif()
@@ -35,7 +35,7 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME})
 
 # Hardware nodes for the Pi, through the kernel's drivers. The controller
-# needs libgpiod (sudo apt install libgpiod-dev); the IMU and magnetometer
+# needs libgpiod 2 (sudo apt install libgpiod-dev); the IMU and magnetometer
 # only need the kernel's i2c-dev headers
 find_library(GPIOD_LIB gpiod)
 find_path(GPIOD_INCLUDE_DIR gpiod.h)
@@ -43,14 +43,6 @@ if(GPIOD_LIB AND GPIOD_INCLUDE_DIR)
   add_executable(car_s_controller_accel src/pi_car_s_controller_accel.cpp src/car_gpio.cpp)
   target_include_directories(car_s_controller_accel PRIVATE ${GPIOD_INCLUDE_DIR})
   target_link_libraries(car_s_controller_accel ${GPIOD_LIB})
-  # libgpiod 2 (Ubuntu 26.04) has a different API from 1 (Ubuntu 24.04)
-  include(CheckSymbolExists)
-  set(CMAKE_REQUIRED_INCLUDES ${GPIOD_INCLUDE_DIR})
-  set(CMAKE_REQUIRED_LIBRARIES ${GPIOD_LIB})
-  check_symbol_exists(gpiod_chip_request_lines "gpiod.h" CAR_GPIOD_V2)
-  if(CAR_GPIOD_V2)
-    target_compile_definitions(car_s_controller_accel PRIVATE CAR_GPIOD_V2)
-  endif()
   target_link_libraries(car_s_controller_accel rclcpp::rclcpp ${nav_msgs_TARGETS}
     ${std_msgs_TARGETS} ${geometry_msgs_TARGETS} tf2::tf2 tf2_ros::tf2_ros
     tf2_geometry_msgs::tf2_geometry_msgs)

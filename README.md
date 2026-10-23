@@ -1,6 +1,6 @@
 # car_s
 
-ROS 2 (Lyrical, or Jazzy) software for a Raspberry Pi 4 robot car with four stepper motors,
+ROS 2 Lyrical software for a Raspberry Pi 4 robot car with four stepper motors,
 an RPLIDAR A1, an MPU6050 IMU (accelerometer + gyro) and a QMC5883L magnetometer.
 
 The Pi runs the hardware nodes. A PC on the same network does the heavy work:
@@ -94,9 +94,8 @@ Still to look at:
   and the motors powered, forward, backward and both turns were right. On
   2026-10-23 it drove on the floor (0.4 m forward and back, and turns),
   which looked right. Not yet mapped or navigated on the real car with
-  Lyrical. The code still
-  builds with Jazzy and libgpiod 1 (Ubuntu 24.04). Jazzy and Lyrical don't
-  reliably talk to each other, so the Pi and the PC have to match.
+  Lyrical. The code is Lyrical only since 2026-10-23 (it was built for Jazzy
+  and libgpiod 1 before).
 
 ## Hardware
 
@@ -130,7 +129,7 @@ Everything goes through the kernel's own drivers; there's no daemon:
 service before it starts, loads the overlay fresh at run time (no
 `config.txt` change), exports both PWM channels and gives their files to the
 car's user. `/dev/gpiochip0` belongs to the `dialout` group, and `/dev/i2c-1`
-to `i2c` on Ubuntu 26.04 (`dialout` on 24.04).
+to `i2c`.
 
 The kernel can't report 10,000 edges a second to a program, so odometry is
 worked out from the step rate actually set, multiplied by time: hardware PWM
@@ -339,8 +338,7 @@ The localisation is built around that:
 
 ### 1. Operating system
 
-Install Ubuntu 26.04 for Raspberry Pi (24.04 works too, with ROS 2 Jazzy),
-then set these in `/boot/firmware/config.txt` and reboot:
+Install Ubuntu 26.04 for Raspberry Pi, then set these in `/boot/firmware/config.txt` and reboot:
 
 ```
 dtparam=audio=off
@@ -358,7 +356,7 @@ off because its TX pin, GPIO 14, is the stepper drivers' ENABLE. Ubuntu
 
 Add your user to the `dialout` and `i2c` groups, for the lidar's serial
 port, the GPIO and the I²C bus without `sudo` (log out and back in
-afterwards; on Ubuntu 24.04 `dialout` covers I²C too):
+afterwards):
 
 ```bash
 sudo usermod -aG dialout,i2c $USER
@@ -368,19 +366,19 @@ sudo usermod -aG dialout,i2c $USER
 
 Follow the [ROS 2 Lyrical Ubuntu install guide](https://docs.ros.org/en/lyrical/Installation/Ubuntu-Install-Debs.html),
 installing `ros-lyrical-ros-base` (no desktop is needed on the Pi), then the
-build tools. (On Ubuntu 24.04, use Jazzy: `jazzy` in place of `lyrical`
-throughout.)
+build tools and Cyclone DDS:
 
 ```bash
-sudo apt install build-essential python3-colcon-common-extensions python3-rosdep
+sudo apt install build-essential python3-colcon-common-extensions python3-rosdep \
+  ros-lyrical-rmw-cyclonedds-cpp
 sudo rosdep init
 rosdep update
 ```
 
 ### 3. GPIO, PWM and I²C tools
 
-The controller needs libgpiod (version 1 on Ubuntu 24.04, 2 on 26.04: it
-builds against either), and the PWM set-up compiles a device-tree overlay:
+The controller needs libgpiod 2 (Ubuntu 26.04's), and the PWM set-up
+compiles a device-tree overlay:
 
 ```bash
 sudo apt install libgpiod-dev gpiod device-tree-compiler i2c-tools
@@ -535,20 +533,20 @@ and check that `ros2 topic list` shows the car's topics while it runs.
 
 ### Nav2 1.5
 
-Nav2 1.5 (Lyrical) changed a few things from Jazzy's 1.3, which the launch
-file and `config/nav2.yaml` handle (they still work with Jazzy too):
+Nav2 1.5 (Lyrical) changed a few things from Jazzy's 1.3, which the car's
+config was first made for. The launch file and `config/nav2.yaml` now follow
+1.5:
 
-- Its `navigation_launch.py` no longer starts a lifecycle manager, so
-  `pc_bringup.launch.py` starts one (`lifecycle_manager_nav2`) when it
-  doesn't.
-- MPPI's motion model is a plugin (`DiffDrive.plugin`), and path pruning
-  moved to the controller server (`PathHandler`). Jazzy ignores both.
-- `bt_navigator` refuses the old `error_code_names`, so it's left at each
-  version's default, and the new `following_server` needs unstamped
-  `cmd_vel` like the other servers.
+- Its `navigation_launch.py` doesn't start a lifecycle manager, so
+  `pc_bringup.launch.py` starts one (`lifecycle_manager_nav2`).
+- MPPI's motion model is a plugin (`diff_drive.plugin`), and path pruning
+  moved to the controller server (`PathHandler`).
+- `bt_navigator` refuses the old `error_code_names`, so it's left at its
+  default, and the new `following_server` needs unstamped `cmd_vel` like the
+  other servers.
 - Lyrical's MPPI got stuck with `vx_std: 0.1`. With Nav2's 0.2, and the goal
-  heading only counted within the 0.25 m goal tolerance, both versions
-  reach all the test goals in the simulator. Lyrical was still sometimes
+  heading only counted within the 0.25 m goal tolerance, it reaches all the
+  test goals in the simulator. Lyrical was still sometimes
   slow to finish beside a goal, where only the spin recovery got it out.
 - Lyrical's MPPI checks its chosen trajectory before using it, by default
   rejecting it if the car's centre comes within the inscribed radius of
@@ -557,8 +555,8 @@ file and `config/nav2.yaml` handle (they still work with Jazzy too):
   too. It now checks the real footprint, 1 s ahead (`TrajectoryValidator`).
 - The local costmap's inflation is now 0.30 m with a cost scaling of 5.0
   (was 0.40 m and 3.0): with the wider one, a narrow but passable gap cost
-  so much that MPPI chose to stand still. Both versions pass the simulator
-  goal and bump tests with it.
+  so much that MPPI chose to stand still. It passes the simulator goal and
+  bump tests with it.
 
 ## Running the car
 
@@ -974,7 +972,7 @@ Other tools:
 | Motors don't move, and `journalctl -u car_s` says "Ignoring cmd_vel, motors are off" | Send `motor_on` true (`m` in `key_cmd`). In auto mode, hold the key down |
 | No `/scan`, and the lidar node logs "cannot bind to the specified serial port" | The lidar isn't on USB. Check `lsusb` for the CP210x and `ls /dev/ttyUSB*`, then the cable (one failed). Then `sudo systemctl restart car_s` |
 | No `/scan`, the lidar spins, and `rplidar_composition` uses 100% CPU | The driver has wedged, and service calls to it hang. It used to happen when `/start_motor` was called while it was already running; the patch stops that. Restart `car_s` |
-| `car_imu` or `car_mag`: "Can't open /dev/i2c-1" or "No MPU6050/QMC5883L answering" | Check that `dtparam=i2c_arm=on` is set, the user is in `i2c` (`dialout` on Ubuntu 24.04), and the wiring: `i2cdetect -y 1` should show `68` and `0d` |
+| `car_imu` or `car_mag`: "Can't open /dev/i2c-1" or "No MPU6050/QMC5883L answering" | Check that `dtparam=i2c_arm=on` is set, the user is in `i2c`, and the wiring: `i2cdetect -y 1` should show `68` and `0d` |
 | The PC can't see the car's topics, or sees topics but not nodes or parameters | Same network and `ROS_DOMAIN_ID` on both, and the Beelink's firewall rule for the car (see [Machines and network](#machines-and-network)) |
 | "Lookup would require extrapolation into the future" over and over | The clocks disagree: check `timedatectl` on both machines |
 | RViz shows no lidar points with the fixed frame `map` | There's no `map` frame yet: with AMCL, set **2D Pose Estimate** |
@@ -999,9 +997,8 @@ Other tools:
   calls during many test runs, went with explore_lite failing to reach Nav2
   more often. Stop it (`pgrep -af "ros-domain-id 42"`, then `kill`); it's
   only a cache, and the next `ros2` command starts a new one.
-- **`.warn()` in rclpy nodes:** Lyrical removed it; use `.warning()`, which
-  Jazzy has too. One logging call can't switch severity between calls
-  either.
+- **`.warn()` in rclpy nodes:** Lyrical removed it; use `.warning()`. One
+  logging call can't switch severity between calls either.
 - **Leftover processes.** A simulator `robot_state_publisher` left over from
   an interrupted run kept publishing an old URDF's TF on domain 42 a day
   later. Find leftovers with `pgrep -af robot_state_publisher`, and check

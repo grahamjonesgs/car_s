@@ -104,8 +104,7 @@ void CarGpio::accumulate(Channel &c) {
   c.steps += (c.forwards ? 1.0 : -1.0) * c.rate * dt;
 }
 
-#ifdef CAR_GPIOD_V2
-// libgpiod 2: one request for all the output pins
+// libgpiod: one request for all the output pins
 
 void CarGpio::open_outputs() {
   chip_ = gpiod_chip_open("/dev/gpiochip0");
@@ -164,51 +163,6 @@ void CarGpio::close_outputs() {
   }
 }
 
-#else
-// libgpiod 1: one request per pin
-
-void CarGpio::open_outputs() {
-  chip_ = gpiod_chip_open_by_name("gpiochip0");
-  if (!chip_) {
-    throw std::runtime_error("can't open /dev/gpiochip0: is the user in dialout?");
-  }
-  // ENABLE first and high, so the drivers stay off while the rest is set up
-  std::vector<int> order = {pins_.enable};
-  for (int i = 0; i < pins_.n_outputs; ++i) {
-    if (pins_.outputs[i] != pins_.enable) {
-      order.push_back(pins_.outputs[i]);
-    }
-  }
-  for (int gpio : order) {
-    gpiod_line *line = gpiod_chip_get_line(chip_, gpio);
-    if (!line || gpiod_line_request_output(line, CONSUMER, gpio == pins_.enable) < 0) {
-      throw std::runtime_error("can't use GPIO " + std::to_string(gpio) +
-                               " as an output (is another program using it?)");
-    }
-    lines_.push_back({gpio, line});
-  }
-}
-
-bool CarGpio::set_output(int gpio, bool high) {
-  for (auto &l : lines_) {
-    if (l.first == gpio) {
-      return gpiod_line_set_value(l.second, high ? 1 : 0) == 0;
-    }
-  }
-  return false;
-}
-
-void CarGpio::close_outputs() {
-  for (auto &l : lines_) {
-    gpiod_line_release(l.second);
-  }
-  lines_.clear();
-  if (chip_) {
-    gpiod_chip_close(chip_);
-    chip_ = nullptr;
-  }
-}
-#endif
 
 int CarGpio::open_attr(const std::string &path) {
   int fd = open(path.c_str(), O_WRONLY);

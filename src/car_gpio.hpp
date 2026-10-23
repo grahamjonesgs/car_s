@@ -6,9 +6,7 @@
 // wheels) and channel 1 on GPIO 13 and 19 (the left), and
 // tools/car_pwm_setup.sh (run as root by the car_s service) loads it,
 // exports both channels and hands their files to the car's user. The other
-// pins are outputs through libgpiod (/dev/gpiochip0), version 1 (Ubuntu
-// 24.04) or 2 (Ubuntu 26.04), whichever it's built against (CAR_GPIOD_V2 is
-// set by CMakeLists.txt).
+// pins are outputs through libgpiod 2 (/dev/gpiochip0), in one line request.
 //
 // The kernel can't report 10,000 edges a second to a program, so the steps
 // are worked out from the rate set: hardware PWM produces it exactly, so
@@ -17,8 +15,6 @@
 
 #include <chrono>
 #include <string>
-#include <utility>
-#include <vector>
 
 #include <gpiod.h>
 #include <rclcpp/rclcpp.hpp>
@@ -77,10 +73,6 @@ private:
   CarPins pins_;
   rclcpp::Logger logger_;
   gpiod_chip *chip_ = nullptr;
-#ifdef CAR_GPIOD_V2
   gpiod_line_request *request_ = nullptr;
-#else
-  std::vector<std::pair<int, gpiod_line *>> lines_;
-#endif
   Channel ch_[2];
 };
