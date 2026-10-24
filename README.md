@@ -800,7 +800,11 @@ result on `/motion_check`:
 | `pushed` | Moving without a command |
 | `unknown` | The scans can't tell, e.g. a featureless corridor |
 
-A state is only reported once it has lasted 1.5 s. Changes are logged in the
+A state is only reported once it has lasted 1.5 s, so one bad scan match
+can't trigger it: about 2.5 s after it starts (1 s of movement, then the
+hold). Stuck while driving, the clearest case, is also checked over the
+last 0.5 s, when the wheels commanded at least 5 cm in it, and reported after
+0.5 s: about 1 s after the car hits something. Changes are logged in the
 launch terminal ("Motion: stuck (moved 0.00 m of 0.15 m ...)"), as warnings
 for stuck, slipping and pushed. The measured movement is on
 `/motion_check/twist`, to plot against `/odom`.
@@ -811,8 +815,8 @@ standing still `idle`. Turning it by hand with the motors off showed
 `pushed` for each quarter-turn (27° and 44° measured), and `idle` between
 them. Driving on the floor (forward and back 0.4 m, turns of about 85°)
 showed `ok` with the lidar and gyro agreeing with the odometry to about
-2 cm and 1°, and no false alarms. A state is reported about 2.5 s after it
-starts (1 s of movement, then the 1.5 s hold).
+2 cm and 1°, and no false alarms (before the quicker stuck check, which
+still needs a floor test).
 
 ```bash
 ros2 topic echo /motion_check
@@ -850,7 +854,7 @@ ramp):
 ros2 service call /motion_check/clear_bumps std_srvs/srv/Empty
 ```
 
-A mark is only made after about 2.5 s of pushing, and it is a row at the
+A mark is made after about 1 s of pushing, and it is a row at the
 car's edge, not the obstacle's shape. Stuck while turning on the spot
 marks nothing, as which corner caught is unknown.
 

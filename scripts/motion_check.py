@@ -22,7 +22,9 @@ and publishes on /motion_check (std_msgs/String):
             scans yet
 
 A state is only reported once it has lasted hold_s, so one bad match can't
-trigger it. Changes are logged too (a warning for stuck, slipping and
+trigger it. Stuck, the clearest case, is also checked over a shorter window
+(stuck_window_s, held for stuck_hold_s), so it is reported in about a second
+instead of window_s + hold_s. Changes are logged too (a warning for stuck, slipping and
 pushed). The measured motion is published on /motion_check/twist
 (geometry_msgs/TwistStamped, in base_link) for plotting against /odom.
 
@@ -151,6 +153,11 @@ class MotionCheck(Node):
         super().__init__('motion_check')
         self.window = self.declare_parameter('window_s', 1.0).value
         self.hold = self.declare_parameter('hold_s', 1.5).value
+        # The quick stuck check: over this window, only when the wheels
+        # commanded at least stuck_min_distance in it
+        self.stuck_window = self.declare_parameter('stuck_window_s', 0.5).value
+        self.stuck_hold = self.declare_parameter('stuck_hold_s', 0.5).value
+        self.stuck_min_dist = self.declare_parameter('stuck_min_distance', 0.05).value
         # Below these, per window, the car isn't commanded to move
         self.min_dist = self.declare_parameter('min_distance', 0.04).value
         self.min_turn = self.declare_parameter('min_turn', 0.25).value
@@ -197,6 +204,7 @@ class MotionCheck(Node):
         self.state = 'unknown'
         self.candidate = None
         self.since = None
+        self.candidate_window = None  # window of the check that started it
         self.detail = ''
         self.state_pub = self.create_publisher(String, '/motion_check', 10)
         self.twist_pub = self.create_publisher(TwistStamped, '/motion_check/twist', 10)
@@ -278,15 +286,17 @@ class MotionCheck(Node):
         history.append((now, tr.transform.translation.x, tr.transform.translation.y, yaw))
         self.trim(history, now)
 
-    def check(self, t):
-        self.record_pose(self.map_frame, self.map_poses)
-        old = at_time(self.scans, t - self.window)
+    def measure(self, t, window):
+        """Wheel and real movement over about window seconds up to t:
+        (span, cmd, cmd_dist, turn, meas_dist), meas_dist None if the scans
+        can't tell, or None if the data isn't there yet"""
+        old = at_time(self.scans, t - window)
         o0, o1 = at_time(self.odom, old[0]), at_time(self.odom, t)
         g0, g1 = at_time(self.gyro, old[0]), at_time(self.gyro, t)
         span = t - old[0]
-        if (span < 0.5 * self.window or None in (o0, o1, g0, g1)
+        if (span < 0.5 * window or None in (o0, o1, g0, g1)
                 or abs(o1[0] - t) > 0.2 or abs(g1[0] - t) > 0.2):
-            return self.update('unknown', 'waiting for odometry, gyro and scans')
+            return None
 
         # What the wheels did, in the old base_link
         c, s = math.cos(o0[3]), math.sin(o0[3])
@@ -305,15 +315,34 @@ class MotionCheck(Node):
                 best = res
         meas_dist = None
         if best and best[1] < MAX_RMS and best[3] > MIN_CONSTRAINT:
-            (mx, my, myaw), rms = best[0], best[1]
-            meas_dist = math.hypot(mx, my)
-            tw = TwistStamped()
-            tw.header.stamp = rclpy.time.Time(seconds=t).to_msg()
-            tw.header.frame_id = 'base_link'
-            tw.twist.linear.x, tw.twist.linear.y = mx / span, my / span
-            tw.twist.angular.z = myaw / span
-            self.twist_pub.publish(tw)
+            meas_dist = math.hypot(best[0][0], best[0][1])
+            if window == self.window:
+                (mx, my, myaw) = best[0]
+                tw = TwistStamped()
+                tw.header.stamp = rclpy.time.Time(seconds=t).to_msg()
+                tw.header.frame_id = 'base_link'
+                tw.twist.linear.x, tw.twist.linear.y = mx / span, my / span
+                tw.twist.angular.z = myaw / span
+                self.twist_pub.publish(tw)
+        return span, cmd, cmd_dist, turn, meas_dist
 
+    def check(self, t):
+        self.record_pose(self.map_frame, self.map_poses)
+
+        # The quick stuck check first: driven a clear distance, hardly moved
+        quick = self.measure(t, self.stuck_window)
+        if quick is not None:
+            span, cmd, cmd_dist, turn, meas_dist = quick
+            if (cmd_dist > self.stuck_min_dist and meas_dist is not None
+                    and meas_dist / cmd_dist < self.stuck_ratio):
+                self.cmd_sign = math.copysign(1.0, cmd[0])
+                return self.update('stuck', f'moved {meas_dist:.2f} m of {cmd_dist:.2f} m '
+                                            f'in {span:.1f} s', self.stuck_hold, self.stuck_window)
+
+        slow = self.measure(t, self.window)
+        if slow is None:
+            return self.update('unknown', 'waiting for odometry, gyro and scans')
+        span, cmd, cmd_dist, turn, meas_dist = slow
         moving = cmd_dist > self.min_dist
         self.cmd_sign = math.copysign(1.0, cmd[0]) if moving else 0.0
         turning = abs(cmd[2]) > self.min_turn
@@ -341,8 +370,11 @@ class MotionCheck(Node):
             return self.update('unknown', 'the scans can\'t measure the movement here')
         return self.update('idle', '')
 
-    def update(self, label, detail):
+    def update(self, label, detail, hold=None, window=None):
+        """Report label once it has lasted hold (default hold_s). window is
+        the window of the check that gave it (default window_s)"""
         now = self.get_clock().now().nanoseconds * 1e-9
+        hold = self.hold if hold is None else hold
         if self.pin is not None:
             # Hold it only while the wheels still drive into the obstacle and
             # the car isn't turning: the stuck verdict covers the last window,
@@ -354,8 +386,9 @@ class MotionCheck(Node):
                 self.pin = None
         if label != self.candidate:
             self.candidate, self.since = label, now
+            self.candidate_window = self.window if window is None else window
         self.detail = detail
-        if label != self.state and now - self.since >= self.hold:
+        if label != self.state and now - self.since >= hold:
             self.state = label
             text = f'Motion: {label}' + (f' ({detail})' if detail else '')
             # rclpy wants one severity per logging call site
@@ -374,7 +407,7 @@ class MotionCheck(Node):
             return
         # Where it was when it stopped moving: the start of the first window
         # that showed it stuck
-        pose = at_time(self.map_poses, self.since - self.window)
+        pose = at_time(self.map_poses, self.since - self.candidate_window)
         if pose is None:
             self.get_logger().warning(f'No {self.map_frame} -> base_link pose to mark the bump')
             return
