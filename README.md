@@ -115,6 +115,9 @@ side share one PWM channel: left on PWM1 (GPIO 13 and 19), right on PWM0
 (GPIO 18 and 12). For that reason onboard audio must be disabled (it uses the
 same PWM hardware), and nothing else may use GPIO 12, 13, 18 or 19.
 
+Planned upgrades (sensors, drivers, parts list with South African prices) are
+in [docs/hardware-upgrade-options.md](docs/hardware-upgrade-options.md).
+
 ### How the Pi drives the hardware
 
 Everything goes through the kernel's own drivers; there's no daemon:
