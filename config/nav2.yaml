@@ -282,10 +282,12 @@ local_costmap:
           obstacle_min_range: 0.0
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        # The controller (MPPI) steers by this costmap. A wider, slower-fading
-        # margin than the global costmap's keeps the car further from chair
-        # legs as it passes. Inflation only adds cost; what counts as a
-        # collision is the footprint touching an obstacle cell
+        # The controller (MPPI) steers by this costmap. A margin a little
+        # wider than the global costmap's 0.25 m keeps the car off chair legs
+        # as it passes, and the same steep fade (5.0) keeps a narrow but
+        # passable gap cheap enough to drive through, which 0.40 m and 3.0
+        # weren't. Inflation only adds cost; what counts as a collision is the
+        # footprint touching an obstacle cell
         cost_scaling_factor: 5.0
         inflation_radius: 0.30
       # 2D lidar only, so a plain obstacle layer rather than voxels

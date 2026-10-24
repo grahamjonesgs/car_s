@@ -6,7 +6,7 @@ fixes that aren't upstream. Apply a patch after cloning with
 
 | Patch | Package | Built on | Base commit | Fixes |
 |---|---|---|---|---|
-| [rplidar_ros.patch](rplidar_ros.patch) | [Slamtec/rplidar_ros](https://github.com/Slamtec/rplidar_ros), branch `ros2` (`~/ros_ws/src/rplidar_ros`) | Pi | `24cc9b6` (2.1.4 and later fixes, SDK 2.1) | `/start_motor` while the lidar is already running restarts the scan mid-stream, which wedged the driver. Now ignored. Also builds with ROS 2 Lyrical (no `ament_target_dependencies`, C++17). (Until 2026-10-22 the car used the [allenh1/rplidar_ros](https://github.com/allenh1/rplidar_ros) fork, 2.1.0, with the same fix) |
+| [rplidar_ros.patch](rplidar_ros.patch) | [Slamtec/rplidar_ros](https://github.com/Slamtec/rplidar_ros), branch `ros2` (`~/ros_ws/src/rplidar_ros`) | Pi | `24cc9b6` (2.1.4 and later fixes, SDK 2.1) | `/start_motor` while the lidar is already running restarts the scan mid-stream, which wedged the driver. Now ignored while scans are arriving; if none has arrived for 5 s, `/start_motor` stops and restarts the scan, so a dead stream can be recovered. Also builds with ROS 2 Lyrical (no `ament_target_dependencies`, C++17). (Until 2026-10-22 the car used the [allenh1/rplidar_ros](https://github.com/allenh1/rplidar_ros) fork, 2.1.0, with the same fix) |
 | [m-explore-ros2.patch](m-explore-ros2.patch) | [robo-friends/m-explore-ros2](https://github.com/robo-friends/m-explore-ros2) (`~/ros2_ws/src/m-explore-ros2`) | Beelink | `326cf8a` | See below |
 
 The `explore_lite` changes:

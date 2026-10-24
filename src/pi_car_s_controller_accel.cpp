@@ -34,6 +34,7 @@
 #include "tf2/LinearMath/Quaternion.hpp"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "tf2_ros/transform_broadcaster.hpp"
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cmath>
@@ -113,6 +114,8 @@ const std::string TOPIC_STEPS = "motor_steps";
 const std::string TOPIC_FREQ = "motor_max_freq";
 const std::string TOPIC_MODE = "motor_mode";
 const std::string TOPIC_ACCEL = "motor_accel";
+// The drivers' real enable state, latched for late joiners such as key_cmd
+const std::string TOPIC_MOTOR_STATE = "/motor_state";
 
 // PiCarController class
 // This class controls the Pi Car through the kernel's GPIO and PWM drivers
@@ -128,7 +131,8 @@ public:
         current_right_velocity_(0.0), acceleration_rate_(1.0),
         sub_steps_(SUB_STEPS), target_angle_(0.0), current_angle_(0.0),
         angle_delta_(ANGLE_DELTA), turn_started_(false),
-        pending_left_m_(0.0), pending_right_m_(0.0), timeout_stop_(false) {
+        pending_left_m_(0.0), pending_right_m_(0.0), timeout_stop_(false),
+        drivers_on_(false), steady_clock_(RCL_STEADY_TIME) {
     RCLCPP_INFO(
         this->get_logger(),
         "Started Pi Car Stepper Controller with Acceleration (C++ Class)");
@@ -145,16 +149,16 @@ public:
         this->declare_parameter("cmd_vel_timeout", DEFAULT_CMD_VEL_TIMEOUT);
     max_wheel_speed_ =
         this->declare_parameter("max_wheel_speed", DEFAULT_MAX_WHEEL_SPEED);
-    if (!positive(wheel_separation_) || !positive(m_per_revolution_) ||
-        !positive(cmd_vel_timeout_) || !positive(max_wheel_speed_)) {
-      RCLCPP_ERROR(this->get_logger(),
-                   "wheel_separation, m_per_revolution, cmd_vel_timeout and "
-                   "max_wheel_speed must be positive, using defaults");
-      wheel_separation_ = DEFAULT_WHEEL_SEPARATION;
-      m_per_revolution_ = DEFAULT_M_PER_REVOLUTION;
-      cmd_vel_timeout_ = DEFAULT_CMD_VEL_TIMEOUT;
-      max_wheel_speed_ = DEFAULT_MAX_WHEEL_SPEED;
-    }
+    // Replace only an invalid one with its default, and set the parameter
+    // to match, so ros2 param get shows the value in use
+    use_default_if_invalid("wheel_separation", wheel_separation_,
+                           DEFAULT_WHEEL_SEPARATION);
+    use_default_if_invalid("m_per_revolution", m_per_revolution_,
+                           DEFAULT_M_PER_REVOLUTION);
+    use_default_if_invalid("cmd_vel_timeout", cmd_vel_timeout_,
+                           DEFAULT_CMD_VEL_TIMEOUT);
+    use_default_if_invalid("max_wheel_speed", max_wheel_speed_,
+                           DEFAULT_MAX_WHEEL_SPEED);
     param_callback_handle_ = this->add_on_set_parameters_callback(
         std::bind(&PiCarController::parameters_callback, this,
                   std::placeholders::_1));
@@ -207,6 +211,8 @@ public:
     right_speed_pub_ =
         this->create_publisher<std_msgs::msg::Float32>(TOPIC_RIGHT_SPEED, 2);
     angle_pub_ = this->create_publisher<std_msgs::msg::Float32>(TOPIC_ANGLE, 2);
+    motor_state_pub_ = this->create_publisher<std_msgs::msg::Bool>(
+        TOPIC_MOTOR_STATE, rclcpp::QoS(1).reliable().transient_local());
 
     // TF broadcaster
     odom_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
@@ -224,9 +230,10 @@ public:
         std::bind(&PiCarController::led_timer_callback, this));
 
     // Set initial values
-    gpio_->write(ENABLE_PIN, true); // Disable drive initially
+    set_drivers(false); // Disable drive initially
+    publish_motor_state();
     set_substep(sub_steps_);
-    last_control_time_ = this->now();
+    last_control_time_ = steady_clock_.now();
     last_cmd_vel_time_ = this->now();
     last_odom_time_ = this->now();
   }
@@ -254,6 +261,7 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr left_speed_pub_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr right_speed_pub_;
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr angle_pub_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr motor_state_pub_;
   std::shared_ptr<tf2_ros::TransformBroadcaster> odom_broadcaster_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_velocity_;
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr sub_motor_;
@@ -297,12 +305,47 @@ private:
   // Stopping because cmd_vel stopped arriving: decelerate at least
   // MIN_STOP_DECEL
   bool timeout_stop_;
+  // What ENABLE is set to, as published on motor_state
+  bool drivers_on_;
+  // For the ramp's time step, which must not jump when the system clock is
+  // set (the Pi has no RTC)
+  rclcpp::Clock steady_clock_;
 
   static bool positive(double v) { return std::isfinite(v) && v > 0.0; }
 
+  // At start-up, replace an invalid parameter with its default
+  void use_default_if_invalid(const std::string &name, double &value,
+                              double default_value) {
+    if (positive(value)) {
+      return;
+    }
+    RCLCPP_ERROR(this->get_logger(), "%s %f must be positive, using %.4f",
+                 name.c_str(), value, default_value);
+    value = default_value;
+    this->set_parameter(rclcpp::Parameter(name, default_value));
+  }
+
+  // Enable or disable the drivers, and publish motor_state if that changes
+  void set_drivers(bool on) {
+    gpio_->write(ENABLE_PIN, !on); // ENABLE high = drive disabled
+    if (on != drivers_on_) {
+      drivers_on_ = on;
+      publish_motor_state();
+    }
+  }
+
+  void publish_motor_state() {
+    if (!motor_state_pub_) {
+      return;
+    }
+    std_msgs::msg::Bool msg;
+    msg.data = drivers_on_;
+    motor_state_pub_->publish(msg);
+  }
+
   // Disable the drivers and stop all step pulses
   void stop_step_pulses() {
-    gpio_->write(ENABLE_PIN, true); // Disable drive
+    set_drivers(false); // Disable drive
     gpio_->set_step_rate(Side::LEFT, 0, true);
     gpio_->set_step_rate(Side::RIGHT, 0, true);
   }
@@ -402,9 +445,6 @@ private:
       float rate = timeout_stop_ ? std::max(acceleration_rate_,
                                             static_cast<float>(MIN_STOP_DECEL))
                                  : acceleration_rate_;
-      // Don't jump if the loop was held up
-      time_diff = std::min(time_diff, 0.05);
-
       if (current_velocity != target_velocity) {
         if (target_velocity > current_velocity) {
           current_velocity += rate * time_diff;
@@ -460,9 +500,13 @@ private:
   // speed is in m/s and turn_rate in rad/s, positive turns anticlockwise
   // (REP-103), using differential drive kinematics
   void motor_set_target(float speed, float turn_rate) {
-    if (speed != 0.0 && motor_mode_ == MotorMode::TURN_360) {
-      target_angle_ = current_angle_;
-      turn_started_ = false;
+    // In turn-360 mode, a command that starts the car from a stop (a spin on
+    // the spot or an arc) starts a new turn from the heading now
+    if (motor_mode_ == MotorMode::TURN_360 &&
+        (speed != 0.0 || turn_rate != 0.0) &&
+        last_left_target_velocity_ == 0.0 &&
+        last_right_target_velocity_ == 0.0) {
+      start_turn();
     }
 
     float wheel_offset = turn_rate * wheel_separation_ / 2.0;
@@ -482,12 +526,22 @@ private:
     last_right_target_velocity_ = right;
   }
 
+  // Measure a turn-360 turn from the heading now
+  void start_turn() {
+    target_angle_ = current_angle_;
+    turn_started_ = false;
+  }
+
   // Control loop to set the motor PWM based on the target velocities
   // It applies acceleration to the target velocities and sets the PWM
   // accordingly
   void control_loop() {
     rclcpp::Time current_time = this->now();
-    double time_diff = (current_time - last_control_time_).seconds();
+    // Steady clock, so a system clock step can't jump or reverse the ramp,
+    // and capped, so it doesn't jump if the loop was held up
+    rclcpp::Time steady_time = steady_clock_.now();
+    double time_diff =
+        std::clamp((steady_time - last_control_time_).seconds(), 0.0, 0.05);
 
     // Continuous and turn-360 modes have no cmd_vel timeout of their own,
     // but still stop if commands stop arriving for a long time
@@ -519,7 +573,7 @@ private:
     }
 
 
-    last_control_time_ = current_time;
+    last_control_time_ = steady_time;
   }
 
   // Callback for message timeout
@@ -626,7 +680,10 @@ private:
     current_angle_ = angle_msg.data;
     // Wrap the error to +/-180 so it is correct across the +/-180 boundary
     angle_error = std::abs(std::remainder(current_angle_ - target_angle_, 360.0));
-    if ((angle_error > angle_delta_) && (!turn_started_)) {
+    if (motor_mode_ == MotorMode::TURN_360 && angle_error > angle_delta_ &&
+        !turn_started_ &&
+        (last_left_target_velocity_ != 0.0 ||
+         last_right_target_velocity_ != 0.0)) {
       turn_started_ = true;
       RCLCPP_INFO(this->get_logger(), "Turn started set to true");
     }
@@ -755,6 +812,9 @@ private:
       RCLCPP_INFO(this->get_logger(), "Set to continuous mode");
       break;
     case static_cast<int>(MotorMode::TURN_360):
+      if (motor_mode_ != MotorMode::TURN_360) {
+        start_turn(); // Count a turn already under way from here
+      }
       motor_mode_ = MotorMode::TURN_360;
       RCLCPP_INFO(this->get_logger(), "Set to 360 mode");
       break;
@@ -769,10 +829,10 @@ private:
     motor_on_ = msg.data;
     if (msg.data) {
       RCLCPP_INFO(this->get_logger(), "Set motor on");
-      gpio_->write(ENABLE_PIN, false); // Enable drive
+      set_drivers(true); // Enable drive
     } else {
       RCLCPP_INFO(this->get_logger(), "Set motor off");
-      gpio_->write(ENABLE_PIN, true); // Disable drive
+      set_drivers(false); // Disable drive
       // Stop immediately, with no ramp down, so nothing is left to resume
       // and odometry does not count steps the wheels never made
       motor_set_target(0.0, 0.0);

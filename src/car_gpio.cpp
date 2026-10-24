@@ -2,7 +2,9 @@
 // car_gpio.hpp)
 #include "car_gpio.hpp"
 
+#include <cerrno>
 #include <cmath>
+#include <cstring>
 #include <fcntl.h>
 #include <stdexcept>
 #include <unistd.h>
@@ -14,34 +16,48 @@ const char *CONSUMER = "car_s";
 
 CarGpio::CarGpio(const CarPins &pins, rclcpp::Logger logger)
     : pins_(pins), logger_(logger) {
-  open_outputs();
-  for (Side s : {Side::LEFT, Side::RIGHT}) {
-    Channel &c = ch_[idx(s)];
-    // Channel 0 drives the right wheels, channel 1 the left
-    std::string dir = std::string(PWM_DIR) + "/pwm" + (s == Side::RIGHT ? "0" : "1");
-    c.period_fd = open_attr(dir + "/period");
-    c.duty_fd = open_attr(dir + "/duty_cycle");
-    c.enable_fd = open_attr(dir + "/enable");
-    // Off, in case an earlier run left it on. A freshly exported channel is
-    // already off, and refuses this until it has a period, so ignore the
-    // result
-    std::string off = "0";
-    (void)!pwrite(c.enable_fd, off.c_str(), off.size(), 0);
-    c.last = Clock::now();
+  // The destructor doesn't run if this throws, so let go of what was opened
+  try {
+    open_outputs();
+    for (Side s : {Side::LEFT, Side::RIGHT}) {
+      Channel &c = ch_[idx(s)];
+      // Channel 0 drives the right wheels, channel 1 the left
+      std::string dir = std::string(PWM_DIR) + "/pwm" + (s == Side::RIGHT ? "0" : "1");
+      c.period_fd = open_attr(dir + "/period");
+      c.duty_fd = open_attr(dir + "/duty_cycle");
+      c.enable_fd = open_attr(dir + "/enable");
+      // Off, in case an earlier run left it on. A freshly exported channel is
+      // already off, and refuses this until it has a period, so ignore the
+      // result
+      std::string off = "0";
+      (void)!pwrite(c.enable_fd, off.c_str(), off.size(), 0);
+      // Duty 0 fits any period, so it matches the cached state and the
+      // first period write can't be refused for an old, longer duty
+      (void)!pwrite(c.duty_fd, off.c_str(), off.size(), 0);
+      c.last = Clock::now();
+    }
+  } catch (...) {
+    release();
+    throw;
   }
 }
 
-CarGpio::~CarGpio() {
-  write(pins_.enable, true);
+CarGpio::~CarGpio() { release(); }
+
+void CarGpio::release() {
+  if (request_) {
+    write(pins_.enable, true);
+  }
   for (Channel &c : ch_) {
     if (c.enable_fd >= 0) {
       // A channel that never had a period refuses this, harmlessly
       std::string off = "0";
       (void)!pwrite(c.enable_fd, off.c_str(), off.size(), 0);
     }
-    for (int fd : {c.period_fd, c.duty_fd, c.enable_fd}) {
-      if (fd >= 0) {
-        close(fd);
+    for (int *fd : {&c.period_fd, &c.duty_fd, &c.enable_fd}) {
+      if (*fd >= 0) {
+        close(*fd);
+        *fd = -1;
       }
     }
   }
@@ -59,33 +75,57 @@ void CarGpio::set_step_rate(Side side, unsigned freq, bool forwards) {
   Channel &c = ch_[idx(side)];
   accumulate(c);
   c.forwards = forwards;
+  // The cached state only changes when the hardware took the write, so the
+  // steps counted are the ones it really makes
+  bool ok = true;
   if (freq == 0) {
     if (c.enabled) {
-      write_attr(c.enable_fd, 0);
-      c.enabled = false;
+      ok = write_attr(c.enable_fd, 0);
+      c.enabled = !ok;
     }
-    c.rate = 0.0;
-    return;
-  }
-  long period = std::lround(1e9 / freq);
-  if (period != c.period) {
-    // The duty cycle must never exceed the period, so the order depends
-    // on whether the period grows or shrinks
+  } else {
+    long period = std::lround(1e9 / freq);
     long duty = period / 2;
+    // The duty cycle must never exceed the period, so the order depends on
+    // whether the period grows or shrinks. A write that failed is tried
+    // again on the next call, as the cache still differs
     if (period > c.period) {
-      write_attr(c.period_fd, period);
-      write_attr(c.duty_fd, duty);
-    } else {
-      write_attr(c.duty_fd, duty);
-      write_attr(c.period_fd, period);
+      ok = write_attr(c.period_fd, period);
+      if (ok) {
+        c.period = period;
+      }
     }
-    c.period = period;
+    if (ok && duty != c.duty) {
+      ok = write_attr(c.duty_fd, duty);
+      if (ok) {
+        c.duty = duty;
+      }
+    }
+    if (ok && period != c.period) {
+      ok = write_attr(c.period_fd, period);
+      if (ok) {
+        c.period = period;
+      }
+    }
+    if (ok && !c.enabled) {
+      ok = write_attr(c.enable_fd, 1);
+      c.enabled = ok;
+    }
   }
-  if (!c.enabled) {
-    write_attr(c.enable_fd, 1);
-    c.enabled = true;
+  c.rate = c.enabled ? 1e9 / c.period : 0.0; // what the hardware really produces
+
+  if (ok) {
+    c.failures = 0;
+  } else if (++c.failures >= MAX_PWM_FAILURES && !pwm_failed_) {
+    // Only once, so stopping on the way out doesn't throw again
+    pwm_failed_ = true;
+    write(pins_.enable, true);
+    for (Channel &ch : ch_) {
+      std::string off = "0";
+      (void)!pwrite(ch.enable_fd, off.c_str(), off.size(), 0);
+    }
+    throw std::runtime_error("PWM writes keep failing, drivers disabled");
   }
-  c.rate = 1e9 / c.period; // what the hardware really produces
 }
 
 double CarGpio::take_steps(Side side) {
@@ -173,10 +213,12 @@ int CarGpio::open_attr(const std::string &path) {
   return fd;
 }
 
-void CarGpio::write_attr(int fd, long value) {
+bool CarGpio::write_attr(int fd, long value) {
   std::string s = std::to_string(value);
   if (pwrite(fd, s.c_str(), s.size(), 0) < 0) {
     RCLCPP_ERROR_THROTTLE(logger_, *rclcpp::Clock::make_shared(), 5000,
-                          "PWM write of %ld failed", value);
+                          "PWM write of %ld failed: %s", value, strerror(errno));
+    return false;
   }
+  return true;
 }

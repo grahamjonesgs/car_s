@@ -20,14 +20,24 @@ echo "Simulation on ROS domain $ROS_DOMAIN_ID, localhost only"
 # (explore_lite never found Nav2). Clear the ones nothing is using
 command -v fastdds > /dev/null && fastdds shm clean > /dev/null 2>&1
 
+# The URDF through xacro, as robot_car.launch.py does, and in a params file
+# as a quoted string: -p robot_description:=... is read as YAML, so a colon
+# followed by a space anywhere in the URDF would break it
+URDF=$(xacro "$REPO/urdf/robot_car.urdf.xml" robot_name:=robot_car)
+PARAMS=$(mktemp --suffix=.yaml)
+trap 'rm -f "$PARAMS"' EXIT
+URDF=$URDF python3 -c '
+import os, sys, yaml
+yaml.safe_dump({"robot_state_publisher": {"ros__parameters": {"robot_description": os.environ["URDF"]}}}, sys.stdout)' > "$PARAMS"
+
 python3 "$REPO/tools/sim_car.py" &
 SIM=$!
 # The binary itself, not through ros2 run: killing the ros2 run wrapper left
 # robot_state_publisher running, publishing a stale TF on this domain
 "$(ros2 pkg prefix robot_state_publisher)/lib/robot_state_publisher/robot_state_publisher" --ros-args \
-  -p robot_description:="$(cat "$REPO/urdf/robot_car.urdf.xml")" > /dev/null 2>&1 &
+  --params-file "$PARAMS" > /dev/null 2>&1 &
 RSP=$!
-trap 'kill $SIM $RSP 2>/dev/null' EXIT
+trap 'kill $SIM $RSP 2>/dev/null; rm -f "$PARAMS"' EXIT
 sleep 2
 
 ros2 launch car_s pc_bringup.launch.py "$@"

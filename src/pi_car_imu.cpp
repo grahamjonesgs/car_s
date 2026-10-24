@@ -52,8 +52,12 @@ Ave G -0.0617,0.0115,0.0011  A -0.6567,-1.78,10.47
 #define CALIBRATION_ATTEMPTS 5
 
 // Identical readings for this many samples in a row mean the chip has
-// stopped converting (e.g. it browned out and woke up asleep): re-initialise
+// stopped converting (e.g. it browned out and woke up asleep): re-initialise.
+// Up to FROZEN_REPEATS repeats are published, as the timer can now and then
+// read the same 200 Hz sample twice; more are not. Still frozen
+// FROZEN_SAMPLES after the re-initialise, the node exits and is respawned
 #define FROZEN_SAMPLES 50
+#define FROZEN_REPEATS 2
 
 // Covariances (diagonals) for the IMU message. Measured at rest the gyro
 // variance is about 3e-6 (rad/s)^2; these allow for bias drift and vibration
@@ -75,6 +79,10 @@ Ave G -0.0617,0.0115,0.0011  A -0.6567,-1.78,10.47
 rclcpp::TimerBase::SharedPtr imu_timer; // Timer for reading the IMU
 rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub;
 rclcpp::Node::SharedPtr nh;
+int exit_code = 0;
+// Failed reads in a row before re-initialising the MPU6050, about 1 s worth
+// (set from rate_hz). As many again after that and the node exits
+int max_read_failures = 100;
 // The MPU6050 on I2C bus 1, through the kernel's i2c-dev driver
 I2cDevice imu;
 #define I2C_BUS 1
@@ -186,6 +194,14 @@ void calibrate_gyro(float Gx, float Gy, float Gz) {
               calibration_count, NGx, NGy, NGz);
 }
 
+// Log an error and stop spinning, so main exits with an error and the
+// launch respawns the node
+void fail(const char *msg) {
+  RCLCPP_ERROR(nh->get_logger(), "%s, exiting", msg);
+  exit_code = 1;
+  rclcpp::shutdown();
+}
+
 void imu_timer_callback() {
   // ROS timer callback to publish IMU data
   short raw[7];
@@ -193,24 +209,42 @@ void imu_timer_callback() {
   float Gx = 0, Gy = 0, Gz = 0;
   sensor_msgs::msg::Imu imu_msg;
 
+  static int read_failures = 0;
   if (!read_raw_data(raw)) {
     RCLCPP_WARN_THROTTLE(nh->get_logger(), *nh->get_clock(), 2000,
                          "Failed to read IMU");
+    ++read_failures;
+    if (read_failures == max_read_failures) {
+      RCLCPP_ERROR(nh->get_logger(),
+                   "IMU reads failing, re-initialising the MPU6050");
+      if (!MPU6050_Init()) {
+        fail("Failed to re-initialise the MPU6050");
+      }
+    } else if (read_failures >= 2 * max_read_failures) {
+      fail("IMU reads still failing after re-initialising");
+    }
     return;
   }
+  read_failures = 0;
 
   // Real readings always have some noise; exactly the same values for a
   // while mean the chip stopped converting, so don't publish them as data
   static short last_raw[7];
   static int same_count = 0;
   if (std::equal(raw, raw + 7, last_raw)) {
-    if (++same_count >= FROZEN_SAMPLES) {
-      RCLCPP_ERROR_THROTTLE(nh->get_logger(), *nh->get_clock(), 5000,
-                            "IMU readings frozen, re-initialising the MPU6050");
-      MPU6050_Init();
-      same_count = 0;
+    ++same_count;
+    if (same_count == FROZEN_SAMPLES) {
+      RCLCPP_ERROR(nh->get_logger(),
+                   "IMU readings frozen, re-initialising the MPU6050");
+      if (!MPU6050_Init()) {
+        fail("Failed to re-initialise the MPU6050");
+        return;
+      }
+    } else if (same_count >= 2 * FROZEN_SAMPLES) {
+      fail("IMU readings still frozen after re-initialising");
+      return;
     }
-    if (same_count >= 3) {
+    if (same_count > FROZEN_REPEATS) {
       return;
     }
   } else {
@@ -283,6 +317,7 @@ int main(int argc, char **argv) {
   calibration_samples_needed =
       static_cast<int>(std::max(calibration_time, 0.0) * rate_hz);
   calibration_samples = calibration_samples_needed;
+  max_read_failures = std::max(static_cast<int>(rate_hz), 1);
 
   // Set up MPU6050
   if (!imu.open(I2C_BUS, MPU6050_ADDR)) {
@@ -321,5 +356,5 @@ int main(int argc, char **argv) {
                                     std::bind(&imu_timer_callback));
 
   rclcpp::spin(nh);
-  return finish(0);
+  return finish(exit_code);
 }

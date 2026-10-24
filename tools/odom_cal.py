@@ -239,13 +239,16 @@ def main():
         print(f'Stopped: {e}')
     finally:
         # Each step on its own, so a failure in one can't skip disabling the
-        # motors; a second Ctrl-C here is ignored until they're off
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        # motors; a second Ctrl-C, kill or hang-up here is ignored until
+        # they're off (BaseException too: the SIGTERM/SIGHUP handlers raise
+        # KeyboardInterrupt, and one may already be on its way)
+        for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+            signal.signal(sig, signal.SIG_IGN)
         for step in (n.stop, lambda: n.set_motors(False)):
             try:
                 step()
-            except Exception as e:  # noqa: BLE001
-                print(f'Clean-up step failed: {e}')
+            except BaseException as e:  # noqa: BLE001
+                print(f'Clean-up step failed: {e!r}')
         print('Motors stopped and disabled')
         rclpy.try_shutdown()
 

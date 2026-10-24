@@ -40,6 +40,10 @@
 
 // Timers
 #define MAG_TIMER 0.1 // Interval between MAG readings
+// Readings in a row with no new data (about 1 s) before the chip is
+// configured again, e.g. after it reset into standby. As many again after
+// that and the node exits, and the launch respawns it
+#define NO_DATA_READINGS 10
 
 // MPU6050 definitions
 /* The default I2C address of this chip */
@@ -95,6 +99,8 @@ rclcpp::Publisher<sensor_msgs::msg::MagneticField>::SharedPtr mag_pub;
 I2cDevice mag;
 #define I2C_BUS 1
 rclcpp::Node::SharedPtr nh;
+int exit_code = 0;
+int no_data_count = 0; // Readings in a row with no new data
 
 uint8_t mode;
 uint8_t rate;
@@ -104,17 +110,17 @@ uint8_t oversampling;
 // Normalisation values
 float DigitPermg;
 
-void reconfigure() {
-  mag.write_byte(QMC5883L_CONFIG,
-                      oversampling | range | rate | mode);
+// The set-up functions return false if a write fails
+bool reconfigure() {
+  return mag.write_byte(QMC5883L_CONFIG,
+                        oversampling | range | rate | mode);
 }
 
-void reset() {
-  mag.write_byte(QMC5883L_RESET, 0x01);
-  reconfigure();
+bool reset() {
+  return mag.write_byte(QMC5883L_RESET, 0x01) && reconfigure();
 }
 
-void setOversampling(int x) {
+bool setOversampling(int x) {
   switch (x) {
   case 512:
     oversampling = QMC5883L_CONFIG_OS512;
@@ -129,10 +135,10 @@ void setOversampling(int x) {
     oversampling = QMC5883L_CONFIG_OS64;
     break;
   }
-  reconfigure();
+  return reconfigure();
 }
 
-void setRange(int x) {
+bool setRange(int x) {
   switch (x) {
   case 2:
     range = QMC5883L_CONFIG_2GAUSS;
@@ -143,10 +149,10 @@ void setRange(int x) {
     DigitPermg = 3.0;
     break;
   }
-  reconfigure();
+  return reconfigure();
 }
 
-void setSamplingRate(int x) {
+bool setSamplingRate(int x) {
   switch (x) {
   case 10:
     rate = QMC5883L_CONFIG_10HZ;
@@ -161,17 +167,39 @@ void setSamplingRate(int x) {
     rate = QMC5883L_CONFIG_200HZ;
     break;
   }
-  reconfigure();
+  return reconfigure();
 }
 
-void QMC5883L_init() {
-  /* This assumes the wire library has been initialized. */
-  // addr = QMC5883L_ADDR;
-  setOversampling(512);
-  setRange(2);
-  setSamplingRate(100);
+bool QMC5883L_init() {
+  if (!setOversampling(512) || !setRange(2) || !setSamplingRate(100)) {
+    return false;
+  }
   mode = QMC5883L_CONFIG_CONT;
-  reset();
+  return reset();
+}
+
+// Log an error and stop spinning, so main exits with an error and the
+// launch respawns the node
+void fail(const char *msg) {
+  RCLCPP_ERROR(nh->get_logger(), "%s, exiting", msg);
+  exit_code = 1;
+  rclcpp::shutdown();
+}
+
+// Count a reading with no new data. After about 1 s configure the chip
+// again; after as long again, exit
+void no_data() {
+  ++no_data_count;
+  if (no_data_count == NO_DATA_READINGS) {
+    RCLCPP_ERROR(nh->get_logger(),
+                 "No magnetometer data for %.1f s, configuring the QMC5883L "
+                 "again", NO_DATA_READINGS * MAG_TIMER);
+    if (!reset()) {
+      fail("Failed to configure the QMC5883L");
+    }
+  } else if (no_data_count >= 2 * NO_DATA_READINGS) {
+    fail("Still no magnetometer data after configuring the QMC5883L again");
+  }
 }
 
 // Read X, Y and Z in one transfer, so they all come from the same sample.
@@ -201,12 +229,23 @@ void mag_timer_callback() {
   // previous reading was missed, so accept either
   if (status < 0 ||
       !(status & (QMC5883L_STATUS_DRDY | QMC5883L_STATUS_DOR))) {
+    no_data();
     return;
   }
 
   if (!readRaw(&x, &y, &z)) {
     RCLCPP_WARN_THROTTLE(nh->get_logger(), *nh->get_clock(), 5000,
                          "Failed to read the magnetometer");
+    no_data();
+    return;
+  }
+  // The chip is converting, even if this sample is out of range
+  no_data_count = 0;
+  // OVL: a field beyond the range (e.g. a magnet or the motors nearby), so
+  // the values are clipped. Read anyway to clear the status, but drop it
+  if (status & QMC5883L_STATUS_OVL) {
+    RCLCPP_WARN_THROTTLE(nh->get_logger(), *nh->get_clock(), 5000,
+                         "Magnetometer overflow, dropping the reading");
     return;
   }
   mag_msg.header.stamp = nh->get_clock()->now();
@@ -248,7 +287,10 @@ int main(int argc, char **argv) {
     return finish(1);
   }
 
-  QMC5883L_init();
+  if (!QMC5883L_init()) {
+    RCLCPP_ERROR(nh->get_logger(), "Failed to set up the QMC5883L");
+    return finish(1);
+  }
 
   // Set up ROS
   mag_pub = nh->create_publisher<sensor_msgs::msg::MagneticField>(
@@ -256,5 +298,5 @@ int main(int argc, char **argv) {
   mag_timer = nh->create_wall_timer(std::chrono::duration<double>(MAG_TIMER),
                                     std::bind(&mag_timer_callback));
   rclcpp::spin(nh);
-  return finish(0);
+  return finish(exit_code);
 }

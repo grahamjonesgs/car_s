@@ -5,6 +5,7 @@
 #include "std_msgs/msg/int32.hpp"
 #include "std_srvs/srv/empty.hpp"
 #include <chrono>
+#include <cmath>
 #include <errno.h>
 #include <poll.h>
 #include <rclcpp/rclcpp.hpp>
@@ -44,6 +45,12 @@
 // Effective wheel separation in m, used to convert wheel speed to turn rate in
 // rad/s. Matches the controller's calibrated default
 #define WHEEL_SEPARATION 0.262
+// Top speed for f and the velocity parameter, in m/s. The controller's
+// default max_wheel_speed: the steppers stall above about this
+#define MAX_VELOCITY 0.5
+#define DEFAULT_VELOCITY 0.2
+// The lidar counts as on if a scan arrived within this long, in s
+#define SCAN_RECENT 1.0
 std_msgs::msg::Bool motor;
 std_msgs::msg::Int32 motor_steps;
 std_msgs::msg::Float32 motor_accel;
@@ -56,8 +63,11 @@ public:
 
 private:
   int readKey();
+  bool lidarOn();
   bool moving; // the last command sent was not a stop
   std::shared_ptr<rclcpp::Node> nh;
+  // Spun from the key loop, between key reads
+  rclcpp::executors::SingleThreadedExecutor executor_;
   double linear, angular, velocity, acceleration;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr twist_pub_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr motor_pub_;
@@ -65,15 +75,27 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr motor_accel_pub_;
   rclcpp::Client<std_srvs::srv::Empty>::SharedPtr lidar_start_client_;
   rclcpp::Client<std_srvs::srv::Empty>::SharedPtr lidar_stop_client_;
-  bool lidar_on; // Lidar motor is stopped by default at launch
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr motor_state_sub_;
+  rclcpp::GenericSubscription::SharedPtr scan_sub_;
+  bool motor_state_known; // a /motor_state message has arrived
+  bool motor_state;       // the drivers' real enable state, from the controller
+  bool scan_seen;
+  std::chrono::steady_clock::time_point last_scan;
 };
 
 TeleopCmd::TeleopCmd()
-    : moving(false), linear(0), angular(0), velocity(0.2), acceleration(0.5),
-      lidar_on(false) {
+    : moving(false), linear(0), angular(0), velocity(DEFAULT_VELOCITY),
+      acceleration(0.5), motor_state_known(false), motor_state(false),
+      scan_seen(false) {
   nh = rclcpp::Node::make_shared("teleop_cmd");
   nh->declare_parameter("velocity", velocity);
   nh->get_parameter("velocity", velocity);
+  if (!std::isfinite(velocity) || velocity <= 0.0 || velocity > MAX_VELOCITY) {
+    RCLCPP_ERROR(nh->get_logger(),
+                 "velocity must be above 0 and at most %.2f m/s, using %.2f",
+                 MAX_VELOCITY, DEFAULT_VELOCITY);
+    velocity = DEFAULT_VELOCITY;
+  }
 
   twist_pub_ = nh->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 1);
   motor_pub_ = nh->create_publisher<std_msgs::msg::Bool>("/motor_on", 1);
@@ -84,13 +106,36 @@ TeleopCmd::TeleopCmd()
   lidar_start_client_ =
       nh->create_client<std_srvs::srv::Empty>("/start_motor");
   lidar_stop_client_ = nh->create_client<std_srvs::srv::Empty>("/stop_motor");
+
+  // The controller keeps the latest real motor state here, so m can toggle it
+  motor_state_sub_ = nh->create_subscription<std_msgs::msg::Bool>(
+      "/motor_state", rclcpp::QoS(1).reliable().transient_local(),
+      [this](const std_msgs::msg::Bool &msg) {
+        motor_state = msg.data;
+        motor_state_known = true;
+      });
+  // Only the arrival time matters, so the scan isn't deserialised
+  scan_sub_ = nh->create_generic_subscription(
+      "/scan", "sensor_msgs/msg/LaserScan", rclcpp::SensorDataQoS(),
+      [this](std::shared_ptr<const rclcpp::SerializedMessage>) {
+        last_scan = std::chrono::steady_clock::now();
+        scan_seen = true;
+      });
+  executor_.add_node(nh);
+}
+
+// The lidar is spinning if scans are arriving
+bool TeleopCmd::lidarOn() {
+  return scan_seen && std::chrono::duration<double>(
+                          std::chrono::steady_clock::now() - last_scan)
+                              .count() < SCAN_RECENT;
 }
 
 int kfd = 0;
 struct termios cooked, raw;
 
-// Set by SIGINT, SIGTERM and SIGHUP; the key loop then stops the car and
-// restores the terminal, which isn't safe to do inside a signal handler
+// Set by SIGINT, SIGTERM, SIGHUP and SIGQUIT; the key loop then stops the car
+// and restores the terminal, which isn't safe to do inside a signal handler
 static volatile sig_atomic_t quit_requested = 0;
 static void on_quit_signal(int) { quit_requested = 1; }
 
@@ -108,14 +153,31 @@ int main(int argc, char **argv) {
   sigaction(SIGINT, &sa, nullptr);
   sigaction(SIGTERM, &sa, nullptr);
   sigaction(SIGHUP, &sa, nullptr);
+  sigaction(SIGQUIT, &sa, nullptr); // Ctrl-\, which raw mode leaves on
   // A suspended key_cmd couldn't stop the car, so Ctrl-Z does nothing
   signal(SIGTSTP, SIG_IGN);
 
-  TeleopCmd teleop_cmd;
-  teleop_cmd.keyLoop();
-  teleop_cmd.stop();
+  // After an error too, send the stop and restore the terminal
+  std::string error;
+  try {
+    TeleopCmd teleop_cmd;
+    try {
+      teleop_cmd.keyLoop();
+    } catch (const std::exception &e) {
+      error = e.what();
+    }
+    teleop_cmd.stop();
+  } catch (const std::exception &e) {
+    if (error.empty()) {
+      error = e.what();
+    }
+  }
   tcsetattr(kfd, TCSANOW, &cooked);
   rclcpp::shutdown();
+  if (!error.empty()) {
+    fprintf(stderr, "key_cmd: %s\n", error.c_str());
+    return 1;
+  }
   return 0;
 }
 
@@ -213,6 +275,7 @@ void TeleopCmd::keyLoop() {
   puts("Use arrow keys to move the car. q or Ctrl-C to quit.");
 
   for (;;) {
+    executor_.spin_some();
     // get the next event from the keyboard
     c = readKey();
     if (c == KEY_QUIT || c == KEYCODE_Q) {
@@ -266,10 +329,8 @@ void TeleopCmd::keyLoop() {
       velocity += 0.1;
       linear = 1.0;
       dirty = true;
-      /*
-      Removed the following line to allow velocity to go above 1.0 for testing
-      if (velocity > 1.0)
-          velocity = 1.0;*/
+      if (velocity > MAX_VELOCITY)
+        velocity = MAX_VELOCITY;
       RCLCPP_INFO(nh->get_logger(), "Velocity is %0.2f", velocity);
       break;
     case KEYCODE_S:
@@ -312,12 +373,15 @@ void TeleopCmd::keyLoop() {
     case KEYCODE_M:
       RCLCPP_DEBUG(nh->get_logger(), "MOTOR");
 
-      if (motor.data == 0) {
-        motor.data = 1;
-        RCLCPP_INFO(nh->get_logger(), "Motor on");
+      // Toggle the real state. Not knowing it, stop: that's the safe guess
+      if (!motor_state_known) {
+        motor.data = false;
+        RCLCPP_WARN(nh->get_logger(),
+                    "Motor state unknown (nothing on /motor_state), motor off");
       } else {
-        motor.data = 0;
-        RCLCPP_INFO(nh->get_logger(), "Motor off");
+        motor.data = !motor_state;
+        motor_state = motor.data; // until the controller confirms it
+        RCLCPP_INFO(nh->get_logger(), motor.data ? "Motor on" : "Motor off");
       }
       motor_pub_->publish(motor);
 
@@ -356,17 +420,17 @@ void TeleopCmd::keyLoop() {
       break;
     case KEYCODE_L: {
       RCLCPP_DEBUG(nh->get_logger(), "LIDAR");
+      bool lidar_on = lidarOn();
       auto client = lidar_on ? lidar_stop_client_ : lidar_start_client_;
       if (!client->service_is_ready()) {
         RCLCPP_WARN(nh->get_logger(), "Lidar service not available");
         break;
       }
-      // The node isn't spun, so send without waiting for the empty response
+      // Send without waiting for the empty response
       client->async_send_request(
           std::make_shared<std_srvs::srv::Empty::Request>());
       client->prune_pending_requests();
-      lidar_on = !lidar_on;
-      RCLCPP_INFO(nh->get_logger(), lidar_on ? "Lidar on" : "Lidar off");
+      RCLCPP_INFO(nh->get_logger(), lidar_on ? "Lidar off" : "Lidar on");
       break;
     }
     }

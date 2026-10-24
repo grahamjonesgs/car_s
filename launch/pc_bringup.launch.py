@@ -143,7 +143,8 @@ def start_motion_check(context):
     # them beside the saved map in use, and load them with it. A new map
     # starts with none, in ~/.ros/car_s_bumps.yaml (copy it beside the map
     # when saving it)
-    slam_map = os.path.expanduser(LaunchConfiguration('slam_map').perform(context))
+    slam_map = os.path.expanduser(
+        LaunchConfiguration('slam_map').perform(context)).removesuffix('.posegraph')
     map_yaml = os.path.expanduser(LaunchConfiguration('map').perform(context))
     if slam_map:
         bumps_file, load = slam_map + '.bumps.yaml', True
@@ -246,9 +247,10 @@ def generate_launch_description():
 
     slam_launch = OpaqueFunction(function=start_slam, condition=IfCondition(slam))
 
-    # slam_toolbox publishes /map as volatile (republished every
-    # map_update_interval), and a transient local subscriber never receives
-    # it. map_server publishes once as transient local, so needs it
+    # slam_toolbox (2.10, Lyrical) and map_server both publish /map as
+    # transient local, which a subscriber of either durability receives.
+    # map_server publishes only once, so its subscribers must be transient
+    # local to get the map; with SLAM, volatile is enough
     nav2_params = RewrittenYaml(
         source_file=os.path.join(car_s_dir, 'config', 'nav2.yaml'),
         param_rewrites={'map_subscribe_transient_local': PythonExpression(
@@ -330,6 +332,15 @@ def generate_launch_description():
             ["'", slam, "'.lower() == 'true' and '", map_yaml, "' != ''"])),
     )
 
+    # Nav2's BT navigator, controller and velocity smoother read /odometry/filtered, which
+    # only the EKF publishes
+    nav2_needs_ekf = LogInfo(
+        msg='WARNING: Nav2 is on but ekf is false, so nothing publishes '
+            '/odometry/filtered and Nav2 has no odometry',
+        condition=IfCondition(PythonExpression(
+            ["'", nav2_on, "' == 'True' and '", ekf, "'.lower() != 'true'"])),
+    )
+
     # The map frame only exists with SLAM or AMCL running
     rviz_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -347,6 +358,7 @@ def generate_launch_description():
 
     return LaunchDescription(args + [
         both_maps_warning,
+        nav2_needs_ekf,
         car_guard,
         motion_check_node,
         ekf_node,

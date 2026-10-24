@@ -28,15 +28,16 @@ instead of window_s + hold_s. Changes are logged too (a warning for stuck, slipp
 pushed). The measured motion is published on /motion_check/twist
 (geometry_msgs/TwistStamped, in base_link) for plotting against /odom.
 
-Bumps: when the car gets stuck driving forwards or backwards, something the
-lidar can't see is probably in the way, such as a low chair leg. It marks a
-row of points just beyond the footprint's front or rear edge, in the map
-frame, and publishes all the marks on /motion_check/bumps (PointCloud2,
-about once a second). The costmaps' bump_layer (config/nav2.yaml) turns them
-into obstacles that the lidar doesn't clear, so Nav2 plans around them. They
-are kept in bumps_file, loaded at start if load_bumps is true (the same
-saved map, so the same map frame). /motion_check/clear_bumps
-(std_srvs/Empty) forgets them all and clears the costmaps.
+Bumps: when the car gets stuck driving forwards or backwards (the distance
+short, not just the turn), something the lidar can't see is probably in the
+way, such as a low chair leg. It marks a row of points just beyond the
+footprint's front or rear edge, in the map frame, and publishes all the
+marks on /motion_check/bumps (PointCloud2, about once a second). The
+costmaps' bump_layer (config/nav2.yaml) turns them into obstacles that the
+lidar doesn't clear, so Nav2 plans around them. They are kept in
+bumps_file, loaded at start if load_bumps is true (the same saved map, so
+the same map frame). /motion_check/clear_bumps (std_srvs/Empty) forgets them
+all and clears the costmaps.
 
 A stuck car's odometry carries on counting, so the EKF's pose drifts on past
 the obstacle, and Nav2 then finds the car's own footprint in collision. So
@@ -184,7 +185,7 @@ class MotionCheck(Node):
             self.get_logger().info(f'Loaded {len(self.bumps)} bump points from {self.bumps_file}')
         else:
             self.save_bumps()
-        self.cmd_sign = 0.0   # direction of the last commanded translation
+        self.cmd_sign = 0.0   # direction of a translation found blocked, else 0
         # (clock time, x, y, yaw) of base_link in map_frame: a stuck car's
         # odometry carries on counting, so its pose drifts on past the
         # obstacle; the bump is marked, and the EKF reset, from before
@@ -295,6 +296,7 @@ class MotionCheck(Node):
         g0, g1 = at_time(self.gyro, old[0]), at_time(self.gyro, t)
         span = t - old[0]
         if (span < 0.5 * window or None in (o0, o1, g0, g1)
+                or abs(o0[0] - old[0]) > 0.2 or abs(g0[0] - old[0]) > 0.2
                 or abs(o1[0] - t) > 0.2 or abs(g1[0] - t) > 0.2):
             return None
 
@@ -344,14 +346,19 @@ class MotionCheck(Node):
             return self.update('unknown', 'waiting for odometry, gyro and scans')
         span, cmd, cmd_dist, turn, meas_dist = slow
         moving = cmd_dist > self.min_dist
-        self.cmd_sign = math.copysign(1.0, cmd[0]) if moving else 0.0
         turning = abs(cmd[2]) > self.min_turn
+        self.cmd_sign = 0.0
         if moving or turning:
             ratios = []
             if moving and meas_dist is not None:
                 ratios.append(meas_dist / cmd_dist)
+                # Only a short distance is something in the way ahead or
+                # behind: a skid steer's arc often turns short on carpet
+                if ratios[-1] < self.stuck_ratio:
+                    self.cmd_sign = math.copysign(1.0, cmd[0])
             if turning:
-                ratios.append(abs(turn) / abs(cmd[2]))
+                # Signed, so a turn the wrong way counts as none
+                ratios.append(turn / cmd[2])
             if not ratios:
                 return self.update('unknown', 'the scans can\'t measure the movement here')
             ratio = min(ratios)
@@ -380,7 +387,7 @@ class MotionCheck(Node):
             # the car isn't turning: the stuck verdict covers the last window,
             # so it lags a car that is already backing away
             pushing = (self.cmd_vx * self.pin_sign > 0.01 and abs(self.gyro_wz) < 0.1)
-            if label == 'stuck' and pushing:
+            if label == 'stuck' and self.cmd_sign == self.pin_sign and pushing:
                 self.set_ekf_pose(self.pin, log=False)
             else:
                 self.pin = None
@@ -402,7 +409,8 @@ class MotionCheck(Node):
 
     def mark_bump(self):
         """Mark a row of points just beyond the edge the car was driving
-        towards (not for a stuck turn: which corner caught is unknown)"""
+        towards (not for a stuck turn, or a turn that fell short while the
+        distance didn't: which corner caught is unknown)"""
         if self.cmd_sign == 0.0:
             return
         # Where it was when it stopped moving: the start of the first window

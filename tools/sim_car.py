@@ -65,6 +65,7 @@ class FakeCar(Node):
         self.x = self.y = self.th = 0.0        # true pose
         self.ox = self.oy = self.oth = 0.0     # odometry: what was commanded
         self.v = self.w = 0.0
+        self.true_w = 0.0                      # true turn rate, for the gyro
         self.last_cmd = self.get_clock().now()
         # Like the real controller: motors off until motor_on, and cmd_vel
         # ignored while they're off, so a missing enable shows up here too
@@ -106,7 +107,10 @@ class FakeCar(Node):
         th = self.th + self.w * keep * dt
         x = self.x + v * math.cos(th) * dt
         y = self.y + v * math.sin(th) * dt
-        if not self.hits_leg(x, y, th):
+        if self.hits_leg(x, y, th):
+            self.true_w = 0.0
+        else:
+            self.true_w = (th - self.th) / dt
             self.x, self.y, self.th = x, y, th
         now = self.get_clock().now().to_msg()
         q = (0.0, 0.0, math.sin(self.oth / 2), math.cos(self.oth / 2))
@@ -147,8 +151,7 @@ class FakeCar(Node):
         m.header.stamp = self.get_clock().now().to_msg()
         m.header.frame_id = 'imu_link'
         m.orientation_covariance[0] = -1.0
-        keep = 1.0 - min(max(self.get_parameter('slip').value, 0.0), 1.0)
-        m.angular_velocity.z = self.w * keep
+        m.angular_velocity.z = self.true_w
         m.linear_acceleration.z = 9.81
         for i in (0, 4, 8):
             m.angular_velocity_covariance[i] = 1e-4

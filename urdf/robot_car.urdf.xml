@@ -147,6 +147,10 @@
     </inertial>
   </link>
 
+  <!-- The QMC5883L magnetometer. Frame only, for imu/mag; car_mag publishes
+       the chip's axes unchanged, taken as lined up with base_link -->
+  <link name="mag_link"/>
+
   <link name="laser_link">
     <visual>
       <geometry>
@@ -195,6 +199,14 @@
   <joint name="imu_joint" type="fixed">
     <parent link="base_link"/>
     <child link="imu_link"/>
+    <origin xyz="0.1 0 0.05" rpy="0 0 0"/>
+  </joint>
+
+  <joint name="mag_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="mag_link"/>
+    <!-- Not measured. The position (the IMU's) and the axes lined up with
+         base_link are guesses, to measure -->
     <origin xyz="0.1 0 0.05" rpy="0 0 0"/>
   </joint>
 

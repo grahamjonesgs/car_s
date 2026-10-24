@@ -45,19 +45,59 @@ index af7c560..7a7f575 100644
  # Install
  ################################################################################
 diff --git a/src/rplidar_node.cpp b/src/rplidar_node.cpp
-index ee7e7cf..c50e5f4 100644
+index ee7e7cf..20b1104 100644
 --- a/src/rplidar_node.cpp
 +++ b/src/rplidar_node.cpp
-@@ -341,6 +341,12 @@ class RPlidarNode : public rclcpp::Node
+@@ -32,6 +32,7 @@
+  *
+  */
+ 
++#include <chrono>  // Local patch (car_s)
+ #include <rclcpp/rclcpp.hpp>
+ #include <sensor_msgs/msg/laser_scan.hpp>
+ #include <std_srvs/srv/empty.hpp>
+@@ -341,6 +342,18 @@ class RPlidarNode : public rclcpp::Node
          if (nullptr == drv) {
              return false;
          }
 +        // Local patch (car_s): starting again while already scanning
 +        // restarts the scan mid-stream, which wedged the driver, so ignore it
++        // while scans are arriving. If none has for a while the stream is
++        // dead, so stop it and start again
 +        if (is_scanning) {
-+            RCLCPP_INFO(this->get_logger(), "Already running, ignoring start");
-+            return true;
++            if (std::chrono::steady_clock::now() - last_good_scan < std::chrono::seconds(5)) {
++                RCLCPP_INFO(this->get_logger(), "Already running, ignoring start");
++                return true;
++            }
++            RCLCPP_WARN(this->get_logger(), "No scan for 5 s, restarting");
++            this->stop();
 +        }
  
          RCLCPP_INFO(this->get_logger(), "Start");
          drv->setMotorSpeed();
+@@ -350,6 +363,7 @@ class RPlidarNode : public rclcpp::Node
+             return false;
+         }
+         is_scanning = true;
++        last_good_scan = std::chrono::steady_clock::now();  // Local patch (car_s)
+         return true;
+     }
+ 
+@@ -470,6 +484,7 @@ public:
+             scan_duration = (end_scan_time - start_scan_time).seconds();
+ 
+             if (op_result == SL_RESULT_OK) {
++                last_good_scan = std::chrono::steady_clock::now();  // Local patch (car_s)
+                 if(scan_frequency_tunning_after_scan) { //Set scan frequency(For Slamtec Tof lidar)
+                     RCLCPP_INFO(this->get_logger(), "set lidar scan frequency to %.1f Hz(%.1f Rpm) ",scan_frequency,scan_frequency*60);
+                     drv->setMotorSpeed(scan_frequency*60); //rpm 
+@@ -575,6 +590,9 @@ public:
+     float scan_frequency;
+     /* State */
+     bool is_scanning = false;
++    // Local patch (car_s): when grabScanDataHq last succeeded, so start()
++    // can tell a running scan from a dead one
++    std::chrono::steady_clock::time_point last_good_scan;
+ 
+     ILidarDriver *drv = nullptr;
+ };

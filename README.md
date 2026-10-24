@@ -72,7 +72,7 @@ Still to look at:
   car:
   - the measured rectangular footprint (narrower at the sides than the
     0.17 m circle that boxed the car in)
-  - a wider, gentler local inflation for steering (0.40 m)
+  - a slightly wider local inflation for steering (0.30 m)
   - the SLAM map in the local costmap, so chair legs aren't wiped between
     lidar scans
   Chair legs are the hardest case: thin, and seen by only a few lidar points.
@@ -235,9 +235,10 @@ The magnetometer shares the IMU's I2C bus (SDA/SCL).
 | `rplidar_composition` | Pi | The lidar driver (`rplidar_ros`), publishes `scan` |
 | `robot_state_publisher` | Pi | Publishes the URDF's fixed frames |
 | `car_power` | Pi | `/car/shutdown` and `/car/reboot` services, to turn the Pi off cleanly |
-| `key_cmd` | PC | Keyboard teleop |
+| `key_cmd` | PC | Keyboard teleop. Subscribes to `/motor_state` (for `m`) and `/scan` (for `l`) |
 | `imu_normalize` | Either | Prints running averages of `imu/data_raw`, for calibration |
-| `car_guard` | PC | Started by `pc_bringup.launch.py`: keeps the car's TF off for the EKF, the lidar spinning, and enables the motors, again after a car restart |
+| `car_guard` | PC | Started by `pc_bringup.launch.py`: keeps the car's TF off for the EKF and the lidar spinning, again after a car restart; with `motors_on:=true` enables the motors once at start (never after a car restart) |
+| `motion_check` | PC | Started by `pc_bringup.launch.py`: compares odometry with the lidar and gyro, publishes `/motion_check` and `/motion_check/twist`, marks obstacles the lidar can't see on `/motion_check/bumps`, holds the EKF on `/set_pose` while stuck; `/motion_check/clear_bumps` forgets the marks. See [Stuck, slipping or pushed](#stuck-slipping-or-pushed) |
 
 The controller ramps each wheel's speed towards its target at `motor_accel`
 m/s² (default 1.0) rather than jumping straight to it, so the steppers don't
@@ -251,13 +252,16 @@ Subscribed:
 |---|---|---|
 | `cmd_vel` | `geometry_msgs/Twist` | `linear.x` in m/s, `angular.z` in rad/s (positive = anticlockwise). Unstamped |
 | `motor_on` | `std_msgs/Bool` | Enables or disables the stepper drivers. **The motors stay disabled until this is set true**, and `cmd_vel` is ignored while they're off |
-| `motor_mode` | `std_msgs/Int32` | 1 = continuous (keep going until told otherwise), 2 = auto (stop `cmd_vel_timeout`, 0.3 s, after the last `cmd_vel`, the default), 3 = turn 360 (stop after one full spin) |
+| `motor_mode` | `std_msgs/Int32` | 1 = continuous (keep going until told otherwise), 2 = auto (stop `cmd_vel_timeout`, 0.3 s, after the last `cmd_vel`, the default), 3 = turn 360 (stop after one full spin, counted from the heading where the car started moving: a spin on the spot or an arc) |
 | `motor_steps` | `std_msgs/Int32` | Microsteps: 1, 2, 4, 8, 16 or 32 (default 32) |
 | `motor_accel` | `std_msgs/Float32` | Acceleration ramp in m/s², 0 = no ramp |
 
 Published: `odom` (`nav_msgs/Odometry`, with covariances), TF `odom` →
 `base_link`, `left_speed` and `right_speed` (m/s), `angle` (heading in
-degrees).
+degrees), and `/motor_state` (`std_msgs/Bool`, latched: reliable + transient
+local), which is true while the stepper drivers are really enabled. It is
+published at start-up (false) and whenever the drivers are enabled or
+disabled.
 
 Parameters (all can be changed while it runs, with
 `ros2 param set /car_controller <name> <value>`):
@@ -270,6 +274,10 @@ Parameters (all can be changed while it runs, with
 | `cmd_vel_timeout` | `0.3` | In auto mode, stop this long (s) after the last `cmd_vel`. Long enough for WiFi jitter |
 | `max_wheel_speed` | `0.5` | Cap on each wheel's speed (m/s). Above it, both wheels are scaled down together, keeping the turn. The steppers stall above about this, while odometry would still count the commanded steps |
 
+An invalid value (not positive) given at start-up is replaced by that
+parameter's default, with an error in the log. The parameter is set to the
+default too, so `ros2 param get` shows the value in use.
+
 Safety limits that aren't parameters:
 
 - In continuous and turn-360 modes, the car still stops if no `cmd_vel`
@@ -279,6 +287,9 @@ Safety limits that aren't parameters:
   0 (no ramp) to 5 m/s².
 - Changing microsteps while moving keeps the speed: the step rate is set
   again, and steps already counted are converted at the old setting.
+- If writes to the kernel PWM fail 3 times in a row, the controller disables
+  the drivers, stops the step pulses and exits, so systemd restarts `car_s`.
+  Odometry only counts step rates the PWM accepted.
 
 Values set with `ros2 param set` are lost when the node restarts. To keep
 them, change the defaults in
@@ -289,7 +300,8 @@ them, change the defaults in
 
 `odom` → `base_link` comes from the controller, or from the EKF on the PC
 while `pc_bringup.launch.py` runs. `robot_state_publisher` adds
-`base_link` → `imu_link`, `laser_link` (turned 180°) and the wheel links
+`base_link` → `imu_link`, `mag_link` (at the IMU's position for now, not
+measured), `laser_link` (turned 180°) and the wheel links
 from [urdf/robot_car.urdf.xml](urdf/robot_car.urdf.xml). The wheel joints are
 `fixed`, because nothing publishes `joint_states`. With SLAM or AMCL running,
 they add `map` → `odom`.
@@ -436,8 +448,18 @@ sudo systemctl restart car_s     # keep the car still while the gyro calibrates
 ```
 
 `rplidar_ros` carries a local patch, so pull it only on purpose, then
-reapply the patch if needed. After an `apt upgrade` that updates ROS
-packages, rebuild the whole workspace.
+reapply the patch if needed. When an update to car_s changes
+`patches/rplidar_ros.patch`, apply it again and rebuild the driver:
+
+```bash
+git -C ~/ros_ws/src/rplidar_ros checkout -- .
+git -C ~/ros_ws/src/rplidar_ros apply ~/ros_ws/src/car_s/patches/rplidar_ros.patch
+cd ~/ros_ws && MAKEFLAGS=-j2 colcon build --symlink-install --parallel-workers 2 --packages-select rplidar_ros
+sudo systemctl restart car_s
+```
+
+After an `apt upgrade` that updates ROS packages, rebuild the whole
+workspace.
 
 ### 5. Start the car at boot
 
@@ -456,7 +478,14 @@ straight away: it stops the step pulses and disables the drivers (43 ms
 after a `kill -9` in testing). Then the whole launch stops, the service's
 `ExecStopPost` runs the same script again as a backstop, and the service
 restarts after 5 s (`Restart=always`, since `ros2 launch` exits 0 even then). The lidar, IMU and magnetometer nodes restart by
-themselves if they die. The IMU recalibrates the gyro when it restarts.
+themselves if they die. `car_imu` and `car_mag` also exit on purpose, so they
+get restarted, when the chip stops answering mid-run. The IMU re-initialises
+the MPU6050 after about 1 s of failed reads or 0.5 s of identical (frozen)
+readings, and exits if that fails or the problem persists. The magnetometer
+configures the QMC5883L again after about 1 s with no new data, and exits if
+that fails or there is still no data 1 s later. Magnetometer samples with
+the overflow (OVL) bit set are dropped, with a warning. The IMU recalibrates
+the gyro when it restarts.
 
 After changing the service file, copy it again and run
 `sudo systemctl daemon-reload`.
@@ -629,17 +658,21 @@ time after any change to the motion code.
 
 | Key | Action |
 |---|---|
-| `m` | Motors on / off |
+| `m` | Motors on / off. Toggles the real state from `/motor_state`; until that has arrived, `m` always sends off |
 | ↑ / ↓ | Forward / backward |
 | ← / → | Turn on the spot anticlockwise / clockwise |
 | `8` / `9` | Drive forward turning left / right |
 | Space | Stop |
-| `f` / `s` | Speed up / slow down by 0.1 m/s (`f` also drives forward). Starts at 0.2 m/s |
+| `f` / `s` | Speed up / slow down by 0.1 m/s (`f` also drives forward). Starts at 0.2 m/s, at most 0.5 m/s (the controller's default `max_wheel_speed`) |
 | `z` / `x` | Acceleration ramp up / down by 0.1 m/s² |
 | `v` / `c` | Acceleration ramp to 1.0 / off |
 | `0`–`5` | Microsteps 1, 2, 4, 8, 16, 32 |
-| `l` | Lidar motor on / off (starts off) |
-| `q` or Ctrl-C | Quit. If it last sent a move, it sends a stop first |
+| `l` | Lidar motor on / off: stops it if scans arrived in the last second, otherwise starts it |
+| `q`, Ctrl-C or Ctrl-\\ | Quit. If it last sent a move, it sends a stop first |
+
+The `velocity` parameter
+(`ros2 run car_s key_cmd --ros-args -p velocity:=0.3`) sets the starting
+speed. A value outside 0 to 0.5 m/s is logged as an error and 0.2 is used.
 
 In the default auto mode, the car stops 0.3 s after the last command, and
 `key_cmd` sends one command per key press, so **hold the key down** to keep
@@ -657,7 +690,7 @@ ros2 topic pub --once /motor_accel std_msgs/msg/Float32 "{data: 0.5}"
 ros2 topic echo /odom --field pose.pose.position
 ros2 topic hz /scan /odom /imu/data_raw
 ros2 run tf2_ros tf2_echo odom base_link
-ros2 run tf2_tools view_frames        # expect map -> odom -> base_link -> imu_link, laser_link, wheels
+ros2 run tf2_tools view_frames        # expect map -> odom -> base_link -> imu_link, mag_link, laser_link, wheels
 ```
 
 ### RViz
@@ -684,6 +717,9 @@ the parameters in [config/](config/). Its `car_guard` node
 - turns off the controller's TF while the EKF runs, and checks it stays off
 - starts the lidar motor, and again whenever scans stop for 5 s
 - with `motors_on:=true`, enables the motors once the controller is listening
+  (a motor-off from `key_cmd` or anyone else in the first few seconds cancels
+  this)
+- retries a TF or lidar service call that gets no reply within 5 s
 
 If the car restarts during a session (a crash, `/car/reboot`), `car_guard`
 sets up the TF and lidar again, but leaves the motors off and logs an error:
@@ -705,6 +741,9 @@ gives the controller its TF back and stops the lidar.
 
 Maps are saved outside the repo, in `~/maps` on the PC.
 
+With `nav2:=true` or `explore:=true`, `ekf:=false` leaves Nav2 without
+`/odometry/filtered`, and `pc_bringup` logs a warning.
+
 ### Mapping by hand
 
 Drive slowly (0.1–0.15 m/s) with gentle turns, and pause after turns. Go back
@@ -717,8 +756,9 @@ over that area.
 `map_saver_cli` saves the map image (`.pgm` + `.yaml`), which is what AMCL
 navigates on. To add to a map later, also save slam_toolbox's own model with
 `serialize_map` (`.posegraph` + `.data`), as in the table. Then
-`slam_map:=$HOME/maps/<name>` loads it and carries on mapping, with no
-extension on the name. Save both again at the end, and the image afterwards
+`slam_map:=$HOME/maps/<name>` loads it and carries on mapping. The name may
+be given with or without the `.posegraph` extension, and the bumps file is
+`<name>.bumps.yaml` either way. Save both again at the end, and the image afterwards
 matches the model.
 
 slam_toolbox assumes the car starts where the saved mapping started, facing
@@ -751,10 +791,11 @@ car:
   the sides, but the rear corners reach further. The global costmap, which the
   planner uses, has 0.25 m inflation: with 0.35 m, the margins round
   furniture legs merged and trapped the car. The local costmap, which the
-  controller steers by, has a wider, slower-fading 0.40 m margin, so the car
-  keeps further from chair legs as it passes them without the planner losing
-  the gaps. In the simulator, the closest approach to the box went from
-  0.36 m to 0.44 m.
+  controller steers by, has a slightly wider 0.30 m margin with the same
+  steep fade (cost scaling 5.0), so the car keeps further from chair legs as
+  it passes them without the planner losing the gaps. A 0.40 m margin with
+  cost scaling 3.0 made narrow but passable gaps so costly that MPPI stood
+  still.
 - **Timeouts:** longer transform tolerances for WiFi, and
   `default_server_timeout: 100` so goals don't abort under load. The
   velocity smoother stops repeating the last command after 0.3 s
@@ -762,10 +803,11 @@ car:
   car's own 0.3 s timeout.
 - Nav2 runs composed in one process.
 - **The map subscription depends on the mode,** and `pc_bringup` sets it.
-  slam_toolbox publishes `/map` as volatile, and a transient-local subscriber
-  never receives it, which left the global costmap empty. `map_server`
-  publishes once, as transient local, so it needs a transient-local
-  subscriber.
+  slam_toolbox (2.10 on Lyrical) and `map_server` both publish `/map` as
+  transient local, which a subscriber of either durability receives.
+  `map_server` publishes only once, so in saved-map mode the subscriber must
+  be transient local to get the map. RViz's Map display uses transient
+  local, which works in both modes.
 
 ### Exploring
 
@@ -802,6 +844,8 @@ result on `/motion_check`:
 | `stuck` | Commanded to move, but under 30% of it |
 | `pushed` | Moving without a command |
 | `unknown` | The scans can't tell, e.g. a featureless corridor |
+
+A gyro turn the opposite way to the commanded turn counts as no turn.
 
 A state is only reported once it has lasted 1.5 s, so one bad scan match
 can't trigger it: about 2.5 s after it starts (1 s of movement, then the
@@ -859,7 +903,9 @@ ros2 service call /motion_check/clear_bumps std_srvs/srv/Empty
 
 A mark is made after about 1 s of pushing, and it is a row at the
 car's edge, not the obstacle's shape. Stuck while turning on the spot
-marks nothing, as which corner caught is unknown.
+marks nothing, as which corner caught is unknown, and neither does an arc
+that turns short while the distance driven is fine (normal on carpet for a
+skid steer): only a short distance marks a bump and holds the EKF.
 
 Checked in the simulator (a chair leg the simulated lidar doesn't see,
 `hidden_leg`, see [Testing without the car](#testing-without-the-car)): the
@@ -971,7 +1017,7 @@ Other tools:
 | [tools/scan_check.py](tools/scan_check.py) | Closest lidar return in each direction around the car |
 | [tools/imu_stats.py](tools/imu_stats.py) | IMU rate, bias and noise |
 | [tools/odom_cal.py](tools/odom_cal.py) | Odometry calibration on the floor |
-| [tools/pulse_count.py](tools/pulse_count.py) | Step pulses per second on the four STEP pins, on the Pi (`sudo`) |
+| [tools/pulse_count.py](tools/pulse_count.py) | Step pulses per second on the four STEP pins, on the Pi (`sudo`). It also reports gaps where the Pi preempted it for longer than about half a step period (count, longest gap, and how far low the counts may be), so a low count from those isn't mistaken for a PWM fault |
 | [tools/kernel_pwm_test.sh](tools/kernel_pwm_test.sh) | The kernel PWM on its own at 3–10 kHz, on the Pi (stops `car_s` while it runs) |
 
 ## Troubleshooting
@@ -983,8 +1029,9 @@ Other tools:
 | Step pulses at wildly wrong rates (`tools/pulse_count.py`) | Something changed the PWM clock behind the kernel's back, such as pigpio's PWM: reboot |
 | Motors don't move, and `journalctl -u car_s` says "Ignoring cmd_vel, motors are off" | Send `motor_on` true (`m` in `key_cmd`). In auto mode, hold the key down |
 | No `/scan`, and the lidar node logs "cannot bind to the specified serial port" | The lidar isn't on USB. Check `lsusb` for the CP210x and `ls /dev/ttyUSB*`, then the cable (one failed). Then `sudo systemctl restart car_s` |
-| No `/scan`, the lidar spins, and `rplidar_composition` uses 100% CPU | The driver has wedged, and service calls to it hang. It used to happen when `/start_motor` was called while it was already running; the patch stops that. Restart `car_s` |
+| No `/scan`, the lidar spins, and `rplidar_composition` uses 100% CPU | The driver has wedged, and service calls to it hang. It used to happen when `/start_motor` was called while it was already running; the patch stops that. The patched driver still ignores `/start_motor` while scans are arriving, but if none has arrived for 5 s it logs "No scan for 5 s, restarting" and restarts the scan. If that doesn't bring `/scan` back, restart `car_s` |
 | `car_imu` or `car_mag`: "Can't open /dev/i2c-1" or "No MPU6050/QMC5883L answering" | Check that `dtparam=i2c_arm=on` is set, the user is in `i2c`, and the wiring: `i2cdetect -y 1` should show `68` and `0d` |
+| `car_imu`: "IMU reads failing" / "IMU readings frozen", or `car_mag`: "No magnetometer data", then the node restarts | The chip stopped answering or reset mid-run (loose wiring, brown-out); check the I2C wires and `i2cdetect -y 1` |
 | The PC can't see the car's topics, or sees topics but not nodes or parameters | Same network and `ROS_DOMAIN_ID` on both, and the Beelink's firewall rule for the car (see [Machines and network](#machines-and-network)) |
 | "Lookup would require extrapolation into the future" over and over | The clocks disagree: check `timedatectl` on both machines |
 | RViz shows no lidar points with the fixed frame `map` | There's no `map` frame yet: with AMCL, set **2D Pose Estimate** |

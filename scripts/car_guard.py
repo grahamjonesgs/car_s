@@ -13,7 +13,8 @@ checking:
   stop for a while (the patched lidar driver ignores a start while running).
 - motors_on: the motors are enabled when the controller first appears. After
   a car restart they are left off, with a warning: re-arming them by itself
-  after something went wrong would be unsafe.
+  after something went wrong would be unsafe. A motor_on false from anyone
+  else (key_cmd, car_power) cancels any enables still to be sent.
 """
 import rclpy
 import rclpy.executors
@@ -30,6 +31,7 @@ CHECK_S = 1.0          # how often to look
 TF_RECHECK_S = 5.0     # how often to confirm publish_odom_tf is still false
 SCAN_GAP_S = 5.0       # no /scan for this long: start the lidar
 LIDAR_RETRY_S = 10.0   # at most one /start_motor per this long
+CALL_TIMEOUT_S = 5.0   # forget a service call with no reply after this long
 
 
 class CarGuard(Node):
@@ -44,6 +46,7 @@ class CarGuard(Node):
         self.start_motor = self.create_client(Empty, '/start_motor')
         self.motor_pub = self.create_publisher(Bool, '/motor_on', 10)
         self.create_subscription(LaserScan, '/scan', self.on_scan, qos_profile_sensor_data)
+        self.create_subscription(Bool, '/motor_on', self.on_motor_on, 10)
 
         now = self.now()
         self.present = False
@@ -52,7 +55,7 @@ class CarGuard(Node):
         self.last_tf_check = now
         self.last_scan = now
         self.last_lidar_start = now - LIDAR_RETRY_S
-        self.busy = set()  # service calls in flight
+        self.busy = {}  # service calls in flight: key -> (sent at, client, future)
         self.enables_to_send = 0
         self.create_timer(CHECK_S, self.check)
         self.get_logger().info(
@@ -65,6 +68,13 @@ class CarGuard(Node):
     def on_scan(self, _):
         self.last_scan = self.now()
 
+    def on_motor_on(self, msg):
+        # car_guard only ever sends true, so a false is someone turning the
+        # motors off: don't override them
+        if not msg.data and self.enables_to_send:
+            self.enables_to_send = 0
+            self.get_logger().info('Motors turned off elsewhere: not enabling them')
+
     def controller_present(self):
         return any(name == CONTROLLER and ns == '/'
                    for name, ns in self.get_node_names_and_namespaces())
@@ -76,12 +86,22 @@ class CarGuard(Node):
             self.appeared()
         elif self.present and not present:
             self.get_logger().warning(f'/{CONTROLLER} has gone: is the car still running?')
+            # Never enable the motors of a car that has restarted
+            self.enables_to_send = 0
         self.present = present
+        for key, (sent, client, future) in list(self.busy.items()):
+            if now - sent > CALL_TIMEOUT_S:
+                client.remove_pending_request(future)
+                del self.busy[key]
+                self.get_logger().warning(f'No reply to the {key} call: trying again')
         if not present:
             return
 
-        # Only once the controller is subscribed, or the message is lost
-        if self.enables_to_send and self.motor_pub.get_subscription_count() > 0:
+        # Only once the controller is subscribed, or the message is lost (not
+        # get_subscription_count: car_guard's own subscription counts too)
+        if self.enables_to_send and any(
+                info.node_name == CONTROLLER and info.node_namespace == '/'
+                for info in self.get_subscriptions_info_by_topic('/motor_on')):
             self.motor_pub.publish(Bool(data=True))
             self.enables_to_send -= 1
             if not self.enables_to_send:
@@ -98,10 +118,20 @@ class CarGuard(Node):
                 and now - self.last_lidar_start > LIDAR_RETRY_S
                 and 'lidar' not in self.busy and self.start_motor.service_is_ready()):
             self.last_lidar_start = now
-            self.busy.add('lidar')
             self.get_logger().info('No /scan: starting the lidar motor')
-            self.start_motor.call_async(Empty.Request()).add_done_callback(
-                lambda _: self.busy.discard('lidar'))
+            self.call('lidar', self.start_motor, Empty.Request(), lambda _: None)
+
+    def call(self, key, client, request, done):
+        """call_async, with the call in self.busy until it is answered or times out."""
+        future = client.call_async(request)
+        self.busy[key] = (self.now(), client, future)
+
+        def finished(f):
+            # Only if it is still this call, not a retry after a timeout
+            if self.busy.get(key, (None, None, None))[2] is f:
+                del self.busy[key]
+            done(f)
+        future.add_done_callback(finished)
 
     def appeared(self):
         self.tf_off = False
@@ -122,31 +152,27 @@ class CarGuard(Node):
     def set_tf_off(self):
         if 'set_tf' in self.busy or not self.set_params.service_is_ready():
             return
-        self.busy.add('set_tf')
         value = ParameterValue(type=ParameterType.PARAMETER_BOOL, bool_value=False)
         req = SetParameters.Request(parameters=[Parameter(name='publish_odom_tf', value=value)])
 
         def done(future):
-            self.busy.discard('set_tf')
             result = future.result()
             if result and result.results and result.results[0].successful:
                 self.tf_off = True
                 self.last_tf_check = self.now()
                 self.get_logger().info('Car TF off: the EKF publishes odom -> base_link')
-        self.set_params.call_async(req).add_done_callback(done)
+        self.call('set_tf', self.set_params, req, done)
 
     def check_tf_off(self):
         if 'get_tf' in self.busy or not self.get_params.service_is_ready():
             return
-        self.busy.add('get_tf')
 
         def done(future):
-            self.busy.discard('get_tf')
             result = future.result()
             if result and result.values and result.values[0].bool_value:
                 self.get_logger().warning('Car TF was back on: turning it off again')
                 self.tf_off = False
-        self.get_params.call_async(GetParameters.Request(names=['publish_odom_tf'])).add_done_callback(done)
+        self.call('get_tf', self.get_params, GetParameters.Request(names=['publish_odom_tf']), done)
 
 
 def main():
