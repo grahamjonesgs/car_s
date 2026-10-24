@@ -53,6 +53,18 @@ Next steps, in order:
   changes, Ctrl-C in `key_cmd`, and the drivers disabled within 49 ms of a
   `kill -9` on the controller; then odometry recalibrated on the floor and a
   first exploration run. The I²C move hasn't run on the car yet.
+- **Bench-tested with the motor battery off** (2026-10-24, after the code
+  review fixes): `/motor_state` follows the drivers; the ramp reaches
+  0.2 m/s in 0.3 s; turn-360 spins of 364°, including straight after an
+  earlier turn; `m` in `key_cmd` turns off motors that car_guard enabled,
+  on the first press; `l` follows the real lidar state; Ctrl-\ stops the
+  car and restores the terminal; car_guard enables once, gives way to an
+  early motor-off and leaves the motors off after a car restart; unexporting
+  a PWM channel makes the controller disable the drivers and exit, and
+  systemd restarts it; all four STEP pins at the same rate
+  (`pulse_count.py`); no false "IMU readings frozen" in 15 minutes at rest.
+  Still to check on the floor: driving and turn-360 under load, arcs on
+  carpet marking no bump.
 
 Still to look at:
 
