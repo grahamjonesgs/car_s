@@ -52,6 +52,7 @@ from collections import deque
 import numpy as np
 import rclpy
 import rclpy.executors
+import rclpy.experimental
 import rclpy.time
 from geometry_msgs.msg import PoseWithCovarianceStamped, TwistStamped
 from nav_msgs.msg import Odometry
@@ -468,8 +469,13 @@ class MotionCheck(Node):
 def main():
     rclpy.init()
     node = MotionCheck()
+    # On the Pi the default executor's overhead, for about 140 messages a
+    # second (mostly the IMU), cost more than the scan matching: this one
+    # takes well under half the CPU
+    executor = rclpy.experimental.EventsExecutor()
+    executor.add_node(node)
     try:
-        rclpy.spin(node)
+        executor.spin()
     except (KeyboardInterrupt, rclpy.executors.ExternalShutdownException):
         pass
     node.destroy_node()
