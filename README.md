@@ -3,9 +3,12 @@
 ROS 2 Lyrical software for a Raspberry Pi 4 robot car with four stepper motors,
 an RPLIDAR A1, an MPU6050 IMU (accelerometer + gyro) and a QMC5883L magnetometer.
 
-The Pi runs the hardware nodes. A PC on the same network does the heavy work:
-sensor fusion (EKF), mapping (SLAM), navigation (Nav2) and autonomous
-exploration, plus RViz and keyboard driving with `key_cmd`.
+The Pi runs the hardware nodes, and next to them what needs only the car's
+own data, so WiFi delays can't reach it: sensor fusion (EKF), a collision
+monitor in front of the controller, and the stuck/slipping check
+(`motion_check`). A PC on the same network does the heavy work: mapping
+(SLAM), navigation (Nav2) and autonomous exploration, plus RViz and keyboard
+driving with `key_cmd`.
 
 ## Contents
 
@@ -197,8 +200,8 @@ The magnetometer shares the IMU's I2C bus (SDA/SCL).
 
 | Machine | Address | Role |
 |---|---|---|
-| Pi, `pi-car` | 192.168.68.78, WiFi | Hardware nodes, run at boot by the `car_s` service. Workspace `~/ros_ws` |
-| PC, `Ubuntu-Beelink` | 192.168.68.31, wired | EKF, SLAM, Nav2, exploration, RViz, `key_cmd`. AMD Ryzen AI 9 HX 470 (24 threads), Ubuntu 26.04, ROS 2 Lyrical (see [Setting up the PC](#setting-up-the-pc)). Workspace `~/ros2_ws` |
+| Pi, `pi-car` | 192.168.68.78, WiFi | Hardware nodes, EKF, collision monitor and `motion_check`, run at boot by the `car_s` service. Workspace `~/ros_ws` |
+| PC, `Ubuntu-Beelink` | 192.168.68.31, wired | SLAM, Nav2, exploration, RViz, `key_cmd`. AMD Ryzen AI 9 HX 470 (24 threads), Ubuntu 26.04, ROS 2 Lyrical (see [Setting up the PC](#setting-up-the-pc)). Workspace `~/ros2_ws` |
 | Old PC, `Ubuntu-ROS` | 192.168.68.82 | A 4-core VM with the same setup. Now too slow for the Nav2 settings |
 
 - Both machines use ROS 2 Lyrical and **Cyclone DDS**
@@ -210,8 +213,8 @@ The magnetometer shares the IMU's I2C bus (SDA/SCL).
   (2026-10-23, on the real car and in about half the simulator runs). Five
   simulator explorations in a row then worked on Cyclone. A plain shell on
   the Pi gets it from `~/.bashrc` (see [4. Workspace](#4-workspace)).
-- **Run the PC stack on one machine only.** Two EKFs or two SLAM nodes fight
-  over the car's TF.
+- **Run the PC stack on one machine only.** Two SLAM nodes fight over the
+  car's TF.
 - **SSH to the car:** `ssh graham@192.168.68.78` (key login from the
   Beelink and the old VM).
 - **Clocks:** both machines must be NTP-synced (`timedatectl` shows
@@ -249,8 +252,16 @@ The magnetometer shares the IMU's I2C bus (SDA/SCL).
 | `car_power` | Pi | `/car/shutdown` and `/car/reboot` services, to turn the Pi off cleanly |
 | `key_cmd` | PC | Keyboard teleop. Subscribes to `/motor_state` (for `m`) and `/scan` (for `l`) |
 | `imu_normalize` | Either | Prints running averages of `imu/data_raw`, for calibration |
-| `car_guard` | PC | Started by `pc_bringup.launch.py`: keeps the car's TF off for the EKF and the lidar spinning, again after a car restart; with `motors_on:=true` enables the motors once at start (never after a car restart) |
-| `motion_check` | PC | Started by `pc_bringup.launch.py`: compares odometry with the lidar and gyro, publishes `/motion_check` and `/motion_check/twist`, marks obstacles the lidar can't see on `/motion_check/bumps`, holds the EKF on `/set_pose` while stuck; `/motion_check/clear_bumps` forgets the marks. See [Stuck, slipping or pushed](#stuck-slipping-or-pushed) |
+| `ekf_node` | Pi | `robot_localization`, as `ekf_filter_node` ([config/ekf.yaml](config/ekf.yaml)): fuses `odom` and `imu/data_raw`, publishes `odometry/filtered` and `odom` → `base_link`. See [How localisation works](#how-localisation-works) |
+| `collision_monitor` | Pi | Nav2's collision monitor, as `car_collision_monitor` ([config/collision_monitor.yaml](config/collision_monitor.yaml)): passes Nav2's `cmd_vel_smoothed` on to `cmd_vel`, slowing the car so it can't reach anything the lidar sees within 1.2 s. Its lifecycle manager is `lifecycle_manager_car` |
+| `motion_check` | Pi | Compares odometry with the lidar and gyro, publishes `/motion_check` and `/motion_check/twist`, publishes new marks for obstacles the lidar can't see on `/motion_check/new_bumps`, holds the EKF on `/set_pose` while stuck. See [Stuck, slipping or pushed](#stuck-slipping-or-pushed) |
+| `car_guard` | PC | Started by `pc_bringup.launch.py`: keeps the lidar spinning, again after a car restart; with `motors_on:=true` enables the motors once at start (never after a car restart) |
+| `bump_store` | PC | Started by `pc_bringup.launch.py`: keeps motion_check's marks beside the map in use, publishes them all on `/motion_check/bumps` for the costmaps; `/motion_check/clear_bumps` forgets them |
+
+The EKF, collision monitor and `motion_check` are started by
+[launch/car_local.launch.py](launch/car_local.launch.py), which
+`robot_car.launch.py` includes; its arguments `ekf`, `safety_stop` and
+`motion_check` (all `true`) turn each off.
 
 The controller ramps each wheel's speed towards its target at `motor_accel`
 m/s² (default 1.0) rather than jumping straight to it, so the steppers don't
@@ -280,7 +291,7 @@ Parameters (all can be changed while it runs, with
 
 | Parameter | Default | Meaning |
 |---|---|---|
-| `publish_odom_tf` | `true` | Publish the TF `odom` → `base_link`. `pc_bringup.launch.py` turns it off while its EKF publishes that TF instead, and back on when it stops |
+| `publish_odom_tf` | `false` while the car's EKF runs, else `true` | Publish the TF `odom` → `base_link`. `robot_car.launch.py` sets it: only one of the controller and the EKF may publish that TF |
 | `wheel_separation` | `0.262` | Effective distance between left and right wheels (m), calibrated against the gyro. Skid steer needs more than the physical 0.19 m |
 | `m_per_revolution` | `0.2016` | Distance travelled per wheel revolution (m), calibrated by tape measure (nominal 0.21) |
 | `cmd_vel_timeout` | `0.3` | In auto mode, stop this long (s) after the last `cmd_vel`. Long enough for WiFi jitter |
@@ -310,8 +321,8 @@ them, change the defaults in
 
 ### Frames
 
-`odom` → `base_link` comes from the controller, or from the EKF on the PC
-while `pc_bringup.launch.py` runs. `robot_state_publisher` adds
+`odom` → `base_link` comes from the EKF on the car, or from the controller
+when the car runs with `ekf:=false`. `robot_state_publisher` adds
 `base_link` → `imu_link`, `mag_link` (at the IMU's position for now, not
 measured), `laser_link` (turned 180°) and the wheel links
 from [urdf/robot_car.urdf.xml](urdf/robot_car.urdf.xml). The wheel joints are
@@ -349,7 +360,7 @@ commanded, not what the car did:
 The localisation is built around that:
 
 - **EKF** ([config/ekf.yaml](config/ekf.yaml), `robot_localization` on the
-  PC): takes only the forward and sideways speed from `/odom`, and the yaw
+  car, next to its inputs): takes only the forward and sideways speed from `/odom`, and the yaw
   rate from the gyro, so it never uses the wheels' idea of rotation. It
   publishes `odom` → `base_link` at 30 Hz.
 - **SLAM** ([config/slam.yaml](config/slam.yaml), `slam_toolbox`): scan
@@ -458,6 +469,9 @@ git -C car_s pull
 cd ~/ros_ws && MAKEFLAGS=-j2 colcon build --symlink-install --parallel-workers 2 --packages-select car_s
 sudo systemctl restart car_s     # keep the car still while the gyro calibrates
 ```
+
+When an update adds dependencies to `package.xml`, install them first with
+`rosdep install -i --from-paths src --rosdistro lyrical -y` in `~/ros_ws`.
 
 `rplidar_ros` carries a local patch, so pull it only on purpose, then
 reapply the patch if needed. When an update to car_s changes
@@ -722,23 +736,24 @@ frame.
 ## Mapping, navigation and exploration
 
 [launch/pc_bringup.launch.py](launch/pc_bringup.launch.py) runs everything on
-the PC: the EKF, `slam_toolbox` or AMCL, Nav2, `explore_lite` and RViz, with
-the parameters in [config/](config/). Its `car_guard` node
-([scripts/car_guard.py](scripts/car_guard.py)) also:
+the PC: `slam_toolbox` or AMCL, Nav2, `explore_lite`, `bump_store` and RViz,
+with the parameters in [config/](config/). The EKF, the collision monitor
+and `motion_check` already run on the car. Nav2's own collision monitor is
+left unconfigured: the car's takes Nav2's `cmd_vel_smoothed` instead. Its
+`car_guard` node ([scripts/car_guard.py](scripts/car_guard.py)) also:
 
-- turns off the controller's TF while the EKF runs, and checks it stays off
 - starts the lidar motor, and again whenever scans stop for 5 s
 - with `motors_on:=true`, enables the motors once the controller is listening
   (a motor-off from `key_cmd` or anyone else in the first few seconds cancels
   this)
-- retries a TF or lidar service call that gets no reply within 5 s
+- retries a lidar service call that gets no reply within 5 s
 
 If the car restarts during a session (a crash, `/car/reboot`), `car_guard`
-sets up the TF and lidar again, but leaves the motors off and logs an error:
+starts the lidar again, but leaves the motors off and logs an error:
 enable them with `m` in `key_cmd` when it's safe.
 
-When you stop it with Ctrl-C, it disables the motors (if it enabled them),
-gives the controller its TF back and stops the lidar.
+When you stop it with Ctrl-C, it disables the motors (if it enabled them)
+and stops the lidar.
 
 | Task | Command |
 |---|---|
@@ -749,12 +764,13 @@ gives the controller its TF back and stops the lidar.
 | Navigate on a saved map | `ros2 launch car_s pc_bringup.launch.py slam:=false nav2:=true motors_on:=true map:=$HOME/maps/room.yaml` |
 | Map and navigate at the same time | `ros2 launch car_s pc_bringup.launch.py nav2:=true motors_on:=true` |
 | Explore and map by itself | `ros2 launch car_s pc_bringup.launch.py explore:=true motors_on:=true` |
-| EKF only, no SLAM or RViz | `ros2 launch car_s pc_bringup.launch.py slam:=false rviz:=false` |
+| Only car_guard and bump_store (the car's EKF runs anyway) | `ros2 launch car_s pc_bringup.launch.py slam:=false rviz:=false` |
 
 Maps are saved outside the repo, in `~/maps` on the PC.
 
-With `nav2:=true` or `explore:=true`, `ekf:=false` leaves Nav2 without
-`/odometry/filtered`, and `pc_bringup` logs a warning.
+Nav2 needs the car's EKF (`/odometry/filtered`) and its collision monitor
+(which turns `cmd_vel_smoothed` into `cmd_vel`): with the car running
+`ekf:=false` or `safety_stop:=false`, Nav2 can't drive it.
 
 ### Mapping by hand
 
@@ -789,8 +805,14 @@ frame, so the planner can't start and goals are rejected. Then click
 The Nav2 settings ([config/nav2.yaml](config/nav2.yaml)) are adapted for this
 car:
 
-- **Base frame:** `base_link`, with odometry from the EKF's
+- **Base frame:** `base_link`, with odometry from the car's EKF,
   `/odometry/filtered`.
+- **Collision monitor:** on the car (see
+  [Nodes and topics](#nodes-and-topics)), checking the scans as they arrive
+  rather than after WiFi. Its footprint reaches 0.22 m ahead of `base_link`,
+  not 0.12 m: the lidar, 0.05 m ahead, sees nothing closer than 0.15 m, so
+  with the real front edge an obstacle vanished just before contact and the
+  car drove on (seen in the simulator).
 - **Speed:** unstamped `cmd_vel`, up to 0.2 m/s and 1.0 rad/s, with gentle
   acceleration so the steppers don't skip.
 - **Controller:** MPPI, with the default 2000 samples × 56 steps. That's too
@@ -842,8 +864,9 @@ When it says "No frontiers found" or "All frontiers traversed", save the map.
 The wheel odometry counts the steps sent to the motors, so it can't tell
 when the wheels turn without moving the car (stuck on something, slipping,
 lifted off the floor) or when the car is pushed.
-[scripts/motion_check.py](scripts/motion_check.py), started by
-`pc_bringup.launch.py` (`motion_check:=false` turns it off), compares it
+[scripts/motion_check.py](scripts/motion_check.py), on the car (started by
+`car_local.launch.py`; `motion_check:=false` on the car turns it off),
+compares it
 over the last second with what the car really did: the latest lidar scan
 matched against one from a second earlier, and the gyro. It publishes the
 result on `/motion_check`:
@@ -864,7 +887,7 @@ can't trigger it: about 2.5 s after it starts (1 s of movement, then the
 hold). Stuck while driving, the clearest case, is also checked over the
 last 0.5 s, when the wheels commanded at least 5 cm in it, and reported after
 0.5 s: about 1 s after the car hits something. Changes are logged in the
-launch terminal ("Motion: stuck (moved 0.00 m of 0.15 m ...)"), as warnings
+car's journal, `journalctl -u car_s` ("Motion: stuck (moved 0.00 m of 0.15 m ...)"), as warnings
 for stuck, slipping and pushed. The measured movement is on
 `/motion_check/twist`, to plot against `/odom`.
 
@@ -897,13 +920,17 @@ can't see:
    car's own footprint inside the mark and gives up. The pose it holds is
    the map pose from before the drift, turned into odom with SLAM's
    map -> odom as it is then: SLAM corrects part of the drift itself.
-3. The marks go to `bump_layer` in both costmaps (config/nav2.yaml), which
-   only motion_check's `/motion_check/bumps` feeds and the lidar never
-   clears, so Nav2 plans round them. They are republished every second, so a
-   costmap clear doesn't lose them.
+3. It publishes the new marks on `/motion_check/new_bumps`. `bump_store`
+   on the PC ([scripts/bump_store.py](scripts/bump_store.py)) adds them to
+   its list and publishes them all on `/motion_check/bumps` to `bump_layer`
+   in both costmaps (config/nav2.yaml), which nothing else feeds and the
+   lidar never clears, so Nav2 plans round them. They are republished every
+   second, so a costmap clear doesn't lose them. Marks made while
+   `pc_bringup` isn't running are lost.
 
-The log shows "Marked something the lidar can't see ahead at (x, y)". The
-marks are kept beside the map in use, `<map>.bumps.yaml` (for `map:=` or
+The car's log shows "Marked something the lidar can't see ahead at
+(x, y)", and the PC's "5 bump points marked". `bump_store` keeps the
+marks beside the map in use, `<map>.bumps.yaml` (for `map:=` or
 `slam_map:=`), and loaded with it next time. A new map keeps them in
 `~/.ros/car_s_bumps.yaml`: copy that to `~/maps/<name>.bumps.yaml` when
 saving the map as `<name>`. To forget them all (a false "stuck", say on a
@@ -998,11 +1025,12 @@ noise.
 
 [tools/sim_test.sh](tools/sim_test.sh) runs `pc_bringup.launch.py` against a
 simulated car ([tools/sim_car.py](tools/sim_car.py)) in a 4 × 3 m room with a
-box in it. It uses ROS domain 42, limited to localhost, so the real car is
+box in it, with `car_local.launch.py` (EKF, collision monitor,
+`motion_check`) beside it as on the real car. It uses ROS domain 42, limited to localhost, so the real car is
 never involved. Arguments pass through to `pc_bringup.launch.py`:
 
 ```bash
-tools/sim_test.sh                                    # EKF + SLAM + RViz
+tools/sim_test.sh                                    # SLAM + RViz
 tools/sim_test.sh nav2:=true motors_on:=true         # send goals with Nav2 Goal
 tools/sim_test.sh explore:=true motors_on:=true      # explores the room in about 40 s
 ```
@@ -1048,7 +1076,7 @@ Other tools:
 | "Lookup would require extrapolation into the future" over and over | The clocks disagree: check `timedatectl` on both machines |
 | RViz shows no lidar points with the fixed frame `map` | There's no `map` frame yet: with AMCL, set **2D Pose Estimate** |
 | Nav2 goals do nothing, and RViz logs "Goal was rejected by server" | Nav2 isn't fully started (`ros2 lifecycle get /bt_navigator`). With AMCL, it needs a pose first |
-| The car's TF is off after the PC stack died | `ros2 param set /car_controller publish_odom_tf true`, or restart `car_s` |
+| Nav2 plans but the car doesn't move, and `/cmd_vel` stays quiet | The car's collision monitor isn't running or is blocking: `ros2 lifecycle get /car_collision_monitor` (should be `active`), and `ros2 topic echo /collision_monitor_state` |
 | Odd TF, drifting maps or doubled robots | Something from an earlier run is still running. Check `ros2 node list` for duplicates, and for the simulator, look for leftovers on domain 42 (see below) |
 | Build killed on the Pi | Out of memory, use the `MAKEFLAGS=-j2 ... --parallel-workers 2` build command |
 

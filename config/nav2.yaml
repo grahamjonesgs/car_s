@@ -504,37 +504,9 @@ velocity_smoother:
     # 1.0 it hid a stalled controller from the car's own 0.3 s timeout
     velocity_timeout: 0.3
 
-collision_monitor:
-  ros__parameters:
-    base_frame_id: "base_link"
-    odom_frame_id: "odom"
-    enable_stamped_cmd_vel: false
-    cmd_vel_in_topic: "cmd_vel_smoothed"
-    cmd_vel_out_topic: "cmd_vel"
-    state_topic: "collision_monitor_state"
-    transform_tolerance: 0.3
-    source_timeout: 1.0
-    base_shift_correction: True
-    stop_pub_timeout: 2.0
-    # Polygons represent zone around the robot for "stop", "slowdown" and "limit" action types,
-    # and robot footprint for "approach" action type.
-    polygons: ["FootprintApproach"]
-    FootprintApproach:
-      type: "polygon"
-      action_type: "approach"
-      footprint_topic: "/local_costmap/published_footprint"
-      time_before_collision: 1.2
-      simulation_time_step: 0.1
-      min_points: 6
-      visualize: False
-      enabled: True
-    observation_sources: ["scan"]
-    scan:
-      type: "scan"
-      topic: "scan"
-      min_height: 0.15
-      max_height: 2.0
-      enabled: True
+# collision_monitor isn't used here: pc_bringup.launch.py leaves Nav2's
+# instance unconfigured, and the car runs its own, car_collision_monitor
+# (config/collision_monitor.yaml), between cmd_vel_smoothed and cmd_vel
 
 # Nav2 1.5 starts this with the navigation servers
 following_server:

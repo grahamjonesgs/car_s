@@ -36,11 +36,24 @@ def generate_launch_description():
                     'stopped, and can be started with the /start_motor service.'
     )
 
-    declare_publish_odom_tf_arg = DeclareLaunchArgument(
-        name='publish_odom_tf',
+    declare_ekf_arg = DeclareLaunchArgument(
+        name='ekf',
         default_value='true',
-        description='Publish the odom -> base_link TF from wheel odometry. The '
-                    'PC launch turns it off at run time while its EKF runs.'
+        description='Run the EKF on the car (launch/car_local.launch.py), which '
+                    'publishes odom -> base_link. When false, the controller '
+                    'publishes that TF from the wheel odometry instead.'
+    )
+
+    declare_safety_stop_arg = DeclareLaunchArgument(
+        name='safety_stop',
+        default_value='true',
+        description='Run the collision monitor between Nav2 and the controller.'
+    )
+
+    declare_motion_check_arg = DeclareLaunchArgument(
+        name='motion_check',
+        default_value='true',
+        description='Run motion_check (stuck, slipping or pushed).'
     )
 
     # Get URDF file path
@@ -104,8 +117,9 @@ def generate_launch_description():
         name='car_controller',
         output='screen',
         parameters=[{
-            'publish_odom_tf': ParameterValue(
-                LaunchConfiguration('publish_odom_tf'), value_type=bool),
+            # Only one of the two may publish odom -> base_link
+            'publish_odom_tf': ParameterValue(PythonExpression(
+                ["'", LaunchConfiguration('ekf'), "'.lower() != 'true'"]), value_type=bool),
         }],
         # If the controller dies, the kernel PWM keeps running without it: stop the
         # step pulses and disable the drivers at once, then end the whole
@@ -147,13 +161,28 @@ def generate_launch_description():
         output='screen',
     )
 
+    # The EKF, collision monitor and motion_check: on the car, so they don't
+    # wait on WiFi
+    car_local = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(
+            FindPackageShare(package=package_name).find(package_name),
+            'launch', 'car_local.launch.py')),
+        launch_arguments={
+            'ekf': LaunchConfiguration('ekf'),
+            'safety_stop': LaunchConfiguration('safety_stop'),
+            'motion_check': LaunchConfiguration('motion_check'),
+        }.items(),
+    )
+
     # Create launch description and add actions
     ld = LaunchDescription()
     ld.add_action(declare_robot_name_arg)
     ld.add_action(declare_use_sim_time_arg)
     ld.add_action(declare_lidar_arg)
     ld.add_action(declare_lidar_on_arg)
-    ld.add_action(declare_publish_odom_tf_arg)
+    ld.add_action(declare_ekf_arg)
+    ld.add_action(declare_safety_stop_arg)
+    ld.add_action(declare_motion_check_arg)
     ld.add_action(robot_state_publisher_node)
     ld.add_action(laser_scanner_node) # Add the laser scanner node.
     ld.add_action(stop_lidar_motor)
@@ -161,4 +190,5 @@ def generate_launch_description():
     ld.add_action(picar_imu_node)
     ld.add_action(car_power_node)
     ld.add_action(picar_mag_node)
+    ld.add_action(car_local)
     return ld

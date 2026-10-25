@@ -1,5 +1,6 @@
-# PC side of the car: EKF, SLAM, Nav2 and RViz. The Pi runs
-# robot_car.launch.py (the controller, sensors and robot_state_publisher).
+# PC side of the car: SLAM, Nav2 and RViz. The Pi runs robot_car.launch.py:
+# the controller, sensors and robot_state_publisher, and next to them the
+# EKF, the collision monitor and motion_check (launch/car_local.launch.py).
 #
 #   Mapping:             ros2 launch car_s pc_bringup.launch.py
 #   Mapping + Nav2:      ros2 launch car_s pc_bringup.launch.py nav2:=true
@@ -12,11 +13,9 @@
 #                        ros2 launch car_s pc_bringup.launch.py \
 #                          slam_map:=$HOME/maps/cave
 #
-# While the EKF runs it publishes odom -> base_link, so car_guard
-# (scripts/car_guard.py) turns off the controller's own TF (publish_odom_tf),
-# keeps the lidar running and enables the motors, again if the car restarts.
-# At shutdown the TF is turned back on, the lidar stopped and the motors
-# disabled.
+# car_guard (scripts/car_guard.py) keeps the lidar running and enables the
+# motors (once: not again after a car restart). At shutdown the lidar is
+# stopped and the motors disabled.
 
 import importlib.util
 import os
@@ -38,21 +37,15 @@ from launch_ros.descriptions import ComposableNode
 from launch_ros.parameter_descriptions import ParameterValue
 from nav2_common.launch import RewrittenYaml
 
-CONTROLLER_NODE = '/car_controller'
-
-
 def restore_on_shutdown(context):
-    """Give the controller back its TF, stop the lidar, and disable the motors
-    if this enabled them, when it exits."""
+    """Stop the lidar, and disable the motors if this enabled them, when it
+    exits."""
     commands = []
     if LaunchConfiguration('motors_on').perform(context).lower() == 'true':
         # First, so the car can't act on a last command from Nav2
         commands.append(['ros2', 'topic', 'pub', '-w', '1', '--times', '3',
                          '--rate', '10', '/motor_on', 'std_msgs/msg/Bool',
                          '{data: false}'])
-    if LaunchConfiguration('ekf').perform(context).lower() == 'true':
-        commands.append(['ros2', 'param', 'set', CONTROLLER_NODE,
-                         'publish_odom_tf', 'true'])
     if LaunchConfiguration('start_lidar').perform(context).lower() == 'true':
         commands.append(['ros2', 'service', 'call', '/stop_motor',
                          'std_srvs/srv/Empty'])
@@ -123,7 +116,10 @@ def start_lifecycle_manager(context, nav2_dir, nav2_on, map_yaml):
             os.path.join(nav2_dir, 'launch', 'navigation_launch.py'))
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        nodes += list(module.get_lifecycle_nodes(context))
+        # The collision monitor runs on the car (car_collision_monitor), so
+        # Nav2's own is left unconfigured, which leaves it doing nothing
+        nodes += [n for n in module.get_lifecycle_nodes(context)
+                  if n != 'collision_monitor']
     if not nodes:
         return []
     return [LoadComposableNodes(
@@ -138,11 +134,11 @@ def start_lifecycle_manager(context, nav2_dir, nav2_on, map_yaml):
     )]
 
 
-def start_motion_check(context):
-    # Bumps (low obstacles motion_check marks) belong to a map frame: keep
-    # them beside the saved map in use, and load them with it. A new map
-    # starts with none, in ~/.ros/car_s_bumps.yaml (copy it beside the map
-    # when saving it)
+def start_bump_store(context):
+    # Bumps (low obstacles motion_check on the car marks) belong to a map
+    # frame: keep them beside the saved map in use, and load them with it. A
+    # new map starts with none, in ~/.ros/car_s_bumps.yaml (copy it beside
+    # the map when saving it)
     slam_map = os.path.expanduser(
         LaunchConfiguration('slam_map').perform(context)).removesuffix('.posegraph')
     map_yaml = os.path.expanduser(LaunchConfiguration('map').perform(context))
@@ -154,8 +150,8 @@ def start_motion_check(context):
         bumps_file, load = '~/.ros/car_s_bumps.yaml', False
     return [Node(
         package='car_s',
-        executable='motion_check',
-        name='motion_check',
+        executable='bump_store',
+        name='bump_store',
         output='screen',
         parameters=[{'bumps_file': bumps_file, 'load_bumps': load}],
     )]
@@ -165,7 +161,6 @@ def generate_launch_description():
     car_s_dir = get_package_share_directory('car_s')
     nav2_dir = get_package_share_directory('nav2_bringup')
 
-    ekf = LaunchConfiguration('ekf')
     slam = LaunchConfiguration('slam')
     nav2 = LaunchConfiguration('nav2')
     map_yaml = LaunchConfiguration('map')
@@ -173,12 +168,8 @@ def generate_launch_description():
     start_lidar = LaunchConfiguration('start_lidar')
     motors_on = LaunchConfiguration('motors_on')
     explore = LaunchConfiguration('explore')
-    motion_check = LaunchConfiguration('motion_check')
 
     args = [
-        DeclareLaunchArgument(
-            'ekf', default_value='true',
-            description='Fuse wheel odometry and gyro with robot_localization'),
         DeclareLaunchArgument(
             'slam', default_value='true',
             description='Build a map with slam_toolbox'),
@@ -203,11 +194,6 @@ def generate_launch_description():
             description='Explore with explore_lite, which sends Nav2 goals to '
                         'the edges of the SLAM map (turns Nav2 on)'),
         DeclareLaunchArgument(
-            'motion_check', default_value='true',
-            description='Compare the wheel odometry with the lidar and gyro, and '
-                        'report on /motion_check when the car is stuck, slipping '
-                        'or pushed'),
-        DeclareLaunchArgument(
             'slam_map', default_value='',
             description='Saved SLAM model to carry on mapping from, without '
                         'extension (saved with /slam_toolbox/serialize_map)'),
@@ -221,25 +207,14 @@ def generate_launch_description():
     nav2_on = PythonExpression(
         ["'", nav2, "'.lower() == 'true' or '", explore, "'.lower() == 'true'"])
 
-    ekf_node = Node(
-        package='robot_localization',
-        executable='ekf_node',
-        name='ekf_filter_node',
-        output='screen',
-        parameters=[os.path.join(car_s_dir, 'config', 'ekf.yaml'),
-                    {'use_sim_time': False}],
-        condition=IfCondition(ekf),
-    )
-
-    # Turns the car's TF off for the EKF, keeps the lidar spinning and enables
-    # the motors, and does it again if the car restarts during the session
+    # Keeps the lidar spinning and enables the motors (not again after a car
+    # restart)
     car_guard = Node(
         package='car_s',
         executable='car_guard',
         name='car_guard',
         output='screen',
         parameters=[{
-            'ekf': ParameterValue(ekf, value_type=bool),
             'start_lidar': ParameterValue(start_lidar, value_type=bool),
             'motors_on': ParameterValue(motors_on, value_type=bool),
         }],
@@ -300,10 +275,8 @@ def generate_launch_description():
         args=[nav2_dir, nav2_on, map_yaml],
         condition=IfCondition(run_nav2))
 
-    # The wheel odometry counts commanded steps; this notices when the car
-    # isn't doing what they say (scripts/motion_check.py)
-    motion_check_node = OpaqueFunction(function=start_motion_check,
-                                       condition=IfCondition(motion_check))
+    # Keeps the bumps motion_check marks on the car (scripts/bump_store.py)
+    bump_store_node = OpaqueFunction(function=start_bump_store)
 
     # explore_lite is only built on the PC, so it is looked up only when used
     explore_node = Node(
@@ -332,15 +305,6 @@ def generate_launch_description():
             ["'", slam, "'.lower() == 'true' and '", map_yaml, "' != ''"])),
     )
 
-    # Nav2's BT navigator, controller and velocity smoother read /odometry/filtered, which
-    # only the EKF publishes
-    nav2_needs_ekf = LogInfo(
-        msg='WARNING: Nav2 is on but ekf is false, so nothing publishes '
-            '/odometry/filtered and Nav2 has no odometry',
-        condition=IfCondition(PythonExpression(
-            ["'", nav2_on, "' == 'True' and '", ekf, "'.lower() != 'true'"])),
-    )
-
     # The map frame only exists with SLAM or AMCL running
     rviz_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -358,10 +322,8 @@ def generate_launch_description():
 
     return LaunchDescription(args + [
         both_maps_warning,
-        nav2_needs_ekf,
         car_guard,
-        motion_check_node,
-        ekf_node,
+        bump_store_node,
         slam_launch,
         nav2_container,
         localization_launch,

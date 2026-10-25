@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Notice when the car is stuck, slipping or being pushed.
 
-Runs on the PC, started by pc_bringup.launch.py. The wheel odometry counts
+Runs on the car, started by launch/car_local.launch.py, next to the data it
+uses, so WiFi delays don't reach it. The wheel odometry counts
 the steps sent to the motors, so it carries on when the wheels spin without
 moving the car (stuck, slipping, lifted) and misses the car being pushed.
 This compares it, over the last second, with two measurements of what the
@@ -31,13 +32,10 @@ pushed). The measured motion is published on /motion_check/twist
 Bumps: when the car gets stuck driving forwards or backwards (the distance
 short, not just the turn), something the lidar can't see is probably in the
 way, such as a low chair leg. It marks a row of points just beyond the
-footprint's front or rear edge, in the map frame, and publishes all the
-marks on /motion_check/bumps (PointCloud2, about once a second). The
-costmaps' bump_layer (config/nav2.yaml) turns them into obstacles that the
-lidar doesn't clear, so Nav2 plans around them. They are kept in
-bumps_file, loaded at start if load_bumps is true (the same saved map, so
-the same map frame). /motion_check/clear_bumps (std_srvs/Empty) forgets them
-all and clears the costmaps.
+footprint's front or rear edge, in the map frame, and publishes the new
+marks on /motion_check/new_bumps (PointCloud2). bump_store on the PC
+(scripts/bump_store.py) keeps them, beside the saved map, and publishes them
+all for the costmaps.
 
 A stuck car's odometry carries on counting, so the EKF's pose drifts on past
 the obstacle, and Nav2 then finds the car's own footprint in collision. So
@@ -49,23 +47,19 @@ now: SLAM corrects part of the drift by itself, and resetting odom to its old
 value as well would correct that part twice.
 """
 import math
-import os
 from collections import deque
 
 import numpy as np
 import rclpy
 import rclpy.executors
 import rclpy.time
-import yaml
 from geometry_msgs.msg import PoseWithCovarianceStamped, TwistStamped
-from nav2_msgs.srv import ClearEntireCostmap
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Imu, LaserScan, PointCloud2
 from sensor_msgs_py import point_cloud2
 from std_msgs.msg import Header, String
-from std_srvs.srv import Empty
 from tf2_ros import Buffer, TransformListener
 
 MAX_POINTS = 240       # scan points used for matching, after thinning
@@ -176,15 +170,6 @@ class MotionCheck(Node):
         self.map_frame = self.declare_parameter('map_frame', 'map').value
         self.odom_frame = self.declare_parameter('odom_frame', 'odom').value
         self.reset_ekf = self.declare_parameter('reset_ekf', True).value
-        self.bumps_file = os.path.expanduser(self.declare_parameter(
-            'bumps_file', '~/.ros/car_s_bumps.yaml').value)
-        self.bumps = []       # [x, y] in map_frame
-        if self.declare_parameter('load_bumps', False).value and os.path.exists(self.bumps_file):
-            with open(self.bumps_file) as f:
-                self.bumps = (yaml.safe_load(f) or {}).get('bumps', [])
-            self.get_logger().info(f'Loaded {len(self.bumps)} bump points from {self.bumps_file}')
-        else:
-            self.save_bumps()
         self.cmd_sign = 0.0   # direction of a translation found blocked, else 0
         # (clock time, x, y, yaw) of base_link in map_frame: a stuck car's
         # odometry carries on counting, so its pose drifts on past the
@@ -212,14 +197,9 @@ class MotionCheck(Node):
         self.create_subscription(Odometry, '/odom', self.on_odom, 50)
         self.create_subscription(Imu, '/imu/data_raw', self.on_imu, qos_profile_sensor_data)
         self.create_subscription(LaserScan, '/scan', self.on_scan, qos_profile_sensor_data)
-        self.bumps_pub = self.create_publisher(PointCloud2, '/motion_check/bumps', 10)
+        self.new_bumps_pub = self.create_publisher(PointCloud2, '/motion_check/new_bumps', 10)
         self.set_pose_pub = self.create_publisher(PoseWithCovarianceStamped, '/set_pose', 10)
-        self.clear_clients = [self.create_client(ClearEntireCostmap, name) for name in (
-            '/local_costmap/clear_entirely_local_costmap',
-            '/global_costmap/clear_entirely_global_costmap')]
-        self.create_service(Empty, '/motion_check/clear_bumps', self.on_clear_bumps)
         self.create_timer(1.0, self.publish_state)
-        self.create_timer(1.0, self.publish_bumps)
         self.get_logger().info('Comparing the wheel odometry with the lidar and gyro')
 
     @staticmethod
@@ -427,9 +407,9 @@ class MotionCheck(Node):
         for i in range(n):
             y = -self.half_width + i * 2 * self.half_width / (n - 1)
             new.append([round(px + c * x - s * y, 3), round(py + s * x + c * y, 3)])
-        self.bumps += new
-        self.save_bumps()
-        self.publish_bumps()
+        header = Header(frame_id=self.map_frame, stamp=self.get_clock().now().to_msg())
+        self.new_bumps_pub.publish(point_cloud2.create_cloud_xyz32(
+            header, [(p[0], p[1], BUMP_HEIGHT) for p in new]))
         if self.reset_ekf:
             # Held there while it stays stuck
             self.pin = pose
@@ -470,29 +450,6 @@ class MotionCheck(Node):
         if log:
             self.get_logger().info(f'Holding the EKF where the car stopped, '
                                    f'({x:.2f}, {y:.2f}) in {self.odom_frame}, while it is stuck')
-
-    def save_bumps(self):
-        try:
-            os.makedirs(os.path.dirname(self.bumps_file) or '.', exist_ok=True)
-            with open(self.bumps_file, 'w') as f:
-                yaml.safe_dump({'frame': self.map_frame, 'bumps': self.bumps}, f)
-        except OSError as e:
-            self.get_logger().warning(f'Can\'t save the bumps to {self.bumps_file}: {e}')
-
-    def publish_bumps(self):
-        header = Header(frame_id=self.map_frame, stamp=self.get_clock().now().to_msg())
-        points = [(p[0], p[1], BUMP_HEIGHT) for p in self.bumps]
-        self.bumps_pub.publish(point_cloud2.create_cloud_xyz32(header, points))
-
-    def on_clear_bumps(self, request, response):
-        self.get_logger().info(f'Clearing {len(self.bumps)} bump points')
-        self.bumps = []
-        self.save_bumps()
-        self.publish_bumps()
-        for client in self.clear_clients:
-            if client.service_is_ready():
-                client.call_async(ClearEntireCostmap.Request())
-        return response
 
     def publish_state(self):
         self.state_pub.publish(String(data=self.state))

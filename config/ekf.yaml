@@ -1,8 +1,9 @@
-# robot_localization EKF for car_s, run on the PC by launch/pc_bringup.launch.py.
+# robot_localization EKF for car_s, run on the car by launch/car_local.launch.py,
+# next to its inputs, so WiFi delays don't reach it.
 #
 # Fuses forward speed from the wheels with yaw rate from the gyro, and
-# publishes odom -> base_link (the launch file turns off the controller's own
-# TF while this runs). Wheel yaw isn't used: the car is a skid steer, so it
+# publishes odom -> base_link (robot_car.launch.py turns off the controller's
+# own TF while this runs). Wheel yaw isn't used: the car is a skid steer, so it
 # slips whenever it turns. The magnetometer isn't used: the steppers distort it.
 #
 # Each *_config list is (x, y, z, roll, pitch, yaw,
@@ -14,8 +15,7 @@ ekf_filter_node:
     sensor_timeout: 0.2
     two_d_mode: true
     publish_tf: true
-    # Allow for WiFi latency between the Pi and the PC
-    transform_timeout: 0.1
+    transform_timeout: 0.0
     print_diagnostics: true
 
     map_frame: map

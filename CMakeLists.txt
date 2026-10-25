@@ -62,6 +62,7 @@ install(TARGETS car_imu car_mag DESTINATION lib/${PROJECT_NAME})
 install(PROGRAMS scripts/car_power.py DESTINATION lib/${PROJECT_NAME} RENAME car_power)
 install(PROGRAMS scripts/car_guard.py DESTINATION lib/${PROJECT_NAME} RENAME car_guard)
 install(PROGRAMS scripts/motion_check.py DESTINATION lib/${PROJECT_NAME} RENAME motion_check)
+install(PROGRAMS scripts/bump_store.py DESTINATION lib/${PROJECT_NAME} RENAME bump_store)
 install(PROGRAMS tools/car_outputs_off.sh DESTINATION lib/${PROJECT_NAME} RENAME car_outputs_off)
 
 install(DIRECTORY launch urdf config rviz overlays DESTINATION share/${PROJECT_NAME})

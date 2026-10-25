@@ -1,0 +1,44 @@
+# Nav2's collision monitor, run on the car by launch/car_local.launch.py.
+#
+# Nav2 on the PC sends its velocity on cmd_vel_smoothed; this passes it on to
+# the controller's cmd_vel, slowing the car down so it can't drive its
+# footprint into anything the lidar sees within time_before_collision. On the
+# car it reacts to the scans as they arrive, however late Nav2's commands
+# come over WiFi. key_cmd publishes cmd_vel directly, so it isn't affected.
+#
+# Called car_collision_monitor: Nav2's own collision_monitor on the PC is
+# left unconfigured (pc_bringup.launch.py), and the names must differ.
+car_collision_monitor:
+  ros__parameters:
+    enabled: true
+    base_frame_id: "base_link"
+    odom_frame_id: "odom"
+    enable_stamped_cmd_vel: false
+    cmd_vel_in_topic: "cmd_vel_smoothed"
+    cmd_vel_out_topic: "cmd_vel"
+    state_topic: "collision_monitor_state"
+    # The TF and scans are local now
+    transform_tolerance: 0.1
+    source_timeout: 1.0
+    base_shift_correction: true
+    stop_pub_timeout: 2.0
+    polygons: ["FootprintApproach"]
+    FootprintApproach:
+      type: "polygon"
+      action_type: "approach"
+      # The car's measured rectangle (config/nav2.yaml's footprint), but
+      # reaching 0.22 m ahead instead of 0.12 m: the lidar, 0.05 m ahead of
+      # base_link, sees nothing closer than 0.15 m, so anything nearer than
+      # 0.20 m ahead vanishes from the scans. With the real front edge the
+      # obstacle disappeared just before contact, and the car drove on
+      points: "[[0.22, 0.11], [0.22, -0.11], [-0.17, -0.11], [-0.17, 0.11]]"
+      time_before_collision: 1.2
+      simulation_time_step: 0.1
+      min_points: 6
+      visualize: false
+      enabled: true
+    observation_sources: ["scan"]
+    scan:
+      type: "scan"
+      topic: "/scan"
+      enabled: true

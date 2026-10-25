@@ -25,10 +25,15 @@
   <exec_depend>nav2_msgs</exec_depend>
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>python3-yaml</exec_depend>
-  <!-- pc_bringup.launch.py, car_guard and the tools also use nav2_bringup,
-       nav2_common, robot_localization, slam_toolbox, rviz2 and python3-yaml
-       on the PC. They aren't listed, so rosdep doesn't install Nav2 on the
-       Pi; install them on the PC as in the README ("Setting up the PC") -->
+  <!-- On the car too: launch/car_local.launch.py runs the EKF, the collision
+       monitor and its lifecycle manager -->
+  <exec_depend>robot_localization</exec_depend>
+  <exec_depend>nav2_collision_monitor</exec_depend>
+  <exec_depend>nav2_lifecycle_manager</exec_depend>
+  <!-- pc_bringup.launch.py, car_guard, bump_store and the tools also use
+       nav2_bringup, nav2_common, slam_toolbox and rviz2 on the PC. They
+       aren't listed, so rosdep doesn't install all of Nav2 on the Pi; install
+       them on the PC as in the README ("Setting up the PC") -->
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>launch_yaml</exec_depend>
