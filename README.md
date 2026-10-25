@@ -68,6 +68,13 @@ Next steps, in order:
   (`pulse_count.py`); no false "IMU readings frozen" in 15 minutes at rest.
   Still to check on the floor: driving and turn-360 under load, arcs on
   carpet marking no bump.
+- **The EKF, collision monitor and motion_check run on the car** (since
+  2026-10-25), so WiFi delays don't reach them. In the simulator: exploration,
+  a hidden chair leg marked and kept by `bump_store`, and the collision
+  monitor stopping the car 0.24 m from a wall. On the bench: the EKF at
+  30 Hz, the collision monitor passing Nav2's commands on, and the Pi about
+  88% idle with everything running (motion_check a quarter of one core).
+  Still to try on the floor with Nav2.
 
 Still to look at:
 
