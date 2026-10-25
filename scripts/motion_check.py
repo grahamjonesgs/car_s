@@ -255,8 +255,8 @@ class MotionCheck(Node):
         ok = np.isfinite(r) & (r > max(m.range_min, 0.2)) & (r < min(m.range_max, 8.0))
         if ok.sum() < MIN_INLIERS:
             return
-        # Evenly spread over the scan (a whole-number step kept all of the
-        # A1's 360 points)
+        # Evenly spread over the scan (a whole-number step kept about 300 of
+        # the A1's 600 valid points, and all 360 of the simulator's)
         keep = np.linspace(0, int(ok.sum()) - 1, min(int(ok.sum()), MAX_POINTS)).astype(int)
         r, a = r[ok][keep], a[ok][keep]
         pts = np.stack([laser[0] + r * np.cos(a), laser[1] + r * np.sin(a)], axis=1)
