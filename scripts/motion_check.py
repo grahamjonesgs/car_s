@@ -113,11 +113,16 @@ def icp(cur, old, old_n, guess):
     old, old_n = old[keep], old_n[keep]
     if len(old) < MIN_INLIERS or len(cur) < MIN_INLIERS:
         return None
+    # Squared distances as |p|^2 + |q|^2 - 2 p.q in float32: one matrix
+    # product, about 4x faster on the Pi than differencing every pair
+    old32 = old.astype(np.float32)
+    old_sq = (old32 ** 2).sum(axis=1)
     x, y, th = guess
     for _ in range(ICP_ITERATIONS):
         c, s = math.cos(th), math.sin(th)
         p = cur @ np.array([[c, s], [-s, c]]) + (x, y)
-        d2 = ((p[:, None, :] - old[None, :, :]) ** 2).sum(axis=2)
+        p32 = p.astype(np.float32)
+        d2 = (p32 ** 2).sum(axis=1)[:, None] + old_sq[None, :] - 2 * (p32 @ old32.T)
         j = d2.argmin(axis=1)
         close = d2[np.arange(len(p)), j] < MATCH_DIST ** 2
         if close.sum() < MIN_INLIERS:
@@ -249,8 +254,10 @@ class MotionCheck(Node):
         ok = np.isfinite(r) & (r > max(m.range_min, 0.2)) & (r < min(m.range_max, 8.0))
         if ok.sum() < MIN_INLIERS:
             return
-        step = max(1, int(ok.sum()) // MAX_POINTS)
-        r, a = r[ok][::step], a[ok][::step]
+        # Evenly spread over the scan (a whole-number step kept all of the
+        # A1's 360 points)
+        keep = np.linspace(0, int(ok.sum()) - 1, min(int(ok.sum()), MAX_POINTS)).astype(int)
+        r, a = r[ok][keep], a[ok][keep]
         pts = np.stack([laser[0] + r * np.cos(a), laser[1] + r * np.sin(a)], axis=1)
         self.scans.append((t, pts, normals(pts)))
         self.trim(self.scans, t)
@@ -267,10 +274,11 @@ class MotionCheck(Node):
         history.append((now, tr.transform.translation.x, tr.transform.translation.y, yaw))
         self.trim(history, now)
 
-    def measure(self, t, window):
+    def measure(self, t, window, min_cmd_dist=0.0):
         """Wheel and real movement over about window seconds up to t:
         (span, cmd, cmd_dist, turn, meas_dist), meas_dist None if the scans
-        can't tell, or None if the data isn't there yet"""
+        can't tell (or, to save the scan match, the wheels drove under
+        min_cmd_dist), or None if the data isn't there yet"""
         old = at_time(self.scans, t - window)
         o0, o1 = at_time(self.odom, old[0]), at_time(self.odom, t)
         g0, g1 = at_time(self.gyro, old[0]), at_time(self.gyro, t)
@@ -286,6 +294,8 @@ class MotionCheck(Node):
         cmd = (c * dx + s * dy, -s * dx + c * dy, wrap(o1[3] - o0[3]))
         cmd_dist = math.hypot(cmd[0], cmd[1])
         turn = g1[1] - g0[1]
+        if cmd_dist < min_cmd_dist:
+            return span, cmd, cmd_dist, turn, None
 
         # What the scans say, tried from the wheels' guess and from standing
         # still (it converges better from whichever is nearer the truth)
@@ -312,7 +322,7 @@ class MotionCheck(Node):
         self.record_pose(self.map_frame, self.map_poses)
 
         # The quick stuck check first: driven a clear distance, hardly moved
-        quick = self.measure(t, self.stuck_window)
+        quick = self.measure(t, self.stuck_window, self.stuck_min_dist)
         if quick is not None:
             span, cmd, cmd_dist, turn, meas_dist = quick
             if (cmd_dist > self.stuck_min_dist and meas_dist is not None
