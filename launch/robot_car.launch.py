@@ -36,6 +36,13 @@ def generate_launch_description():
                     'stopped, and can be started with the /start_motor service.'
     )
 
+    declare_scan_mode_arg = DeclareLaunchArgument(
+        name='scan_mode',
+        default_value='Boost',
+        description='Lidar scan mode: Boost (8 kHz, about 1080 points per scan) '
+                    'or Express (4 kHz, about 720). Both turn at 7.5 Hz.'
+    )
+
     declare_ekf_arg = DeclareLaunchArgument(
         name='ekf',
         default_value='true',
@@ -90,6 +97,7 @@ def generate_launch_description():
             'topic_name': '/scan',  # Adjust if necessary
             'frame_id': 'laser_link', # Important to match the URDF link name
             'angle_compensate': True,
+            'scan_mode': LaunchConfiguration('scan_mode'),
             # The A1 talks at 115200 baud; Slamtec's driver defaults to 1000000
             'serial_port': '/dev/ttyUSB0',
             'serial_baudrate': 115200,
@@ -180,6 +188,7 @@ def generate_launch_description():
     ld.add_action(declare_use_sim_time_arg)
     ld.add_action(declare_lidar_arg)
     ld.add_action(declare_lidar_on_arg)
+    ld.add_action(declare_scan_mode_arg)
     ld.add_action(declare_ekf_arg)
     ld.add_action(declare_safety_stop_arg)
     ld.add_action(declare_motion_check_arg)
